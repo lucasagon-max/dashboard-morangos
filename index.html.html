@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morangos Tatuí · Dashboard Live</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red:#b83228; --red2:#e04438; --red3:rgba(184,50,40,0.12);
+  --green:#2d9e60; --green2:rgba(45,158,96,0.12);
+  --gold:#c9952a; --gold2:rgba(201,149,42,0.12);
+  --blue:#2e6fcf; --blue2:rgba(46,111,207,0.12);
+  --orange:#d4622a;
+  --bg:#f7f0eb; --card:#fff;
+  --dark:#180c09; --dark2:#3d1e18;
+  --muted:#896f6a; --border:rgba(184,50,40,0.1);
+  --shadow:0 2px 20px rgba(24,12,9,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--dark);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 10% 0%,rgba(184,50,40,0.07) 0%,transparent 50%),
+             radial-gradient(ellipse at 90% 100%,rgba(201,149,42,0.05) 0%,transparent 45%);
+  pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:relative;z-index:20;background:var(--dark);height:68px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 36px;
+  border-bottom:3px solid var(--red)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-berry{width:34px;height:34px;background:var(--red);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-name{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#f7f0eb}
+.logo-name em{color:var(--red2);font-style:normal}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.periodo-badge{background:rgba(247,240,235,0.08);border:1px solid rgba(247,240,235,0.15);
+  border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(247,240,235,0.6);letter-spacing:0.04em}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)}
+.live-dot::before{content:'';width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* LOGIN SCREEN */
+#loginScreen{position:relative;z-index:10;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;min-height:calc(100vh - 68px);padding:40px 20px}
+.login-card{background:var(--card);border-radius:20px;padding:52px 48px;
+  border:1px solid var(--border);box-shadow:0 20px 60px rgba(24,12,9,0.1);
+  text-align:center;max-width:440px;width:100%}
+.login-berry{font-size:52px;margin-bottom:20px}
+.login-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;
+  color:var(--dark);margin-bottom:10px}
+.login-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:36px}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;
+  background:var(--dark);color:#f7f0eb;border:none;border-radius:12px;
+  padding:16px 32px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;width:100%;transition:all 0.2s;letter-spacing:0.01em}
+.btn-google:hover{background:var(--dark2);transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(24,12,9,0.2)}
+.btn-google svg{width:22px;height:22px;flex-shrink:0}
+.login-note{margin-top:20px;font-size:12px;color:var(--muted);line-height:1.6}
+.login-note strong{color:var(--dark)}
+
+/* LOADING */
+#loadingScreen{display:none;position:relative;z-index:10;
+  flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 68px);gap:20px}
+.spinner{width:48px;height:48px;border:3px solid var(--border);
+  border-top-color:var(--red);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--muted)}
+
+/* ERROR */
+#errorScreen{display:none;position:relative;z-index:10;
+  flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 68px);padding:40px 20px}
+.error-card{background:var(--card);border-radius:16px;padding:36px;
+  border:1px solid rgba(184,50,40,0.2);text-align:center;max-width:480px}
+.error-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--red);margin-bottom:10px}
+.error-msg{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:20px}
+.btn-retry{background:var(--red);color:#fff;border:none;border-radius:10px;
+  padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.btn-retry:hover{background:var(--red2)}
+
+/* NAV TABS */
+.nav-tabs{position:relative;z-index:10;background:var(--dark2);
+  display:flex;gap:0;padding:0 36px;border-bottom:1px solid rgba(255,255,255,0.06);
+  display:none}
+.tab-btn{padding:14px 20px;font-size:13px;font-weight:500;color:rgba(247,240,235,0.5);
+  background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;
+  font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.tab-btn:hover{color:rgba(247,240,235,0.8)}
+.tab-btn.active{color:#f7f0eb;border-bottom-color:var(--red2)}
+
+/* CONTENT */
+.tab-panel{display:none;position:relative;z-index:10;
+  max-width:1260px;margin:36px auto 60px;padding:0 28px;
+  animation:fadeUp 0.4s ease both}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION TITLE */
+.sec{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;
+  color:var(--dark);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:34px}
+.kpi{background:var(--card);border-radius:14px;padding:24px 22px;border:1px solid var(--border);
+  box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(24,12,9,0.1)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.k-red::before{background:var(--red)}
+.kpi.k-green::before{background:var(--green)}
+.kpi.k-gold::before{background:var(--gold)}
+.kpi.k-blue::before{background:var(--blue)}
+.kpi.k-orange::before{background:var(--orange)}
+.kpi-icon{position:absolute;top:18px;right:18px;font-size:26px;opacity:0.13}
+.kpi-label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;font-weight:600}
+.kpi-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--dark);line-height:1;margin-bottom:7px}
+.kpi-sub{font-size:12px;color:var(--muted)}
+.kpi-sub .up{color:var(--green)} .kpi-sub .dn{color:var(--red)}
+
+/* CHART CARDS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:30px}
+.chart-grid.cols-3{grid-template-columns:2fr 1fr}
+.chart-card{background:var(--card);border-radius:14px;padding:24px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.chart-card.wide{grid-column:1/-1}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.chart-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--dark)}
+.chart-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.badge{font-size:10.5px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:0.04em}
+.badge-red{background:var(--red3);color:var(--red)}
+.badge-green{background:var(--green2);color:var(--green)}
+.badge-gold{background:var(--gold2);color:var(--gold)}
+.badge-blue{background:var(--blue2);color:var(--blue)}
+.chart-wrap{position:relative}
+.h200{height:200px} .h260{height:260px} .h300{height:300px} .h320{height:320px}
+
+/* ALERT */
+.alert{background:rgba(201,149,42,0.1);border:1px solid rgba(201,149,42,0.3);
+  border-radius:10px;padding:12px 16px;font-size:13px;color:var(--gold);
+  margin-bottom:20px;display:flex;align-items:center;gap:10px}
+
+/* TABLE */
+.tbl-card{background:var(--card);border-radius:14px;border:1px solid var(--border);
+  box-shadow:var(--shadow);overflow:hidden;margin-bottom:30px}
+.tbl-head{padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.tbl-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:11px 18px;text-align:left;font-size:10.5px;text-transform:uppercase;
+  letter-spacing:0.08em;color:var(--muted);background:rgba(184,50,40,0.03);
+  font-weight:600;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid rgba(0,0,0,0.04);transition:background 0.15s}
+tbody tr:hover{background:rgba(184,50,40,0.025)}
+tbody tr:last-child{border-bottom:none}
+td{padding:12px 18px;vertical-align:middle}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-green{background:var(--green2);color:var(--green)}
+.pill-red{background:var(--red3);color:var(--red)}
+.pill-gold{background:var(--gold2);color:var(--gold)}
+.pill-blue{background:var(--blue2);color:var(--blue)}
+.bar-wrap{height:5px;background:rgba(0,0,0,0.07);border-radius:3px;width:80px}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--red2))}
+
+/* FP */
+.fp-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(0,0,0,0.04)}
+.fp-row:last-child{border-bottom:none}
+.fp-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0;background:rgba(46,111,207,0.08)}
+.fp-name{font-size:13px;font-weight:500;flex:1}
+.fp-taxa{font-size:11px;color:var(--muted)}
+.fp-val{font-family:'Playfair Display',serif;font-size:14px;font-weight:700}
+
+/* PARCELAS */
+.parcela-row{display:flex;justify-content:space-between;align-items:center;
+  padding:13px 18px;border-bottom:1px solid rgba(0,0,0,0.04)}
+.parcela-row:last-child{border-bottom:none}
+.parcela-mes{font-size:13px;font-weight:500}
+.parcela-val{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
+.parcela-val.high{color:var(--red)} .parcela-val.mid{color:var(--gold)} .parcela-val.low{color:var(--green)}
+
+/* LEGEND */
+.legend-list{display:flex;flex-direction:column;gap:8px;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-name{color:var(--dark);flex:1}
+.legend-val{color:var(--muted);font-size:11px}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:30px}
+.info-card{background:var(--card);border-radius:14px;padding:20px 22px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.info-label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;font-weight:600}
+
+/* BTN REFRESH */
+.btn-refresh{background:rgba(247,240,235,0.08);border:1px solid rgba(247,240,235,0.2);
+  color:#f7f0eb;border-radius:8px;padding:6px 16px;font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.btn-refresh:hover{background:rgba(247,240,235,0.15)}
+.btn-refresh.spinning svg{animation:spin 0.8s linear infinite}
+
+@media(max-width:780px){
+  .chart-grid,.chart-grid.cols-3,.info-grid{grid-template-columns:1fr}
+  .chart-card.wide{grid-column:1}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  header,.nav-tabs{padding-left:18px;padding-right:18px}
+  .tab-panel{padding:0 16px}
+}
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+  .tab-btn{font-size:11px;padding:12px 12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-berry">🍓</div>
+    <div class="logo-name">Morangos <em>Tatuí</em></div>
+  </div>
+  <div class="header-right">
+    <div class="periodo-badge" id="periodoBadge">Carregando...</div>
+    <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+      </svg>
+      Atualizar
+    </button>
+    <div class="live-dot" id="liveDot" style="display:none">Conectado</div>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-berry">🍓</div>
+    <div class="login-title">Dashboard Morangos Tatuí</div>
+    <div class="login-sub">Conecte sua conta Google para carregar os dados da planilha em tempo real.</div>
+    <button class="btn-google" onclick="signIn()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="login-note">
+      Apenas <strong>você</strong> terá acesso — os dados ficam na sua conta Google.<br>
+      Nenhuma informação é armazenada neste arquivo.
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 68px);gap:20px;position:relative;z-index:10">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Carregando dados da planilha…</div>
+</div>
+
+<!-- ERROR -->
+<div id="errorScreen" style="display:none;position:relative;z-index:10;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 68px);padding:40px 20px">
+  <div class="error-card">
+    <div class="error-title">❌ Erro ao carregar</div>
+    <div class="error-msg" id="errorMsg">Não foi possível acessar a planilha.</div>
+    <button class="btn-retry" onclick="retryLoad()">Tentar novamente</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<nav class="nav-tabs" id="navTabs">
+  <button class="tab-btn active" onclick="setTab('visao',this)">📊 Visão Geral</button>
+  <button class="tab-btn" onclick="setTab('caixa',this)">💰 Fluxo de Caixa</button>
+  <button class="tab-btn" onclick="setTab('saidas',this)">📤 Saídas</button>
+  <button class="tab-btn" onclick="setTab('pagamentos',this)">💳 Pagamentos</button>
+  <button class="tab-btn" onclick="setTab('parcelas',this)">📅 Parcelas</button>
+</nav>
+
+<!-- TABS -->
+<div id="tab-visao" class="tab-panel active" style="display:none"></div>
+<div id="tab-caixa" class="tab-panel" style="display:none"></div>
+<div id="tab-saidas" class="tab-panel" style="display:none"></div>
+<div id="tab-pagamentos" class="tab-panel" style="display:none"></div>
+<div id="tab-parcelas" class="tab-panel" style="display:none"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const CLIENT_ID   = '781310015266-iff0bmklrbkv3mt6no32gel47tfs3jeu.apps.googleusercontent.com';
+const SHEET_ID    = '1cyM1DI29ob_hF3BomDazojTo-nn3j8kJowpbqh7R8Tg';
+const SCOPES      = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const SHEETS = { MOV:'Movimentacoes', FEC:'Fechamento', PARC:'Parcelas' };
+
+let tokenClient, accessToken = null, charts = {};
+
+// ── GOOGLE IDENTITY ──────────────────────────────────────────────────────────
+function loadGIS() {
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.onload = initGIS;
+  document.head.appendChild(s);
+}
+
+function initGIS() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { showError('Erro no login: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      showLoading('Lendo planilha…');
+      await loadAllData();
+    }
+  });
+}
+
+function signIn() {
+  if (!tokenClient) { showError('Biblioteca Google ainda carregando. Aguarde um segundo e tente novamente.'); return; }
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+async function refreshData() {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spinning');
+  await loadAllData();
+  btn.classList.remove('spinning');
+}
+
+function retryLoad() {
+  document.getElementById('errorScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── FETCH SHEET ──────────────────────────────────────────────────────────────
+async function fetchSheet(sheetName) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `Erro ao ler aba ${sheetName}`);
+  }
+  const json = await res.json();
+  const [headers, ...rows] = json.values || [];
+  if (!headers) return [];
+  return rows.map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] ?? '');
+    return obj;
+  });
+}
+
+// ── LOAD ALL ─────────────────────────────────────────────────────────────────
+async function loadAllData() {
+  try {
+    showLoading('Lendo Movimentações…');
+    const mov  = await fetchSheet(SHEETS.MOV);
+    showLoading('Lendo Fechamentos…');
+    const fec  = await fetchSheet(SHEETS.FEC);
+    showLoading('Lendo Parcelas…');
+    let parc = [];
+    try { parc = await fetchSheet(SHEETS.PARC); } catch(e) {}
+
+    showLoading('Processando dados…');
+    const data = processData(mov, fec, parc);
+    buildDashboard(data);
+    showDashboard(data);
+  } catch(err) {
+    console.error(err);
+    showError(err.message || 'Erro desconhecido ao carregar dados.');
+  }
+}
+
+// ── PROCESS ──────────────────────────────────────────────────────────────────
+function num(v) {
+  if (!v || v === '') return 0;
+  return parseFloat(String(v).replace(/[R$\s]/g,'').replace('.','').replace(',','.')) || 0;
+}
+function dateStr(v) {
+  if (!v) return '';
+  // handle DD/MM/YYYY or YYYY-MM-DD
+  if (String(v).includes('/')) {
+    const p = v.split('/');
+    if (p.length === 3) return `${p[0]}/${p[1]}`; // DD/MM
+  }
+  if (String(v).includes('-')) {
+    const p = v.split('-');
+    return `${p[2]?.substring(0,2)}/${p[1]}`;
+  }
+  return String(v).substring(0,10);
+}
+
+function processData(mov, fec, parc) {
+  // ── Vendas diárias ──
+  const vendasMap = {};
+  mov.filter(r => r.Categoria === 'Vendas' || r.Tipo === 'Entrada' && r.Categoria === 'Vendas')
+     .forEach(r => {
+       const d = dateStr(r.Data);
+       vendasMap[d] = (vendasMap[d]||0) + num(r.Valor);
+     });
+
+  // ── Fechamento ──
+  const fecData = fec.map(r => ({
+    data: dateStr(r.Data_Caixa),
+    entradas: num(r.Total_Entradas),
+    saidas: num(r.Total_Saidas),
+    saldo: num(r.Saldo_Real)
+  })).filter(r => r.data);
+
+  // ── KPIs ──
+  const todasVendas = mov.filter(r => r.Categoria === 'Vendas');
+  const vendasBruto = todasVendas.reduce((a,r) => a+num(r.Valor), 0);
+  const vendasLiq   = todasVendas.reduce((a,r) => a+num(r.Valor_Liquido||r.Valor), 0);
+  const totalEnt    = fec.reduce((a,r) => a+num(r.Total_Entradas), 0);
+  const totalSai    = fec.reduce((a,r) => a+num(r.Total_Saidas), 0);
+  const saldoAtual  = fecData.length ? fecData[fecData.length-1].saldo : 0;
+  const taxaTotal   = mov.filter(r=>r.Categoria==='Taxa maquininha').reduce((a,r)=>a+num(r.Valor),0);
+
+  // ── Saídas por categoria ──
+  const saiMap = {};
+  mov.filter(r => r.Tipo === 'Saída').forEach(r => {
+    const c = r.Categoria || 'Outros';
+    saiMap[c] = (saiMap[c]||0) + num(r.Valor);
+  });
+  const saidas = Object.entries(saiMap).sort((a,b)=>b[1]-a[1]).slice(0,10)
+                       .map(([c,v])=>({Categoria:c, Valor:v}));
+
+  // ── Entradas por forma pagamento ──
+  const fpMap = {}, fpLiq = {};
+  mov.filter(r => r.Tipo === 'Entrada').forEach(r => {
+    const fp = r.Forma_Pagamento || 'Outros';
+    fpMap[fp] = (fpMap[fp]||0) + num(r.Valor);
+    fpLiq[fp] = (fpLiq[fp]||0) + num(r.Valor_Liquido||r.Valor);
+  });
+  const entFP = Object.entries(fpMap).sort((a,b)=>b[1]-a[1])
+    .map(([fp,v])=>({
+      fp, bruto:v, liquido:fpLiq[fp]||v,
+      taxa: v>0 ? +((v-(fpLiq[fp]||v))/v*100).toFixed(2) : 0
+    }));
+
+  // ── Parcelas ──
+  const parcMap = {};
+  parc.filter(r => (r.Status||'').toLowerCase().includes('pend')).forEach(r => {
+    const mes = r.Fatura_Mes?.replace(/^\d+\s+/,'') || 'Outros';
+    parcMap[mes] = (parcMap[mes]||0) + num(r.Valor_Parcela);
+  });
+  const parcelas = Object.entries(parcMap).map(([mes,v])=>({mes,valor:v}));
+
+  // ── Período ──
+  const datas = fecData.map(r=>r.data).filter(Boolean);
+  const periodo = datas.length ? `${datas[0]} – ${datas[datas.length-1]}` : '—';
+
+  // ── Gastos pessoais vs negócio ──
+  const pessoalCats = ['Gastos pessoais','Alimentação','Gasolina'];
+  const negocioCats = ['Insumos','Fornecedores','Valdeci','BM Foods Supercongelados','Frios','Embalagem'];
+  const pessoal = pessoalCats.reduce((a,c)=>a+(saiMap[c]||0),0);
+  const negocio = negocioCats.reduce((a,c)=>a+(saiMap[c]||0),0);
+
+  return {
+    vendasDia: Object.entries(vendasMap).map(([d,v])=>({d,v})),
+    fecData, saidas, entFP, parcelas, periodo,
+    kpis: { vendasBruto, vendasLiq, totalEnt, totalSai, saldoAtual, taxaTotal, pessoal, negocio }
+  };
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+const R  = v => 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const COLORS = ['#b83228','#c9952a','#2d9e60','#2e6fcf','#d4622a','#8e44ad','#16a085','#e67e22','#2c3e50','#7f8c8d'];
+const BF = {family:'DM Sans'};
+const AX = {grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:BF,color:'#896f6a',size:11}};
+const NL = {plugins:{legend:{display:false}}};
+const TT = (cb) => ({plugins:{...NL.plugins, tooltip:{callbacks:{label:cb}}}});
+
+function destroyCharts() { Object.values(charts).forEach(c=>c&&c.destroy()); charts={}; }
+
+function setTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.remove('active');p.style.display='none';});
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const panel = document.getElementById('tab-'+name);
+  panel.classList.add('active');
+  panel.style.display = 'block';
+  if(btn) btn.classList.add('active');
+}
+
+// ── BUILD DASHBOARD ───────────────────────────────────────────────────────────
+function buildDashboard(d) {
+  destroyCharts();
+  buildVisao(d);
+  buildCaixa(d);
+  buildSaidas(d);
+  buildPagamentos(d);
+  buildParcelas(d);
+}
+
+// ── TAB VISÃO ────────────────────────────────────────────────────────────────
+function buildVisao(d) {
+  const k = d.kpis;
+  const el = document.getElementById('tab-visao');
+  el.innerHTML = `
+  <div class="sec">📈 Indicadores do Período</div>
+  <div class="kpi-grid">
+    <div class="kpi k-red"><div class="kpi-icon">💰</div><div class="kpi-label">Vendas Brutas</div><div class="kpi-val" style="font-size:24px">${R(k.vendasBruto)}</div><div class="kpi-sub">Receita total de vendas</div></div>
+    <div class="kpi k-green"><div class="kpi-icon">✅</div><div class="kpi-label">Vendas Líquidas</div><div class="kpi-val" style="font-size:24px">${R(k.vendasLiq)}</div><div class="kpi-sub"><span class="dn">− ${R(k.taxaTotal)}</span> em taxas</div></div>
+    <div class="kpi k-gold"><div class="kpi-icon">📤</div><div class="kpi-label">Total Saídas</div><div class="kpi-val" style="font-size:24px">${R(k.totalSai)}</div><div class="kpi-sub">${d.fecData.length} dias de operação</div></div>
+    <div class="kpi k-blue"><div class="kpi-icon">🏦</div><div class="kpi-label">Saldo em Caixa</div><div class="kpi-val" style="font-size:24px">${R(k.saldoAtual)}</div><div class="kpi-sub">Último fechamento</div></div>
+    <div class="kpi k-orange"><div class="kpi-icon">⚠️</div><div class="kpi-label">Taxas Maquininha</div><div class="kpi-val" style="font-size:24px">${R(k.taxaTotal)}</div><div class="kpi-sub"><span class="dn">${k.vendasBruto>0?(k.taxaTotal/k.vendasBruto*100).toFixed(2):0}% das vendas</span></div></div>
+  </div>
+  <div class="chart-grid"><div class="chart-card wide">
+    <div class="chart-head"><div><div class="chart-title">Faturamento Diário de Vendas</div><div class="chart-sub">Receita bruta por dia</div></div><span class="badge badge-red">Vendas</span></div>
+    <div class="chart-wrap h300"><canvas id="cVD"></canvas></div>
+  </div></div>
+  <div class="chart-grid cols-3">
+    <div class="chart-card">
+      <div class="chart-head"><div><div class="chart-title">Entradas vs Saídas</div><div class="chart-sub">Por semana</div></div><span class="badge badge-green">Caixa</span></div>
+      <div class="chart-wrap h260"><canvas id="cES"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head"><div><div class="chart-title">Top 5 Saídas</div><div class="chart-sub">Por categoria</div></div><span class="badge badge-gold">Despesas</span></div>
+      <div style="display:flex;align-items:center;gap:18px;height:260px">
+        <div class="chart-wrap" style="height:200px;width:200px;flex-shrink:0"><canvas id="cDN"></canvas></div>
+        <div class="legend-list" id="dnLegend"></div>
+      </div>
+    </div>
+  </div>`;
+
+  // chart vendas dia
+  const maxV = Math.max(...d.vendasDia.map(x=>x.v));
+  charts.vd = new Chart(document.getElementById('cVD'),{
+    type:'bar', data:{
+      labels:d.vendasDia.map(x=>x.d),
+      datasets:[{data:d.vendasDia.map(x=>x.v),
+        backgroundColor:d.vendasDia.map(x=>x.v===maxV?'#b83228':'rgba(184,50,40,0.38)'),
+        borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,...NL,
+      plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
+              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  // weekly
+  const wEnt={},wSai={};
+  d.fecData.forEach(r=>{
+    const [dd,mm]=r.data.split('/');
+    const wk=parseInt(dd)<=7?1:parseInt(dd)<=14?2:parseInt(dd)<=21?3:4;
+    const k=`${mm}/S${wk}`;
+    wEnt[k]=(wEnt[k]||0)+r.entradas;
+    wSai[k]=(wSai[k]||0)+r.saidas;
+  });
+  const wk=[...new Set([...Object.keys(wEnt)])];
+  charts.es = new Chart(document.getElementById('cES'),{
+    type:'bar',data:{labels:wk,datasets:[
+      {label:'Entradas',data:wk.map(k=>wEnt[k]||0),backgroundColor:'rgba(45,158,96,0.7)',borderRadius:5,borderSkipped:false},
+      {label:'Saídas',  data:wk.map(k=>wSai[k]||0),backgroundColor:'rgba(184,50,40,0.65)',borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#180c09',boxWidth:10,padding:14}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+      scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  // donut
+  const top5=d.saidas.slice(0,5);
+  charts.dn = new Chart(document.getElementById('cDN'),{
+    type:'doughnut',data:{labels:top5.map(x=>x.Categoria),datasets:[{data:top5.map(x=>x.Valor),backgroundColor:COLORS.slice(0,5),borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed)}}}}
+  });
+  const lgd=document.getElementById('dnLegend');
+  top5.forEach((x,i)=>lgd.innerHTML+=`<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i]}"></div><div class="legend-name">${x.Categoria}</div><div class="legend-val">${R(x.Valor)}</div></div>`);
+}
+
+// ── TAB CAIXA ────────────────────────────────────────────────────────────────
+function buildCaixa(d) {
+  const k=d.kpis;
+  const res=k.totalEnt-k.totalSai;
+  document.getElementById('tab-caixa').innerHTML=`
+  <div class="sec">💰 Fluxo de Caixa Diário</div>
+  <div class="kpi-grid">
+    <div class="kpi k-green"><div class="kpi-icon">⬆️</div><div class="kpi-label">Total Entradas</div><div class="kpi-val" style="font-size:24px">${R(k.totalEnt)}</div><div class="kpi-sub">Período completo</div></div>
+    <div class="kpi k-red"><div class="kpi-icon">⬇️</div><div class="kpi-label">Total Saídas</div><div class="kpi-val" style="font-size:24px">${R(k.totalSai)}</div><div class="kpi-sub">Período completo</div></div>
+    <div class="kpi k-blue"><div class="kpi-icon">💼</div><div class="kpi-label">Resultado Líquido</div><div class="kpi-val" style="font-size:24px">${res>=0?'+':''} ${R(res)}</div><div class="kpi-sub"><span class="${res>=0?'up':'dn'}">${res>=0?'Positivo':'Negativo'}</span></div></div>
+    <div class="kpi k-gold"><div class="kpi-icon">📍</div><div class="kpi-label">Saldo Atual</div><div class="kpi-val" style="font-size:24px">${R(k.saldoAtual)}</div><div class="kpi-sub">Último fechamento</div></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-head"><div><div class="chart-title">Evolução do Saldo de Caixa</div><div class="chart-sub">Saldo real por dia de fechamento</div></div><span class="badge badge-blue">Saldo Real</span></div>
+    <div class="chart-wrap h320"><canvas id="cSaldo"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-head"><div><div class="chart-title">Entradas vs Saídas Diárias</div><div class="chart-sub">Por dia de fechamento</div></div><span class="badge badge-green">Caixa</span></div>
+    <div class="chart-wrap h300"><canvas id="cESF"></canvas></div>
+  </div>`;
+
+  charts.saldo = new Chart(document.getElementById('cSaldo'),{
+    type:'line',data:{labels:d.fecData.map(r=>r.data),datasets:[{label:'Saldo Real',data:d.fecData.map(r=>r.saldo),
+      borderColor:'#2e6fcf',backgroundColor:'rgba(46,111,207,0.08)',fill:true,tension:0.3,
+      pointBackgroundColor:d.fecData.map(r=>r.saldo<500?'#b83228':r.saldo>2000?'#2d9e60':'#2e6fcf'),
+      pointRadius:4,pointHoverRadius:7}]},
+    options:{responsive:true,maintainAspectRatio:false,...NL,
+      plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
+              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  charts.esf = new Chart(document.getElementById('cESF'),{
+    type:'bar',data:{labels:d.fecData.map(r=>r.data),datasets:[
+      {label:'Entradas',data:d.fecData.map(r=>r.entradas),backgroundColor:'rgba(45,158,96,0.65)',borderRadius:4,borderSkipped:false},
+      {label:'Saídas',  data:d.fecData.map(r=>r.saidas),  backgroundColor:'rgba(184,50,40,0.6)', borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#180c09',boxWidth:10,padding:14}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
+              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+}
+
+// ── TAB SAÍDAS ───────────────────────────────────────────────────────────────
+function buildSaidas(d) {
+  const k=d.kpis;
+  const total=d.saidas.reduce((a,x)=>a+x.Valor,0);
+  const tipos={'Cartão de Crédito 💳':'Financeiro','Valdeci':'Insumo','Salário':'RH','Insumos':'Insumo','Gastos pessoais':'Pessoal','Empréstimo':'Financeiro','Fornecedores':'Insumo','BM Foods Supercongelados':'Insumo','BM Foods':'Insumo','Aluguel':'Fixo','Taxa maquininha':'Operacional'};
+  const pillC={'Financeiro':'pill-red','Insumo':'pill-green','RH':'pill-blue','Pessoal':'pill-gold','Fixo':'pill-blue','Operacional':'pill-gold'};
+  const rows=d.saidas.map((x,i)=>{
+    const pct=(x.Valor/total*100).toFixed(1);
+    const t=tipos[x.Categoria]||'Outro';
+    return `<tr><td><strong style="color:var(--muted)">${i+1}</strong></td><td><strong>${x.Categoria}</strong></td><td><strong>${R(x.Valor)}</strong></td><td>${pct}%</td><td><div class="bar-wrap"><div class="bar-fill" style="width:${(x.Valor/d.saidas[0].Valor*100).toFixed(0)}%"></div></div></td><td><span class="pill ${pillC[t]||'pill-gold'}">${t}</span></td></tr>`;
+  }).join('');
+
+  document.getElementById('tab-saidas').innerHTML=`
+  <div class="sec">📤 Análise de Saídas</div>
+  ${k.pessoal>0?`<div class="alert">⚠️ <strong>Atenção:</strong> Gastos pessoais somam <strong>${R(k.pessoal)}</strong>. Separar contas pessoais das empresariais revela a real rentabilidade.</div>`:''}
+  <div class="kpi-grid">
+    <div class="kpi k-red"><div class="kpi-icon">🛒</div><div class="kpi-label">Insumos do Negócio</div><div class="kpi-val" style="font-size:22px">${R(k.negocio)}</div><div class="kpi-sub">Fornecedores, insumos, frios…</div></div>
+    <div class="kpi k-orange"><div class="kpi-icon">🏠</div><div class="kpi-label">Gastos Pessoais</div><div class="kpi-val" style="font-size:22px">${R(k.pessoal)}</div><div class="kpi-sub">Pessoal, alimentação, gasolina</div></div>
+    <div class="kpi k-gold"><div class="kpi-icon">💳</div><div class="kpi-label">Total Saídas</div><div class="kpi-val" style="font-size:22px">${R(total)}</div><div class="kpi-sub">Top 10 categorias</div></div>
+  </div>
+  <div class="chart-grid"><div class="chart-card wide">
+    <div class="chart-head"><div><div class="chart-title">Top 10 Categorias de Saída</div><div class="chart-sub">Valor total por categoria</div></div><span class="badge badge-red">Despesas</span></div>
+    <div class="chart-wrap h300"><canvas id="cSC"></canvas></div>
+  </div></div>
+  <div class="tbl-card"><div class="tbl-head"><div class="tbl-title">Detalhamento por Categoria</div><span class="badge badge-gold">Top 10</span></div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Categoria</th><th>Valor Total</th><th>%</th><th>Participação</th><th>Tipo</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+
+  charts.sc = new Chart(document.getElementById('cSC'),{
+    type:'bar',data:{labels:d.saidas.map(x=>x.Categoria),datasets:[{data:d.saidas.map(x=>x.Valor),backgroundColor:COLORS,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',...NL,
+      plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.x)}}},
+      scales:{x:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}},
+              y:{...AX,grid:{display:false},ticks:{...AX.ticks,font:{...BF,size:12}}}}}
+  });
+}
+
+// ── TAB PAGAMENTOS ───────────────────────────────────────────────────────────
+function buildPagamentos(d) {
+  const icons={'Crédito a vista':'💳','Crédito à Vista':'💳','PIX':'⚡','Debito':'🏧','Débito':'🏧','Dinheiro':'💵','Transferência I Pix':'🔄','Transf. / PIX':'🔄','Link de pagamento':'🔗'};
+  const totalBruto=d.entFP.reduce((a,x)=>a+x.bruto,0);
+  const totalLiq=d.entFP.reduce((a,x)=>a+x.liquido,0);
+  const taxaTotal=totalBruto-totalLiq;
+  const fpRows=d.entFP.map(x=>`<div class="fp-row"><div class="fp-icon">${icons[x.fp]||'💰'}</div><div><div class="fp-name">${x.fp}</div><div class="fp-taxa">${x.taxa>0?`Taxa: ${x.taxa}% → desconto: ${R(x.bruto-x.liquido)}`:'Sem taxa'}</div></div><div class="fp-val">${R(x.bruto)}</div></div>`).join('');
+
+  document.getElementById('tab-pagamentos').innerHTML=`
+  <div class="sec">💳 Formas de Pagamento</div>
+  <div class="chart-grid cols-3">
+    <div class="chart-card">
+      <div class="chart-head"><div><div class="chart-title">Volume por Modalidade</div><div class="chart-sub">Bruto vs Líquido</div></div><span class="badge badge-blue">Recebimentos</span></div>
+      <div class="chart-wrap h260"><canvas id="cFP"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head"><div><div class="chart-title">Taxa por Modalidade</div><div class="chart-sub">Impacto das taxas</div></div><span class="badge badge-red">Taxas</span></div>
+      <div style="padding-top:8px" id="fpList">${fpRows}</div>
+    </div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card"><div class="info-label">💡 Dica de Gestão</div>
+      <p style="font-size:13px;color:var(--dark2);line-height:1.7">Receber via <strong>PIX direto no banco</strong> (sem maquininha) elimina as taxas de antecipação. Verifique se o PIX da maquininha pode ser substituído pelo PIX do banco para reduzir custos.</p>
+    </div>
+    <div class="info-card"><div class="info-label">📊 Resumo de Taxas</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between"><span style="font-size:13px">Total recebido (bruto)</span><span style="font-family:'Playfair Display',serif;font-weight:700">${R(totalBruto)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:13px">Taxas cobradas</span><span style="color:var(--red);font-weight:600">− ${R(taxaTotal)}</span></div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:600">Valor líquido recebido</span><span style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--green)">${R(totalLiq)}</span></div>
+      </div>
+    </div>
+  </div>`;
+
+  charts.fp = new Chart(document.getElementById('cFP'),{
+    type:'bar',data:{labels:d.entFP.map(x=>x.fp),datasets:[
+      {label:'Bruto',  data:d.entFP.map(x=>x.bruto),  backgroundColor:'rgba(46,111,207,0.7)',borderRadius:5,borderSkipped:false},
+      {label:'Líquido',data:d.entFP.map(x=>x.liquido),backgroundColor:'rgba(45,158,96,0.65)',borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#180c09',boxWidth:10,padding:14}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:30}},
+              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}}}}
+  });
+}
+
+// ── TAB PARCELAS ─────────────────────────────────────────────────────────────
+function buildParcelas(d) {
+  const total=d.parcelas.reduce((a,x)=>a+x.valor,0);
+  const rows=d.parcelas.map(x=>{
+    const c=x.valor>2000?'high':x.valor>1000?'mid':'low';
+    return `<div class="parcela-row"><div class="parcela-mes">📅 ${x.mes}</div><div class="parcela-val ${c}">${R(x.valor)}</div></div>`;
+  }).join('') || '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Nenhuma parcela pendente encontrada.</div>';
+
+  document.getElementById('tab-parcelas').innerHTML=`
+  <div class="sec">📅 Compromissos Futuros</div>
+  ${total>0?`<div class="alert">📋 <strong>Parcelas pendentes</strong> totalizam <strong>${R(total)}</strong>. Planeje o fluxo de caixa para cobrir os meses de maior vencimento.</div>`:''}
+  <div class="chart-grid"><div class="chart-card wide">
+    <div class="chart-head"><div><div class="chart-title">Vencimentos por Mês</div><div class="chart-sub">Valor total de parcelas a pagar</div></div><span class="badge badge-gold">Pendente</span></div>
+    <div class="chart-wrap h260"><canvas id="cPC"></canvas></div>
+  </div></div>
+  <div class="tbl-card"><div class="tbl-head"><div class="tbl-title">Calendário de Vencimentos</div><span class="badge badge-red">${R(total)} no total</span></div><div id="parcList">${rows}</div></div>`;
+
+  if(d.parcelas.length) {
+    charts.pc = new Chart(document.getElementById('cPC'),{
+      type:'bar',data:{labels:d.parcelas.map(x=>x.mes.replace(' - 2026','').replace(' - 2027',' /27')),
+        datasets:[{data:d.parcelas.map(x=>x.valor),
+          backgroundColor:d.parcelas.map(x=>x.valor>2000?'#b83228':x.valor>1000?'#c9952a':'rgba(45,158,96,0.7)'),
+          borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,...NL,
+        plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+        scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+    });
+  }
+}
+
+// ── UI STATE ─────────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('errorScreen').style.display='none';
+  document.getElementById('loadingScreen').style.display='flex';
+  document.getElementById('loadingText').textContent=msg||'Carregando…';
+  document.getElementById('navTabs').style.display='none';
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display='none';p.classList.remove('active');});
+}
+
+function showError(msg) {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('errorScreen').style.display='flex';
+  document.getElementById('errorMsg').textContent=msg;
+  document.getElementById('navTabs').style.display='none';
+}
+
+function showDashboard(data) {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('errorScreen').style.display='none';
+  document.getElementById('navTabs').style.display='flex';
+  document.getElementById('periodoBadge').textContent=data.periodo;
+  document.getElementById('liveDot').style.display='flex';
+  document.getElementById('btnRefresh').style.display='flex';
+  // show first tab
+  const first=document.getElementById('tab-visao');
+  first.style.display='block';
+  first.classList.add('active');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+loadGIS();
+</script>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>
