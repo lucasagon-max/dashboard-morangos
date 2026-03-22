@@ -181,6 +181,40 @@ td{padding:11px 16px;vertical-align:middle}
 
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 
+/* PARCELAS ENHANCED */
+.cartao-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:28px}
+.cartao-card{background:#fff;border-radius:14px;border:1.5px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.cartao-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.cartao-header.red{background:var(--red);} .cartao-header.black{background:var(--black);}
+.cartao-header.gray{background:#444;} .cartao-header.boleto{background:#b07a00;}
+.cartao-nome{font-size:13px;font-weight:700;color:#fff;letter-spacing:0.02em}
+.cartao-id{font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;letter-spacing:0.08em}
+.cartao-total{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#fff;text-align:right}
+.cartao-total-lbl{font-size:10px;color:rgba(255,255,255,0.6);text-align:right;margin-top:1px}
+.cartao-meta{padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;gap:20px;font-size:11px;color:var(--muted)}
+.cartao-meta span strong{color:var(--dark)}
+.cartao-compras{padding:0}
+.compra-row{padding:12px 20px;border-bottom:1px solid rgba(0,0,0,0.04);transition:background 0.1s}
+.compra-row:hover{background:var(--bg2)} .compra-row:last-child{border-bottom:none}
+.compra-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.compra-desc{font-size:13px;font-weight:600;color:var(--dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compra-val{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--red);flex-shrink:0}
+.compra-bottom{display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap}
+.compra-tag{font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.compra-parcrow{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.parc-mini{display:flex;justify-content:space-between;align-items:center;
+  background:var(--bg2);border-radius:6px;padding:5px 10px;font-size:11.5px}
+.parc-mini-desc{color:var(--mid);flex:1}
+.parc-mini-data{color:var(--muted);font-size:10.5px;margin:0 8px}
+.parc-mini-val{font-weight:700;color:var(--dark)}
+.parc-mini-val.vence-hoje{color:var(--red)}
+.parc-mini-val.vence-breve{color:#b07a00}
+.expand-btn{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-weight:600;padding:2px 0;display:flex;align-items:center;gap:3px}
+.expand-btn:hover{text-decoration:underline}
+.compra-parcelas{display:none} .compra-parcelas.open{display:block}
+
 @media(max-width:900px){
   header,#filterBar,#navTabs,.tab-panel{padding-left:20px;padding-right:20px}
   .cgrid,.cgrid.w31,.igrid{grid-template-columns:1fr}
@@ -292,7 +326,7 @@ const SHEET_ID='1cyM1DI29ob_hF3BomDazojTo-nn3j8kJowpbqh7R8Tg';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets.readonly';
 
 let tokenClient,accessToken=null,charts={};
-let RAW_MOV=[],RAW_FEC=[],RAW_PARC=[];
+let RAW_MOV=[],RAW_FEC=[],RAW_PARC=[],RAW_CART=[],RAW_COMP=[];
 let currentFilter='all',customFrom=null,customTo=null;
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -318,6 +352,8 @@ async function loadAllData(){
     showLoading('Lendo Movimentações…');RAW_MOV=await fetchSheet('Movimentacoes');
     showLoading('Lendo Fechamentos…');RAW_FEC=await fetchSheet('Fechamento');
     showLoading('Lendo Parcelas…');try{RAW_PARC=await fetchSheet('Parcelas');}catch(e){RAW_PARC=[];}
+    showLoading('Lendo Cartões…');try{RAW_CART=await fetchSheet('Cartoes_Emprestimos');}catch(e){RAW_CART=[];}
+    showLoading('Lendo Compras…');try{RAW_COMP=await fetchSheet('Compras_Cartao');}catch(e){RAW_COMP=[];}
     showLoading('Processando…');renderAll();showDashboard();
   }catch(err){console.error(err);showError(err.message||'Erro desconhecido.');}
 }
@@ -375,12 +411,12 @@ function renderAll(){
   destroyCharts();
   const mov=filterRows(RAW_MOV,'Data'),fec=filterRows(RAW_FEC,'Data_Caixa');
   document.getElementById('periodLabel').textContent=periodText();
-  const data=processData(mov,fec,RAW_PARC);
+  const data=processData(mov,fec,RAW_PARC,RAW_CART,RAW_COMP);
   buildVisao(data);buildCaixa(data);buildSaidas(data);buildPagamentos(data);buildParcelas(data);
 }
 
 // ── PROCESS ───────────────────────────────────────────────────────────────────
-function processData(mov,fec,parc){
+function processData(mov,fec,parc,cart,comp){
   const vMap={};
   mov.filter(r=>r.Categoria==='Vendas').forEach(r=>{
     const d=parseDate(r.Data);if(!d||isNaN(d))return;
@@ -414,7 +450,42 @@ function processData(mov,fec,parc){
   const negocioCats=['Insumos','Fornecedores','Valdeci','BM Foods Supercongelados','Frios','Embalagem'];
   const pessoal=pessoalCats.reduce((a,c)=>a+(saiMap[c]||0),0);
   const negocio=negocioCats.reduce((a,c)=>a+(saiMap[c]||0),0);
+
+  // ── Cartões com parcelas agrupadas ──
+  const cartMap={};
+  (cart||[]).forEach(c=>{ if(c.ID_Cartao) cartMap[c.ID_Cartao]={...c,compras:[],totalPendente:0}; });
+
+  // Parcelas pendentes por compra
+  const parcPorCompra={};
+  (parc||[]).filter(p=>(p.Status||'').toLowerCase().includes('pend')).forEach(p=>{
+    if(!parcPorCompra[p.ID_Compra_Ref])parcPorCompra[p.ID_Compra_Ref]=[];
+    parcPorCompra[p.ID_Compra_Ref].push(p);
+  });
+
+  // Compras agrupadas por cartão
+  const comprasSemCartao=[];
+  (comp||[]).forEach(c=>{
+    const parcC=parcPorCompra[c.ID_Compra]||[];
+    const totPend=parcC.reduce((a,p)=>a+num(p.Valor_Parcela),0);
+    if(totPend===0)return; // skip se já pago
+    const desc=String(c.Descricao||'').length>60?String(c.Descricao).substring(0,60)+'…':String(c.Descricao||'');
+    const item={...c,desc,parcelas:parcC,totPend,proxVenc:parcC.length?parcC[0].Data_Vencimento:''};
+    if(c.Cartao&&cartMap[c.Cartao]){
+      cartMap[c.Cartao].compras.push(item);
+      cartMap[c.Cartao].totalPendente+=totPend;
+    } else {
+      comprasSemCartao.push(item);
+    }
+  });
+
+  // Boletos pendentes direto das parcelas sem compra vinculada a cartão
+  const boletosPendentes=(parc||[]).filter(p=>{
+    const c=(comp||[]).find(c=>c.ID_Compra===p.ID_Compra_Ref);
+    return (p.Status||'').toLowerCase().includes('pend') && c && (!c.Cartao || c.Cartao==='BOLETO' || c.Tipo_Lancamento==='Boleto');
+  });
+
   return{vendasDia:Object.entries(vMap).map(([d,v])=>({d,v})),fecData,saidas,entFP,parcelas,
+         cartoes:Object.values(cartMap),comprasSemCartao,
          kpis:{vBruto,vLiq,tEnt,tSai,saldo,taxa,pessoal,negocio}};
 }
 
@@ -566,23 +637,111 @@ function buildPagamentos(d){
 }
 
 // ── PARCELAS ──────────────────────────────────────────────────────────────────
+function fmtDate(v){
+  if(!v)return'—';
+  const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
+  if(isNaN(d))return String(v).substring(0,10);
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+function diasAte(v){
+  if(!v)return 999;
+  const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
+  if(isNaN(d))return 999;
+  return Math.round((d-new Date())/(1000*60*60*24));
+}
+function toggleParcelas(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+
 function buildParcelas(d){
   const tot=d.parcelas.reduce((a,x)=>a+x.v,0);
-  const rows=d.parcelas.map(x=>{const c=x.v>2000?'hi':x.v>1000?'md':'lo';
-    return`<div class="prow"><div class="pmes">📅 ${x.mes}</div><div class="pval ${c}">${R(x.v)}</div></div>`;
-  }).join('')||'<div class="empty">Nenhuma parcela pendente.</div>';
+  const totalCartoes=d.cartoes.reduce((a,c)=>a+c.totalPendente,0);
+
+  // ── Cores por cartão ──
+  const cartColors={'CARD01':'red','CARD02':'black','CARD03':'gray','LCRED01':'gray','BOLETO':'boleto'};
+  const cartIcons={'CARD01':'💳','CARD02':'💳','CARD03':'💳','LCRED01':'🏦','BOLETO':'📄'};
+
+  // ── Cards de cartões ──
+  const cartoesHTML=d.cartoes.filter(c=>c.totalPendente>0||c.compras.length>0).map(c=>{
+    const cor=cartColors[c.ID_Cartao]||'gray';
+    const icon=cartIcons[c.ID_Cartao]||'💳';
+    const metaFech=c.Dia_Fechamento?`Fechamento dia <strong>${c.Dia_Fechamento}</strong>`:'';
+    const metaVenc=c.Dia_Vencimento?`Vencimento dia <strong>${c.Dia_Vencimento}</strong>`:'';
+    const metaLim=c.Limite_Total?`Limite <strong>${R(Number(c.Limite_Total))}</strong>`:'';
+
+    const comprasHTML=c.compras.map((cp,i)=>{
+      const uid=`p_${c.ID_Cartao}_${i}`;
+      const proxP=cp.parcelas[0];
+      const dias=proxP?diasAte(proxP.Data_Vencimento):999;
+      const venceClass=dias<=3?'vence-hoje':dias<=10?'vence-breve':'';
+      const parcelasDetalhe=cp.parcelas.map(p=>`
+        <div class="parc-mini">
+          <div class="parc-mini-desc">${p.Descricao_Parcela||p.Fatura_Mes||'—'}</div>
+          <div class="parc-mini-data">📅 ${fmtDate(p.Data_Vencimento)}</div>
+          <div class="parc-mini-val ${diasAte(p.Data_Vencimento)<=3?'vence-hoje':diasAte(p.Data_Vencimento)<=10?'vence-breve':''}">${R(num(p.Valor_Parcela))}</div>
+        </div>`).join('');
+      return`<div class="compra-row">
+        <div class="compra-top">
+          <div class="compra-desc" title="${cp.Descricao||''}">${icon} ${cp.desc}</div>
+          <div class="compra-val">${R(cp.totPend)}</div>
+        </div>
+        <div class="compra-bottom">
+          <span class="compra-tag">📦 ${cp.Qtd_Parcelas||1}x · ${cp.Tipo_Lancamento||'Cartão'}</span>
+          ${proxP?`<span class="compra-tag ${venceClass}">🗓 Próx: ${fmtDate(proxP.Data_Vencimento)}${dias<=10?' · <strong style="color:var(--red)">'+dias+' dias</strong>':''}</span>`:''}
+          ${cp.parcelas.length>1?`<button class="expand-btn" onclick="toggleParcelas('${uid}')">▼ ver parcelas</button>`:''}
+        </div>
+        ${cp.parcelas.length>1?`<div class="compra-parcelas" id="${uid}"><div class="compra-parcrow">${parcelasDetalhe}</div></div>`:''}
+      </div>`;
+    }).join('') || '<div style="padding:14px 20px;font-size:12px;color:var(--muted)">Nenhuma compra pendente.</div>';
+
+    return`<div class="cartao-card">
+      <div class="cartao-header ${cor}">
+        <div><div class="cartao-nome">${c.Nome_Conta||c.ID_Cartao}</div><div class="cartao-id">${c.ID_Cartao}</div></div>
+        <div><div class="cartao-total">${R(c.totalPendente)}</div><div class="cartao-total-lbl">pendente</div></div>
+      </div>
+      ${(metaFech||metaVenc||metaLim)?`<div class="cartao-meta">${[metaFech,metaVenc,metaLim].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
+      <div class="cartao-compras">${comprasHTML}</div>
+    </div>`;
+  }).join('');
+
+  // ── Gráfico de vencimentos ──
+  const parcelasOrdenadas=[...d.parcelas].sort((a,b)=>{
+    const order=['Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro','Janeiro'];
+    return order.findIndex(m=>a.mes.includes(m))-order.findIndex(m=>b.mes.includes(m));
+  });
 
   document.getElementById('tab-parcelas').innerHTML=`
   <div class="sec">Compromissos Futuros</div>
-  ${tot>0?`<div class="alert">📋 <strong>Parcelas pendentes</strong> totalizam <strong>${R(tot)}</strong>. Planeje o fluxo de caixa para cobrir os meses de maior vencimento.</div>`:''}
-  <div class="cgrid"><div class="cc s2"><div class="ch"><div><div class="ct">Vencimentos por Mês</div><div class="cs">Valor total de parcelas pendentes</div></div><span class="badge br">Pendente</span></div><div class="hw"><canvas id="cPC"></canvas></div></div></div>
-  <div class="tcard"><div class="thead"><div class="ttitle">Calendário de Vencimentos</div><span class="badge bx">${R(tot)} no total</span></div><div>${rows}</div></div>`;
 
-  if(d.parcelas.length)charts.pc=new Chart(document.getElementById('cPC'),{type:'bar',
-    data:{labels:d.parcelas.map(x=>x.mes.replace(' - 2026','').replace(' - 2027',' /27')),
-      datasets:[{data:d.parcelas.map(x=>x.v),backgroundColor:d.parcelas.map(x=>x.v>2000?'#c0271b':x.v>1000?'#111':'rgba(17,17,17,0.3)'),borderRadius:7,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  ${tot>0?`<div class="alert">💳 Total pendente em cartões e boletos: <strong>${R(totalCartoes)}</strong> distribuídos em ${d.cartoes.filter(c=>c.totalPendente>0).length} contas. Planeje o caixa para cobrir os vencimentos.</div>`:''}
+
+  <div class="cgrid"><div class="cc s2">
+    <div class="ch"><div><div class="ct">Vencimentos por Mês</div><div class="cs">Soma de todas as parcelas pendentes</div></div><span class="badge br">Pendente</span></div>
+    <div class="hw"><canvas id="cPC"></canvas></div>
+  </div></div>
+
+  <div class="sec">Por Cartão e Conta</div>
+  <div class="cartao-grid">${cartoesHTML||'<div class="empty">Nenhuma parcela pendente encontrada.</div>'}</div>
+
+  <div class="sec">Calendário Consolidado</div>
+  <div class="tcard">
+    <div class="thead"><div class="ttitle">Resumo por Mês</div><span class="badge bx">${R(tot)} no total</span></div>
+    <div>${parcelasOrdenadas.map(x=>{const c=x.v>2000?'hi':x.v>1000?'md':'lo';
+      return`<div class="prow"><div class="pmes">📅 ${x.mes}</div><div class="pval ${c}">${R(x.v)}</div></div>`;
+    }).join('')||'<div class="empty">Sem parcelas.</div>'}</div>
+  </div>`;
+
+  if(parcelasOrdenadas.length){
+    charts.pc=new Chart(document.getElementById('cPC'),{type:'bar',
+      data:{labels:parcelasOrdenadas.map(x=>x.mes.replace(' - 2026','').replace(' - 2027',' /27')),
+        datasets:[{data:parcelasOrdenadas.map(x=>x.v),
+          backgroundColor:parcelasOrdenadas.map(x=>x.v>2000?'#c0271b':x.v>1000?'#111':'rgba(17,17,17,0.3)'),
+          borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,...NL,
+        plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
+        scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  }
 }
 
 // ── UI STATE ──────────────────────────────────────────────────────────────────
