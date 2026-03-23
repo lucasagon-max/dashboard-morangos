@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Comandas - Morangos Tatuí</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); }
+        .logo-img { max-height: 50px; width: auto; object-fit: contain; }
+
+        /* Card cores por tipo */
+        .comanda-card { background: #fff; position: relative; transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+        .comanda-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .bar-mesa    { background: #3b82f6; }
+        .bar-balcao  { background: #f97316; }
+        .bar-delivery{ background: #10b981; }
+        .bar-default { background: #8b5cf6; }
+
+        /* Status badge */
+        .badge-pendente  { background:#fef3c7; color:#92400e; }
+        .badge-preparo   { background:#dbeafe; color:#1e40af; }
+        .badge-pronto    { background:#d1fae5; color:#065f46; }
+
+        /* Animações */
+        .card-new { animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes popIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+        .payment-pill { animation: slideIn 0.2s ease-out; }
+        @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+        .variation-badge { cursor:pointer; transition:all 0.2s; }
+        .variation-badge:hover { background-color:#dbeafe; border-color:#3b82f6; }
+        .extra-chip { transition:all 0.2s; user-select:none; }
+        .extra-chip:active { transform:scale(0.95); }
+
+        /* Indicator pulso */
+        #live-indicator { transition: all 0.3s; }
+        .pulse-green { animation: pulseG 2s infinite; }
+        @keyframes pulseG { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* Contador regressivo */
+        #refresh-progress { transition: width 0.5s linear; }
+    </style>
+</head>
+<body class="p-4 md:p-6" onclick="enableAudioContext()">
+
+    <!-- BARRA DE NAVEGAÇÃO -->
+    <nav class="bg-white shadow-sm rounded-2xl px-6 py-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-200">
+        <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+            <img src="https://lucasagon-max.github.io/dashboard-morangos/logo.png" alt="Logotipo" class="logo-img hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'; document.getElementById('logo-text').classList.remove('hidden')">
+            <h1 id="logo-text" class="hidden text-2xl font-bold text-slate-800 tracking-tight">Morangos<span class="text-red-600">Tatuí</span></h1>
+        </div>
+
+        <!-- Busca -->
+        <div class="flex-1 max-w-md w-full relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="search" class="w-4 h-4 text-slate-400"></i></div>
+            <input type="text" id="search-comanda" oninput="filterComandas()" placeholder="Buscar por Nº ou Cliente..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block pl-10 p-2.5 outline-none transition-all">
+        </div>
+
+        <!-- Status + Botão -->
+        <div class="flex items-center gap-3">
+            <!-- Indicador ao vivo -->
+            <div class="flex flex-col items-end gap-0.5">
+                <div class="flex items-center gap-2 text-xs font-semibold" id="live-indicator">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span id="ping-outer" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span id="ping-inner" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <span id="live-text" class="text-green-600">Ao vivo</span>
+                </div>
+                <!-- Barra de progresso do próximo refresh -->
+                <div class="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="refresh-progress" class="h-full bg-green-400 rounded-full w-full"></div>
+                </div>
+                <span id="next-refresh-text" class="text-[10px] text-slate-400">próx. em 5s</span>
+            </div>
+
+            <button id="btn-refresh" onclick="manualRefresh()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
+                <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
+                <span>Atualizar</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contadores rápidos -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" id="stats-bar">
+        <div class="bg-white rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+            <div class="bg-blue-50 p-2 rounded-lg"><i data-lucide="clipboard-list" class="w-4 h-4 text-blue-500"></i></div>
+            <div><p class="text-[10px] text-slate-400 uppercase font-bold">Abertas</p><p class="text-xl font-black text-slate-800" id="count-total">0</p></div>
+        </div>
+        <div class="bg-white rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+            <div class="bg-yellow-50 p-2 rounded-lg"><i data-lucide="clock" class="w-4 h-4 text-yellow-500"></i></div>
+            <div><p class="text-[10px] text-slate-400 uppercase font-bold">Pendentes</p><p class="text-xl font-black text-slate-800" id="count-pendente">0</p></div>
+        </div>
+        <div class="bg-white rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+            <div class="bg-red-50 p-2 rounded-lg"><i data-lucide="banknote" class="w-4 h-4 text-red-500"></i></div>
+            <div><p class="text-[10px] text-slate-400 uppercase font-bold">A Pagar</p><p class="text-xl font-black text-slate-800" id="count-apagar">0</p></div>
+        </div>
+        <div class="bg-white rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+            <div class="bg-green-50 p-2 rounded-lg"><i data-lucide="trending-up" class="w-4 h-4 text-green-500"></i></div>
+            <div><p class="text-[10px] text-slate-400 uppercase font-bold">Total Aberto</p><p class="text-xl font-black text-slate-800" id="count-valor">R$ 0</p></div>
+        </div>
+    </div>
+
+    <div id="comandas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10"></div>
+    <div id="empty-state" class="hidden text-center py-20 text-slate-400">
+        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+        <p class="font-bold text-lg">Nenhuma comanda aberta</p>
+        <p class="text-sm">Os novos pedidos aparecerão aqui automaticamente.</p>
+    </div>
+
+    <!-- ═══════════════════════════════ MODAL EDIÇÃO ═══════════════════════════════ -->
+    <div id="edit-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]" id="edit-modal-content">
+            <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="edit-3" class="w-5 h-5"></i></div>
+                    <div><h3 class="font-bold text-lg text-slate-800">Editar Pedido</h3><p class="text-xs text-slate-500 font-medium">ID: <span id="edit-modal-id"></span></p></div>
+                </div>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-200 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-5 overflow-y-auto">
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 relative">
+                    <label class="block text-xs font-bold text-blue-800 mb-2 flex items-center gap-1 uppercase tracking-wide"><i data-lucide="shopping-basket" class="w-3 h-3"></i> Adicionar Produto</label>
+                    <input type="text" id="product-search" placeholder="Ex: suco, morango, granola..." class="w-full bg-white border border-blue-200 rounded-lg p-3 text-sm outline-none" oninput="searchProducts(this.value)">
+                    <div id="product-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-b-xl max-h-60 overflow-y-auto z-[120] mt-1"></div>
+                    <div id="variation-selector" class="hidden absolute top-full left-0 right-0 bg-white border-2 border-blue-500 shadow-2xl rounded-xl p-4 z-[130] mt-1">
+                        <div class="flex justify-between items-center mb-3">
+                            <span id="variation-title" class="font-bold text-slate-800 text-sm">Opções do Item</span>
+                            <button onclick="closeVariationSelector()" class="bg-slate-100 hover:bg-slate-200 p-1 rounded-full"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button>
+                        </div>
+                        <div id="variation-options" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Itens do Pedido</label>
+                    <textarea id="edit-items-input" oninput="recalculateTotalFromText()" rows="8" class="w-full border border-slate-300 rounded-xl p-4 text-sm focus:border-blue-500 outline-none font-mono text-slate-700 bg-slate-50 leading-relaxed"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Total do Pedido</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3 text-slate-400 font-bold">R$</span>
+                        <input type="text" id="edit-total-input" class="w-full border border-slate-300 rounded-xl p-3 pl-10 text-lg font-bold text-slate-800 focus:border-blue-500 outline-none" onblur="this.value = formatMoney(parseMoney(this.value))">
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="closeEditModal()" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl">Cancelar</button>
+                <button onclick="saveOrderChanges()" id="btn-save-edit" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 shadow-lg"><i data-lucide="save" class="w-4 h-4"></i> Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════ MODAL PAGAMENTO ═══════════════════════════════ -->
+    <div id="payment-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="text-emerald-500"></i> Finalizar Pedido</h3>
+                <button onclick="closePaymentModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Total da Conta</span><span id="payment-total-label" class="text-xl font-black text-slate-700">R$ 0,00</span></div>
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100"><span class="text-[10px] font-bold text-emerald-600 uppercase block mb-1">Saldo Restante</span><span id="payment-remaining-label" class="text-xl font-black text-emerald-700">R$ 0,00</span></div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Valor do Pagamento Atual</label>
+                    <div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">R$</span><input type="text" id="partial-payment-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 pl-10 text-2xl font-black text-slate-800 focus:border-emerald-500 outline-none"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-6">
+                    <button onclick="addPaymentEntry('Dinheiro')" class="p-3 border rounded-xl hover:bg-emerald-50 transition-all flex items-center gap-2 font-bold text-sm text-slate-600"><i data-lucide="banknote" class="w-4 h-4 text-emerald-500"></i> Dinheiro</button>
+                    <button onclick="addPaymentEntry('Pix')" class="p-3 border rounded-xl hover:bg-blue-50 transition-all flex items-center gap-2 font-bold text-sm text-slate-600"><i data-lucide="qr-code" class="w-4 h-4 text-blue-500"></i> Pix</button>
+                    <button onclick="addPaymentEntry('C. Crédito')" class="p-3 border rounded-xl hover:bg-indigo-50 transition-all flex items-center gap-2 font-bold text-sm text-slate-600"><i data-lucide="credit-card" class="w-4 h-4 text-indigo-500"></i> Crédito</button>
+                    <button onclick="addPaymentEntry('C. Débito')" class="p-3 border rounded-xl hover:bg-orange-50 transition-all flex items-center gap-2 font-bold text-sm text-slate-600"><i data-lucide="credit-card" class="w-4 h-4 text-orange-500"></i> Débito</button>
+                </div>
+                <div id="payment-entries-list" class="space-y-2 max-h-32 overflow-y-auto mb-6 pr-2"></div>
+            </div>
+            <div class="bg-slate-50 p-6 border-t border-slate-100 flex flex-col gap-3">
+                <button id="btn-finalize-order" disabled onclick="processFinalPayment()" class="w-full py-4 rounded-2xl font-black text-white bg-slate-300 transition-all shadow-lg flex items-center justify-center gap-2"><i data-lucide="check-check" class="w-5 h-5"></i> FINALIZAR COMANDA</button>
+                <button onclick="resetSplitPayment()" class="w-full text-xs text-slate-400 font-bold hover:text-red-500 uppercase tracking-widest py-2">Limpar Pagamentos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════ MODAL CANCELAMENTO ═══════════════════════════════ -->
+    <div id="cancel-modal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-red-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Cancelar Comanda</h3>
+                <button onclick="closeCancelModal()" class="text-red-400 hover:text-red-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-slate-600 mb-4">Por favor, informe o motivo do cancelamento:</p>
+                <textarea id="cancel-reason" rows="3" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none" placeholder="Ex: Cliente desistiu..."></textarea>
+                <div class="mt-6 flex gap-3">
+                    <button onclick="closeCancelModal()" class="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-medium">Voltar</button>
+                    <button id="btn-confirm-cancel" onclick="confirmCancel()" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 font-bold shadow-lg shadow-red-200">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// ⚙️  CONFIGURAÇÕES — altere aqui
+// ═══════════════════════════════════════════════════════════════════════════
+const API_URL   = "https://script.google.com/macros/s/AKfycbwb55LSvxXFundENhp2ltj0S6NamuWgy-M8yuMQKIYu4DJdBUvwi1qwO_X58mh10lWh/exec";
+
+// CSV da aba PEDIDOS — mude apenas o gid se a aba mudar
+// Para obter: Arquivo → Publicar na web → aba Pedidos → CSV → copiar link
+const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?gid=2044706631&single=true&output=csv";
+
+// CSV do cardápio (aba Cardápio) — para busca de produtos no modal de edição
+const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?output=csv";
+
+// Intervalo de atualização em ms (5000 = 5 segundos)
+const POLL_INTERVAL = 5000;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Estado global
+// ═══════════════════════════════════════════════════════════════════════════
+let allOrdersData  = [];
+let catalogProducts = [];
+let isFetching     = false;
+let knownNovoIds   = new Set();
+let firstLoad      = true;
+let isAudioUnlocked= false;
+let currentPaymentId   = null;
+let currentOrderTotal  = 0;
+let splitPayments      = [];
+let currentEditingId   = null;
+let currentCancelingId = null;
+let pollingTimer       = null;
+let progressTimer      = null;
+let progressStart      = null;
+
+const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Utilitários
+// ═══════════════════════════════════════════════════════════════════════════
+function formatMoney(val) { return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function parseMoney(val) {
+    if (!val) return 0;
+    let clean = String(val).replace('R$', '').trim();
+    let sign = 1;
+    if (clean.includes('-')) { sign = -1; clean = clean.replace('-', ''); }
+    if (clean.includes('.') && clean.includes(',')) clean = clean.replace('.', '').replace(',', '.');
+    else if (clean.includes(',')) clean = clean.replace(',', '.');
+    return (parseFloat(clean) * sign) || 0;
+}
+function normalizeStr(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; }
+
+function enableAudioContext() {
+    if (isAudioUnlocked) return;
+    if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
+    alertSound.play().then(() => { alertSound.pause(); alertSound.currentTime = 0; isAudioUnlocked = true; }).catch(() => {});
+}
+function playSound() { alertSound.currentTime = 0; alertSound.play().catch(() => {}); }
+
+function toast(text, bg = "#3b82f6") {
+    Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🚀 POLLING RÁPIDO via CSV — sem cold start do Apps Script
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadOrders() {
+    if (isFetching) return;
+    isFetching = true;
+    setLiveStatus('loading');
+
+    try {
+        // Adiciona timestamp para evitar cache do browser
+        const url = `${ORDERS_CSV_URL}&t=${Date.now()}`;
+        const res = await fetch(url);
+        const csvText = await res.text();
+
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (result) => {
+                // Normaliza os campos para o mesmo formato que o código usa
+                const data = result.data.map(r => ({
+                    id:        String(r['ID']   || r['id']   || '').split('.')[0].trim(),
+                    data:      r['Data']  || r['data']  || '',
+                    cliente:   r['Cliente'] || r['cliente'] || 'Cliente',
+                    tipo:      r['Tipo']   || r['tipo']   || '',
+                    itens:     r['Detalhes'] || r['itens'] || r['Itens'] || '',
+                    total:     r['Total']  || r['total']  || '0',
+                    status:    r['Status'] || r['status'] || 'Pendente',
+                    pagamento: r['Pagamento'] || r['pagamento'] || '',
+                    obs:       r['Obs']    || r['obs']    || ''
+                })).filter(r => r.id && r.id !== '');
+
+                // Detecta novos pedidos
+                const novos = data.filter(o => o.status === 'Pendente' || o.status === 'Novo');
+                let hasNew = false;
+                novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
+
+                if (hasNew && !firstLoad) {
+                    playSound();
+                    toast("🔔 Novo Pedido!", "#ef4444");
+                }
+
+                // Só re-renderiza se algo mudou
+                const newHash = JSON.stringify(data.map(o => o.id + o.status + o.total));
+                const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total));
+                if (newHash !== oldHash) {
+                    firstLoad = false;
+                    allOrdersData = data.sort((a, b) => Number(b.id) - Number(a.id));
+                    renderBoard(allOrdersData);
+                }
+
+                setLiveStatus('ok');
+            },
+            error: () => setLiveStatus('error')
+        });
+    } catch (e) {
+        console.error('Erro ao buscar pedidos:', e);
+        setLiveStatus('error');
+    } finally {
+        isFetching = false;
+    }
+}
+
+function setLiveStatus(state) {
+    const text  = document.getElementById('live-text');
+    const outer = document.getElementById('ping-outer');
+    const inner = document.getElementById('ping-inner');
+    if (state === 'ok') {
+        text.textContent = 'Ao vivo'; text.className = 'text-green-600';
+        outer.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75';
+        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500';
+    } else if (state === 'loading') {
+        text.textContent = 'Atualizando…'; text.className = 'text-blue-500';
+        outer.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75';
+        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-400';
+    } else {
+        text.textContent = 'Sem conexão'; text.className = 'text-red-500';
+        outer.className = 'absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75';
+        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500';
+    }
+}
+
+// Barra de progresso regressiva
+function startProgressBar() {
+    progressStart = Date.now();
+    const bar  = document.getElementById('refresh-progress');
+    const label= document.getElementById('next-refresh-text');
+    clearInterval(progressTimer);
+    progressTimer = setInterval(() => {
+        const elapsed = Date.now() - progressStart;
+        const pct = Math.max(0, 100 - (elapsed / POLL_INTERVAL) * 100);
+        bar.style.width = pct + '%';
+        const sec = Math.max(0, Math.ceil((POLL_INTERVAL - elapsed) / 1000));
+        label.textContent = `próx. em ${sec}s`;
+        if (elapsed >= POLL_INTERVAL) {
+            clearInterval(progressTimer);
+            bar.style.width = '100%';
+        }
+    }, 250);
+}
+
+function startPolling() {
+    clearInterval(pollingTimer);
+    pollingTimer = setInterval(() => {
+        loadOrders();
+        startProgressBar();
+    }, POLL_INTERVAL);
+    startProgressBar();
+}
+
+function manualRefresh() {
+    clearInterval(pollingTimer);
+    loadOrders();
+    startPolling();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Renderização do board
+// ═══════════════════════════════════════════════════════════════════════════
+function getBarClass(tipo) {
+    const t = normalizeStr(tipo || '');
+    if (t.includes('mesa'))     return 'bar-mesa';
+    if (t.includes('balcao') || t.includes('balcão') || t.includes('retirada')) return 'bar-balcao';
+    if (t.includes('delivery')) return 'bar-delivery';
+    return 'bar-default';
+}
+
+function renderBoard(orders) {
+    const grid  = document.getElementById('comandas-grid');
+    const empty = document.getElementById('empty-state');
+    const search = normalizeStr(document.getElementById('search-comanda').value);
+
+    const visible = orders.filter(o => {
+        // Normaliza encoding — CSV pode vir com latin1 mal interpretado
+        const s = normalizeStr(o.status);
+        // "Concluído" pode aparecer como "concluido", "concluido" ou com caracteres estranhos
+        const sClear = s.replace(/[^a-z]/g, '');
+        if (sClear.includes('conclui') || sClear.includes('cancelad') || sClear.includes('arquivad')) return false;
+        if (search && !normalizeStr(o.cliente).includes(search) && !o.id.includes(search)) return false;
+        return true;
+    });
+
+    // Atualiza contadores
+    const totalAberto = visible.reduce((a, o) => a + parseMoney(o.total), 0);
+    document.getElementById('count-total').textContent    = visible.length;
+    document.getElementById('count-pendente').textContent = visible.filter(o => normalizeStr(o.status) === 'pendente').length;
+    document.getElementById('count-apagar').textContent   = visible.filter(o => (o.pagamento || '').toLowerCase().includes('pagar') || (o.pagamento || '').toLowerCase().includes('combinar')).length;
+    document.getElementById('count-valor').textContent    = 'R$ ' + totalAberto.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+    if (visible.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); lucide.createIcons(); return; }
+    empty.classList.add('hidden');
+
+    // IDs já renderizados
+    const existingIds = new Set([...grid.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId));
+    const newIds = new Set(visible.map(o => o.id));
+
+    // Remove cards que saíram
+    existingIds.forEach(id => { if (!newIds.has(id)) { const el = grid.querySelector(`[data-order-id="${id}"]`); if (el) el.remove(); } });
+
+    visible.forEach(o => {
+        const obsContent = o.obs || '';
+        const barClass = getBarClass(o.tipo);
+        const isNew = !existingIds.has(o.id);
+
+        if (!isNew) {
+            // Atualiza apenas campos dinâmicos sem re-renderizar o card todo
+            const card = grid.querySelector(`[data-order-id="${o.id}"]`);
+            if (card) {
+                const itemsEl = card.querySelector('.items-text');
+                if (itemsEl) itemsEl.textContent = o.itens.replace(/\|/g, '\n');
+                const totalEl = card.querySelector('.total-val');
+                if (totalEl) totalEl.textContent = formatMoney(parseMoney(o.total));
+            }
+            return;
+        }
+
+        // Cria novo card
+        const card = document.createElement('div');
+        card.className = `comanda-card rounded-2xl overflow-hidden flex flex-col card-new`;
+        card.dataset.orderId = o.id;
+        card.innerHTML = `
+            <div class="h-1.5 w-full ${barClass}"></div>
+            <div class="p-5 flex-1 flex flex-col">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-bold text-slate-400 text-xs">#${o.id.toString().slice(-4)}</span>
+                    <div class="flex gap-1">
+                        <button onclick="openEditModal('${o.id}')" class="text-blue-500 p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                        <button onclick="printOrder('${o.id}')" class="text-slate-400 p-1.5 hover:bg-slate-50 rounded-lg transition-colors" title="Imprimir"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                        <button onclick="openCancelModal('${o.id}')" class="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Cancelar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <h4 class="font-bold text-slate-800 text-lg leading-tight mb-0.5 truncate">${o.cliente}</h4>
+                <p class="text-[10px] font-bold text-blue-600 uppercase mb-3">${o.tipo}</p>
+                <div class="bg-slate-50 p-3 rounded-xl text-sm text-slate-600 flex-1 mb-2 whitespace-pre-wrap leading-relaxed border border-slate-100 font-mono items-text">${o.itens.replace(/\|/g, '\n')}</div>
+                ${obsContent ? `
+                <div class="mb-3 bg-yellow-50 p-2.5 rounded-xl border border-yellow-200 text-yellow-800 text-xs font-bold">
+                    <div class="flex items-center gap-1 mb-1 text-yellow-600 uppercase text-[10px]"><i data-lucide="alert-circle" class="w-3 h-3"></i> Obs</div>
+                    ${obsContent}
+                </div>` : '<div class="mb-3"></div>'}
+                <div class="mt-auto flex justify-between items-end border-t border-slate-100 pt-3">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total</p>
+                        <p class="font-black text-slate-800 text-xl total-val">${formatMoney(parseMoney(o.total))}</p>
+                    </div>
+                    <button onclick="openPaymentModal('${o.id}')" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-slate-700 active:scale-95 transition-all">FINALIZAR</button>
+                </div>
+            </div>`;
+        grid.prepend(card); // novos no topo
+    });
+
+    lucide.createIcons();
+}
+
+function filterComandas() { renderBoard(allOrdersData); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Envio de dados para o Apps Script (POST) com retry
+// ═══════════════════════════════════════════════════════════════════════════
+async function sendPostData(payload, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            // no-cors retorna opaque, não temos como ler — assumimos sucesso
+            return true;
+        } catch (err) {
+            console.warn(`Tentativa ${attempt + 1} falhou:`, err);
+            if (attempt < retries) await new Promise(r => setTimeout(r, 1500));
+        }
+    }
+    return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Cancelamento
+// ═══════════════════════════════════════════════════════════════════════════
+function openCancelModal(id) { currentCancelingId = id; document.getElementById('cancel-modal').classList.remove('hidden'); }
+function closeCancelModal() { document.getElementById('cancel-modal').classList.add('hidden'); }
+
+async function confirmCancel() {
+    const reason = document.getElementById('cancel-reason').value;
+    if (!reason) return toast("Motivo obrigatório.", "#f59e0b");
+    const btn = document.getElementById('btn-confirm-cancel');
+    btn.disabled = true; btn.innerText = "Processando...";
+    const cleanId = String(currentCancelingId).split('.')[0].trim();
+    const success = await sendPostData({ action: "cancel", id: cleanId, motivo: reason });
+    if (success) {
+        closeCancelModal();
+        document.getElementById('cancel-reason').value = '';
+        toast("Comanda cancelada.", "#ef4444");
+        setTimeout(loadOrders, 1000);
+    } else toast("Erro ao cancelar. Tente novamente.", "#ef4444");
+    btn.disabled = false; btn.innerText = "Confirmar Cancelamento";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Catálogo com cache
+// ═══════════════════════════════════════════════════════════════════════════
+function loadCatalog() {
+    // Tenta cache primeiro
+    try {
+        const cached = localStorage.getItem('catalog_cache');
+        if (cached) {
+            const { ts, data } = JSON.parse(cached);
+            if (Date.now() - ts < 10 * 60 * 1000) { // 10 min
+                catalogProducts = data;
+                return;
+            }
+        }
+    } catch(e) {}
+
+    Papa.parse(CATALOG_CSV_URL, {
+        download: true, header: true, skipEmptyLines: true,
+        complete: (res) => {
+            catalogProducts = res.data.filter(p => p.Nome && p['Disponível'] !== 'Não');
+            try { localStorage.setItem('catalog_cache', JSON.stringify({ ts: Date.now(), data: catalogProducts })); } catch(e) {}
+        }
+    });
+}
+
+function searchProducts(q) {
+    const results = document.getElementById('product-results');
+    document.getElementById('variation-selector').classList.add('hidden');
+    if (q.length < 2) { results.classList.add('hidden'); return; }
+    const matches = catalogProducts.filter(p => normalizeStr(p.Nome).includes(normalizeStr(q))).slice(0, 12);
+    results.innerHTML = matches.map(p =>
+        `<div onclick="handleProductSelection('${p.Nome.replace(/'/g, "\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between items-center">
+            <div><span class="text-sm font-bold text-slate-700">${p.Nome}</span><span class="block text-[10px] text-slate-400 uppercase">${p.Categoria || 'Geral'}</span></div>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">OPÇÕES</span>
+        </div>`
+    ).join('');
+    results.classList.toggle('hidden', matches.length === 0);
+}
+
+function handleProductSelection(nome) {
+    const p = catalogProducts.find(x => x.Nome === nome);
+    if (p) showVariationOptions(p);
+}
+
+function showVariationOptions(p) {
+    document.getElementById('product-results').classList.add('hidden');
+    const varSelector = document.getElementById('variation-selector');
+    const optionsDiv  = document.getElementById('variation-options');
+    document.getElementById('variation-title').innerText = p.Nome;
+    let html = '';
+
+    if (p.Preco && (p.Preco.includes(':') || p.Preco.includes('|'))) {
+        const vars = p.Preco.split('|').map(v => { const parts = v.split(':'); return { label: parts[0].trim(), price: parts[1]?.trim() || '0' }; });
+        html += `<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Tamanhos / Tipos</p>`;
+        html += vars.map(v => `<div onclick="addItemToEdit('${p.Nome.replace(/'/g, "\\'")}','${v.price}','${v.label.replace(/'/g, "\\'")}',true)" class="flex justify-between items-center p-3 border rounded-lg variation-badge mb-1"><span class="text-sm font-medium">${v.label}</span><span class="text-sm font-bold text-blue-600">${formatMoney(parseMoney(v.price))}</span></div>`).join('');
+    } else {
+        html += `<div onclick="addItemToEdit('${p.Nome.replace(/'/g, "\\'")}','${p.Preco}',null,true)" class="flex justify-between items-center p-3 border rounded-lg variation-badge mb-1 border-emerald-200"><span class="text-sm font-medium">Adicionar ${p.Nome}</span><span class="text-sm font-bold text-emerald-600">${formatMoney(parseMoney(p.Preco))}</span></div>`;
+    }
+
+    const adicionais = catalogProducts.filter(item => normalizeStr(item.Categoria || '').includes('adicional'));
+    if (adicionais.length > 0) {
+        html += `<div class="border-t pt-2 mt-2"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Adicionais</p><div class="grid grid-cols-2 gap-2">`;
+        html += adicionais.map(ad => `<div onclick="addExtraToEdit('${ad.Nome.replace(/'/g, "\\'")}',${parseMoney(ad.Preco)})" class="flex justify-between items-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"><span class="text-xs font-medium text-slate-600 truncate">${ad.Nome}</span><span class="text-xs font-bold text-blue-500">+${formatMoney(parseMoney(ad.Preco))}</span></div>`).join('');
+        html += `</div></div>`;
+    }
+
+    optionsDiv.innerHTML = html;
+    varSelector.classList.remove('hidden');
+}
+
+function closeVariationSelector() { document.getElementById('variation-selector').classList.add('hidden'); }
+
+function recalculateTotalFromText() {
+    const lines = document.getElementById('edit-items-input').value.split('\n');
+    let total = 0;
+    lines.forEach(line => { const m = line.match(/R\$\s*([\d\.,]+)\s*$/); if (m) total += parseMoney(m[1]); });
+    document.getElementById('edit-total-input').value = formatMoney(total);
+}
+
+function addItemToEdit(nome, preco, variacao = null, shouldClose = false) {
+    const area  = document.getElementById('edit-items-input');
+    const totalEl = document.getElementById('edit-total-input');
+    const nomeEx = variacao ? `${nome} (${variacao})` : nome;
+    const val    = parseMoney(preco);
+    area.value  += (area.value ? '\n' : '') + `1x ${nomeEx} ${formatMoney(val)}`;
+    totalEl.value = formatMoney(parseMoney(totalEl.value) + val);
+    if (shouldClose) { document.getElementById('product-results').classList.add('hidden'); document.getElementById('product-search').value = ''; closeVariationSelector(); }
+    toast(`+ ${nomeEx}`, "#10B981");
+}
+
+function addExtraToEdit(nome, preco) {
+    const area  = document.getElementById('edit-items-input');
+    const totalEl = document.getElementById('edit-total-input');
+    let lines = area.value.split('\n').filter(l => l.trim());
+    if (!lines.length) return toast("Adicione um item principal primeiro!", "#f59e0b");
+    let last = lines[lines.length - 1];
+    const m = last.match(/R\$\s*([\d\.,]+)\s*$/);
+    if (m) {
+        lines[lines.length - 1] = last.substring(0, m.index).trim() + ` + ${nome} ${formatMoney(parseMoney(m[1]) + preco)}`;
+    } else {
+        lines.push(`+ ${nome} ${formatMoney(preco)}`);
+    }
+    area.value = lines.join('\n');
+    totalEl.value = formatMoney(parseMoney(totalEl.value) + preco);
+    toast(`+ ${nome} (Adicionado)`, "#3b82f6");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Modal Edição
+// ═══════════════════════════════════════════════════════════════════════════
+function openEditModal(id) {
+    const order = allOrdersData.find(o => o.id == id);
+    if (!order) return;
+    currentEditingId = id;
+    document.getElementById('edit-modal-id').innerText = '#' + id;
+    document.getElementById('edit-items-input').value = order.itens.replace(/\|/g, '\n');
+    document.getElementById('edit-total-input').value = formatMoney(parseMoney(order.total));
+    document.getElementById('edit-modal').classList.remove('hidden');
+    lucide.createIcons();
+}
+function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+async function saveOrderChanges() {
+    if (!currentEditingId) return;
+    const btn = document.getElementById('btn-save-edit');
+    btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Salvando...';
+    lucide.createIcons();
+    const newItems  = document.getElementById('edit-items-input').value.replace(/\n/g, ' | ');
+    const rawTotal  = parseMoney(document.getElementById('edit-total-input').value);
+    const cleanId   = String(currentEditingId).split('.')[0].trim();
+    const success = await sendPostData({ action: "update", id: cleanId, itens: newItems, total: rawTotal });
+    if (success) { toast("Alterações Salvas!", "#3b82f6"); closeEditModal(); setTimeout(loadOrders, 1200); }
+    else toast("Erro ao salvar. Tente novamente.", "#ef4444");
+    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-2"></i>Salvar Alterações';
+    lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Modal Pagamento
+// ═══════════════════════════════════════════════════════════════════════════
+function openPaymentModal(id) {
+    const order = allOrdersData.find(o => o.id == id);
+    if (!order) return;
+    currentPaymentId  = id;
+    currentOrderTotal = parseMoney(order.total);
+    splitPayments     = [];
+    document.getElementById('payment-total-label').innerText = formatMoney(currentOrderTotal);
+    document.getElementById('partial-payment-input').value   = currentOrderTotal.toFixed(2).replace('.', ',');
+    updateSplitUI();
+    document.getElementById('payment-modal').classList.remove('hidden');
+    lucide.createIcons();
+}
+function closePaymentModal() { document.getElementById('payment-modal').classList.add('hidden'); }
+
+function updateSplitUI() {
+    const totalPaid = splitPayments.reduce((a, c) => a + c.amount, 0);
+    const remaining = Math.max(0, currentOrderTotal - totalPaid);
+    document.getElementById('payment-remaining-label').innerText = formatMoney(remaining);
+    document.getElementById('partial-payment-input').value = remaining > 0 ? remaining.toFixed(2).replace('.', ',') : "0,00";
+    document.getElementById('payment-entries-list').innerHTML = splitPayments.map((p, i) =>
+        `<div class="payment-pill flex justify-between items-center bg-white border border-slate-200 p-2 px-3 rounded-xl shadow-sm">
+            <div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">${p.method}</span><span class="font-bold text-slate-700 text-sm">${formatMoney(p.amount)}</span></div>
+            <button onclick="removePaymentEntry(${i})" class="text-slate-300 hover:text-red-500"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+        </div>`
+    ).join('');
+    const btn = document.getElementById('btn-finalize-order');
+    if (remaining <= 0.01 && splitPayments.length > 0) { btn.disabled = false; btn.className = btn.className.replace('bg-slate-300', 'bg-emerald-600'); }
+    else { btn.disabled = true; btn.className = btn.className.replace('bg-emerald-600', 'bg-slate-300'); }
+    lucide.createIcons();
+}
+
+function addPaymentEntry(method) {
+    const amount = parseMoney(document.getElementById('partial-payment-input').value);
+    if (amount <= 0) return;
+    splitPayments.push({ method, amount });
+    updateSplitUI();
+}
+function removePaymentEntry(i) { splitPayments.splice(i, 1); updateSplitUI(); }
+function resetSplitPayment() { splitPayments = []; updateSplitUI(); }
+
+async function processFinalPayment() {
+    if (!currentPaymentId) return;
+    const btn = document.getElementById('btn-finalize-order');
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline"></i>'; btn.disabled = true;
+    lucide.createIcons();
+    const detail       = splitPayments.map(p => `${p.method}: ${formatMoney(p.amount)}`).join(' | ');
+    const cleanId      = String(currentPaymentId).split('.')[0].trim();
+    const orderToPrint = allOrdersData.find(o => o.id == currentPaymentId);
+    const paysToPrint  = [...splitPayments];
+    const totalToPrint = currentOrderTotal;
+    const success = await sendPostData({ action: "update", id: cleanId, status: 'Concluído', pagamento: detail });
+    if (success) {
+        document.getElementById('payment-modal').classList.add('hidden');
+        toast("✅ Comanda Finalizada!", "#10B981");
+        if (orderToPrint) printReceipt(cleanId, orderToPrint.cliente, totalToPrint, paysToPrint);
+        setTimeout(loadOrders, 1200);
+    } else {
+        alert("Falha ao atualizar. Tente novamente.");
+        btn.innerHTML = 'FINALIZAR COMANDA'; btn.disabled = false;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Impressão
+// ═══════════════════════════════════════════════════════════════════════════
+function printOrder(id) {
+    const o = allOrdersData.find(x => x.id == id);
+    if (!o) return;
+    const obs = o.obs || '';
+    const win = window.open('', '', 'width=450,height=600');
+    win.document.write(`<html><head><title>Imprimir #${id}</title><style>
+        @page{margin:0}body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;color:#000}
+        .header{text-align:center;margin-bottom:10px}.header h2{margin:0;font-size:1.2em}.header p{margin:2px 0;font-size:1em}
+        .divider{border-top:2px dashed #000;margin:10px 0}
+        .client-name{font-size:32px;font-weight:900;margin:10px 0;line-height:1.1;display:block;text-transform:uppercase}
+        .items{font-size:24px;font-weight:bold;white-space:pre-wrap;line-height:1.2;font-family:'Consolas',monospace}
+        .meta{font-size:14px;margin-bottom:5px}.total-section{text-align:right;margin-top:15px}
+        .total-value{font-size:24px;font-weight:900}
+    </style></head><body>
+        <div class="header"><h2>MORANGOS TATUÍ</h2><p>Pedido #${id}</p><p>${o.data || ''}</p></div>
+        <div class="divider"></div>
+        <div class="meta">Tipo: <b>${o.tipo}</b></div>
+        <div class="client-name">${o.cliente}</div>
+        <div class="divider"></div>
+        <div class="items">${o.itens.replace(/\|/g, '\n')}</div>
+        ${obs ? `<div class="divider"></div><div style="font-size:20px;font-weight:bold;margin:10px 0">OBS: ${obs}</div>` : ''}
+        <div class="divider"></div>
+        <div class="total-section"><span style="font-size:16px">TOTAL:</span><div class="total-value">${formatMoney(parseMoney(o.total))}</div></div>
+        <div style="text-align:center;margin-top:20px;font-size:12px">Obrigado pela preferência!</div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 300);
+}
+
+function printReceipt(id, cliente, total, payments) {
+    const lines = payments.map(p => `<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px"><span>${p.method}</span><span style="font-weight:bold">${formatMoney(p.amount)}</span></div>`).join('');
+    const win = window.open('', '', 'width:450,height:600');
+    win.document.write(`<html><head><title>Recibo #${id}</title><style>
+        @page{margin:0}body{font-family:'Courier New',monospace;width:290px;margin:0 auto;padding:10px;color:#000}
+        .header{text-align:center;margin-bottom:15px}.header h2{margin:0;font-size:16px;font-weight:bold}
+        .title{font-size:14px;margin-top:5px;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:5px;display:inline-block}
+        .client-info{margin:15px 0;text-align:center}.client-label{font-size:12px;color:#333}
+        .client-name{font-size:22px;font-weight:900;margin-top:2px;text-transform:uppercase;line-height:1.1}
+        .box{border:1px solid #000;padding:10px;margin-top:10px;border-radius:4px}
+        .total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;border-top:1px dashed #000;padding-top:10px}
+        .total-label{font-size:16px;font-weight:bold}.total-value{font-size:24px;font-weight:900}
+        .footer{text-align:center;margin-top:20px;font-size:11px}
+    </style></head><body>
+        <div class="header"><h2>MORANGOS TATUÍ</h2><div class="title">Comprovante de Pagamento</div></div>
+        <div style="text-align:center;font-size:14px">Pedido: <b>#${id}</b></div>
+        <div class="client-info"><div class="client-label">Cliente</div><div class="client-name">${cliente}</div></div>
+        <div class="box">
+            <div style="font-size:12px;font-weight:bold;margin-bottom:8px;text-transform:uppercase">Formas de Pagamento:</div>
+            ${lines}
+            <div class="total-row"><span class="total-label">TOTAL PAGO</span><span class="total-value">${formatMoney(total)}</span></div>
+        </div>
+        <div class="footer">Obrigado!<br>${new Date().toLocaleString('pt-BR')}</div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INÍCIO
+// ═══════════════════════════════════════════════════════════════════════════
+loadOrders();
+loadCatalog();
+startPolling();
+</script>
+</body>
+</html>
