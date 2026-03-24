@@ -19,34 +19,25 @@
         .logo-img { max-height: 50px; width: auto; object-fit: contain; }
 
         /* Card cores por tipo */
-        .comanda-card { background: #fff; position: relative; transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+        .comanda-card { background: #fff; position: relative; border: 1px solid #e2e8f0; transition: transform 0.2s, box-shadow 0.2s; }
         .comanda-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .bar-mesa    { background: #3b82f6; }
         .bar-balcao  { background: #f97316; }
         .bar-delivery{ background: #10b981; }
         .bar-default { background: #8b5cf6; }
 
-        /* Status badge */
-        .badge-pendente  { background:#fef3c7; color:#92400e; }
-        .badge-preparo   { background:#dbeafe; color:#1e40af; }
-        .badge-pronto    { background:#d1fae5; color:#065f46; }
-
-        /* Animações */
+        /* Animações (SÓ aplicadas a novos itens) */
         .card-new { animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
         @keyframes popIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+        
         .payment-pill { animation: slideIn 0.2s ease-out; }
         @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+        
         .variation-badge { cursor:pointer; transition:all 0.2s; }
         .variation-badge:hover { background-color:#dbeafe; border-color:#3b82f6; }
-        .extra-chip { transition:all 0.2s; user-select:none; }
-        .extra-chip:active { transform:scale(0.95); }
-
+        
         /* Indicator pulso */
         #live-indicator { transition: all 0.3s; }
-        .pulse-green { animation: pulseG 2s infinite; }
-        @keyframes pulseG { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-        /* Contador regressivo */
         #refresh-progress { transition: width 0.5s linear; }
     </style>
 </head>
@@ -67,7 +58,6 @@
 
         <!-- Status + Botão -->
         <div class="flex items-center gap-3">
-            <!-- Indicador ao vivo -->
             <div class="flex flex-col items-end gap-0.5">
                 <div class="flex items-center gap-2 text-xs font-semibold" id="live-indicator">
                     <span class="relative flex h-2.5 w-2.5">
@@ -76,11 +66,10 @@
                     </span>
                     <span id="live-text" class="text-green-600">Ao vivo</span>
                 </div>
-                <!-- Barra de progresso do próximo refresh -->
                 <div class="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
                     <div id="refresh-progress" class="h-full bg-green-400 rounded-full w-full"></div>
                 </div>
-                <span id="next-refresh-text" class="text-[10px] text-slate-400">próx. em 5s</span>
+                <span id="next-refresh-text" class="text-[10px] text-slate-400">próx. em 8s</span>
             </div>
 
             <button id="btn-refresh" onclick="manualRefresh()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
@@ -117,7 +106,8 @@
         <p class="text-sm">Os novos pedidos aparecerão aqui automaticamente.</p>
     </div>
 
-    <!-- ═══════════════════════════════ MODAL EDIÇÃO ═══════════════════════════════ -->
+    <!-- MODAIS (EDIÇÃO / PAGAMENTO / CANCELAMENTO) MANTIDOS EXATAMENTE IGUAIS -->
+    <!-- Modal Edição -->
     <div id="edit-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]" id="edit-modal-content">
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
@@ -159,7 +149,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════ MODAL PAGAMENTO ═══════════════════════════════ -->
+    <!-- Modal Pagamento -->
     <div id="payment-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -190,7 +180,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════ MODAL CANCELAMENTO ═══════════════════════════════ -->
+    <!-- Modal Cancelamento -->
     <div id="cancel-modal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
@@ -210,17 +200,14 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// ⚙️  CONFIGURAÇÕES — altere aqui
+// ⚙️  CONFIGURAÇÕES
 // ═══════════════════════════════════════════════════════════════════════════
 const API_URL   = "https://script.google.com/macros/s/AKfycbwb55LSvxXFundENhp2ltj0S6NamuWgy-M8yuMQKIYu4DJdBUvwi1qwO_X58mh10lWh/exec";
-
 const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?gid=2044706631&single=true&output=csv";
-
-// ATENÇÃO: Adicione o &gid=NUMERO_DA_ABA aqui para garantir que carregue a aba Cardápio!
 const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?single=true&output=csv"; 
 
-// Intervalo de atualização em ms (5000 = 5 segundos)
-const POLL_INTERVAL = 5000;
+// Ajustado para 8 segundos para evitar bloqueio e tela piscando
+const POLL_INTERVAL = 8000;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Estado global
@@ -229,6 +216,7 @@ let allOrdersData  = [];
 let catalogProducts = [];
 let isFetching     = false;
 let knownNovoIds   = new Set();
+let renderedIds    = new Set(); // Controle visual para não animar a tela toda hora
 let firstLoad      = true;
 let isAudioUnlocked= false;
 let currentPaymentId   = null;
@@ -264,13 +252,10 @@ function enableAudioContext() {
     alertSound.play().then(() => { alertSound.pause(); alertSound.currentTime = 0; isAudioUnlocked = true; }).catch(() => {});
 }
 function playSound() { alertSound.currentTime = 0; alertSound.play().catch(() => {}); }
-
-function toast(text, bg = "#3b82f6") {
-    Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast();
-}
+function toast(text, bg = "#3b82f6") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🚀 POLLING RÁPIDO via CSV — sem cold start do Apps Script
+// 🚀 POLLING RÁPIDO via CSV — CORRIGIDO
 // ═══════════════════════════════════════════════════════════════════════════
 async function loadOrders() {
     if (isFetching) return;
@@ -281,6 +266,15 @@ async function loadOrders() {
         const url = `${ORDERS_CSV_URL}&t=${Date.now()}`;
         const res = await fetch(url);
         const csvText = await res.text();
+
+        // 🛡️ TRAVA DE SEGURANÇA: Se o Google devolver erro HTML (Rate Limit), ignoramos.
+        // Isso evita que a tela fique vazia ("sumindo e voltando").
+        if (!csvText || csvText.includes('<!DOCTYPE') || csvText.includes('<html') || !csvText.includes('ID')) {
+            console.warn("Aviso: O Google não retornou os dados corretamente (Bloqueio temporário). Ignorando ciclo...");
+            setLiveStatus('error');
+            isFetching = false;
+            return; 
+        }
 
         Papa.parse(csvText, {
             header: true,
@@ -298,20 +292,24 @@ async function loadOrders() {
                     obs:       r['Obs']    || r['obs']    || ''
                 })).filter(r => r.id && r.id !== '');
 
-                const novos = data.filter(o => o.status === 'Pendente' || o.status === 'Novo');
-                let hasNew = false;
-                novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
+                // 🛡️ CORREÇÃO DO PISCAR: Ordenamos os dados ANTES de verificar se mudou
+                const sortedData = data.sort((a, b) => Number(b.id) - Number(a.id));
 
-                if (hasNew && !firstLoad) {
-                    playSound();
-                    toast("🔔 Novo Pedido!", "#ef4444");
-                }
-
-                const newHash = JSON.stringify(data.map(o => o.id + o.status + o.total));
-                const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total));
+                const newHash = JSON.stringify(sortedData.map(o => o.id + o.status + o.total + o.itens));
+                const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total + o.itens));
+                
                 if (newHash !== oldHash) {
+                    const novos = sortedData.filter(o => o.status === 'Pendente' || o.status === 'Novo');
+                    let hasNew = false;
+                    novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
+
+                    if (hasNew && !firstLoad) {
+                        playSound();
+                        toast("🔔 Novo Pedido!", "#ef4444");
+                    }
+
                     firstLoad = false;
-                    allOrdersData = data.sort((a, b) => Number(b.id) - Number(a.id));
+                    allOrdersData = sortedData;
                     renderBoard(allOrdersData);
                 }
 
@@ -380,7 +378,7 @@ function manualRefresh() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Renderização do board
+// Renderização do board — CORRIGIDO A ORDEM VISUAL
 // ═══════════════════════════════════════════════════════════════════════════
 function getBarClass(tipo) {
     const t = normalizeStr(tipo || '');
@@ -409,33 +407,30 @@ function renderBoard(orders) {
     document.getElementById('count-apagar').textContent   = visible.filter(o => (o.pagamento || '').toLowerCase().includes('pagar') || (o.pagamento || '').toLowerCase().includes('combinar')).length;
     document.getElementById('count-valor').textContent    = 'R$ ' + totalAberto.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-    if (visible.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); lucide.createIcons(); return; }
+    if (visible.length === 0) { 
+        grid.innerHTML = ''; 
+        empty.classList.remove('hidden'); 
+        lucide.createIcons(); 
+        return; 
+    }
     empty.classList.add('hidden');
 
-    const existingIds = new Set([...grid.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId));
-    const newIds = new Set(visible.map(o => o.id));
-
-    existingIds.forEach(id => { if (!newIds.has(id)) { const el = grid.querySelector(`[data-order-id="${id}"]`); if (el) el.remove(); } });
+    // Limpamos o grid inteiro de forma rápida (resolve o bug de ficar bagunçado e invertido)
+    grid.innerHTML = '';
 
     visible.forEach(o => {
         const obsContent = o.obs || '';
         const barClass = getBarClass(o.tipo);
-        const isNew = !existingIds.has(o.id);
-
-        if (!isNew) {
-            const card = grid.querySelector(`[data-order-id="${o.id}"]`);
-            if (card) {
-                const itemsEl = card.querySelector('.items-text');
-                if (itemsEl) itemsEl.textContent = o.itens.replace(/\|/g, '\n');
-                const totalEl = card.querySelector('.total-val');
-                if (totalEl) totalEl.textContent = formatMoney(parseMoney(o.total));
-            }
-            return;
-        }
+        
+        // Verifica se é um item realmente novo para o usuário para aplicar a animação
+        const isBrandNew = !renderedIds.has(o.id) && !firstLoad;
+        renderedIds.add(o.id);
 
         const card = document.createElement('div');
-        card.className = `comanda-card rounded-2xl overflow-hidden flex flex-col card-new`;
+        // Só aplica o "card-new" se for realmente novo, senão ele renderiza direto sem piscar
+        card.className = `comanda-card rounded-2xl overflow-hidden flex flex-col ${isBrandNew ? 'card-new' : ''}`;
         card.dataset.orderId = o.id;
+        
         card.innerHTML = `
             <div class="h-1.5 w-full ${barClass}"></div>
             <div class="p-5 flex-1 flex flex-col">
@@ -463,7 +458,7 @@ function renderBoard(orders) {
                     <button onclick="openPaymentModal('${o.id}')" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-slate-700 active:scale-95 transition-all">FINALIZAR</button>
                 </div>
             </div>`;
-        grid.prepend(card);
+        grid.appendChild(card);
     });
 
     lucide.createIcons();
@@ -516,7 +511,7 @@ async function confirmCancel() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Catálogo com cache (CORRIGIDO PARA IGNORAR ACENTOS NAS COLUNAS)
+// Catálogo com cache
 // ═══════════════════════════════════════════════════════════════════════════
 function loadCatalog() {
     try {
@@ -534,7 +529,6 @@ function loadCatalog() {
         download: true, header: true, skipEmptyLines: true,
         complete: (res) => {
             catalogProducts = res.data.map(p => {
-                // Mapeia flexível para ignorar acentos do cabeçalho
                 return {
                     Nome: p['Nome'] || p['nome'],
                     Categoria: p['Categoria'] || p['categoria'],
@@ -797,4 +791,3 @@ startPolling();
 </script>
 </body>
 </html>
-
