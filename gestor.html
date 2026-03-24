@@ -214,12 +214,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const API_URL   = "https://script.google.com/macros/s/AKfycbwb55LSvxXFundENhp2ltj0S6NamuWgy-M8yuMQKIYu4DJdBUvwi1qwO_X58mh10lWh/exec";
 
-// CSV da aba PEDIDOS — mude apenas o gid se a aba mudar
-// Para obter: Arquivo → Publicar na web → aba Pedidos → CSV → copiar link
 const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?gid=2044706631&single=true&output=csv";
 
-// CSV do cardápio (aba Cardápio) — para busca de produtos no modal de edição
-const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?output=csv";
+// ATENÇÃO: Adicione o &gid=NUMERO_DA_ABA aqui para garantir que carregue a aba Cardápio!
+const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?single=true&output=csv"; 
 
 // Intervalo de atualização em ms (5000 = 5 segundos)
 const POLL_INTERVAL = 5000;
@@ -280,7 +278,6 @@ async function loadOrders() {
     setLiveStatus('loading');
 
     try {
-        // Adiciona timestamp para evitar cache do browser
         const url = `${ORDERS_CSV_URL}&t=${Date.now()}`;
         const res = await fetch(url);
         const csvText = await res.text();
@@ -289,7 +286,6 @@ async function loadOrders() {
             header: true,
             skipEmptyLines: true,
             complete: (result) => {
-                // Normaliza os campos para o mesmo formato que o código usa
                 const data = result.data.map(r => ({
                     id:        String(r['ID']   || r['id']   || '').split('.')[0].trim(),
                     data:      r['Data']  || r['data']  || '',
@@ -302,7 +298,6 @@ async function loadOrders() {
                     obs:       r['Obs']    || r['obs']    || ''
                 })).filter(r => r.id && r.id !== '');
 
-                // Detecta novos pedidos
                 const novos = data.filter(o => o.status === 'Pendente' || o.status === 'Novo');
                 let hasNew = false;
                 novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
@@ -312,7 +307,6 @@ async function loadOrders() {
                     toast("🔔 Novo Pedido!", "#ef4444");
                 }
 
-                // Só re-renderiza se algo mudou
                 const newHash = JSON.stringify(data.map(o => o.id + o.status + o.total));
                 const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total));
                 if (newHash !== oldHash) {
@@ -352,7 +346,6 @@ function setLiveStatus(state) {
     }
 }
 
-// Barra de progresso regressiva
 function startProgressBar() {
     progressStart = Date.now();
     const bar  = document.getElementById('refresh-progress');
@@ -403,16 +396,13 @@ function renderBoard(orders) {
     const search = normalizeStr(document.getElementById('search-comanda').value);
 
     const visible = orders.filter(o => {
-        // Normaliza encoding — CSV pode vir com latin1 mal interpretado
         const s = normalizeStr(o.status);
-        // "Concluído" pode aparecer como "concluido", "concluido" ou com caracteres estranhos
         const sClear = s.replace(/[^a-z]/g, '');
         if (sClear.includes('conclui') || sClear.includes('cancelad') || sClear.includes('arquivad')) return false;
         if (search && !normalizeStr(o.cliente).includes(search) && !o.id.includes(search)) return false;
         return true;
     });
 
-    // Atualiza contadores
     const totalAberto = visible.reduce((a, o) => a + parseMoney(o.total), 0);
     document.getElementById('count-total').textContent    = visible.length;
     document.getElementById('count-pendente').textContent = visible.filter(o => normalizeStr(o.status) === 'pendente').length;
@@ -422,11 +412,9 @@ function renderBoard(orders) {
     if (visible.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); lucide.createIcons(); return; }
     empty.classList.add('hidden');
 
-    // IDs já renderizados
     const existingIds = new Set([...grid.querySelectorAll('[data-order-id]')].map(el => el.dataset.orderId));
     const newIds = new Set(visible.map(o => o.id));
 
-    // Remove cards que saíram
     existingIds.forEach(id => { if (!newIds.has(id)) { const el = grid.querySelector(`[data-order-id="${id}"]`); if (el) el.remove(); } });
 
     visible.forEach(o => {
@@ -435,7 +423,6 @@ function renderBoard(orders) {
         const isNew = !existingIds.has(o.id);
 
         if (!isNew) {
-            // Atualiza apenas campos dinâmicos sem re-renderizar o card todo
             const card = grid.querySelector(`[data-order-id="${o.id}"]`);
             if (card) {
                 const itemsEl = card.querySelector('.items-text');
@@ -446,7 +433,6 @@ function renderBoard(orders) {
             return;
         }
 
-        // Cria novo card
         const card = document.createElement('div');
         card.className = `comanda-card rounded-2xl overflow-hidden flex flex-col card-new`;
         card.dataset.orderId = o.id;
@@ -477,7 +463,7 @@ function renderBoard(orders) {
                     <button onclick="openPaymentModal('${o.id}')" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-slate-700 active:scale-95 transition-all">FINALIZAR</button>
                 </div>
             </div>`;
-        grid.prepend(card); // novos no topo
+        grid.prepend(card);
     });
 
     lucide.createIcons();
@@ -498,7 +484,6 @@ async function sendPostData(payload, retries = 2) {
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             });
-            // no-cors retorna opaque, não temos como ler — assumimos sucesso
             return true;
         } catch (err) {
             console.warn(`Tentativa ${attempt + 1} falhou:`, err);
@@ -531,15 +516,14 @@ async function confirmCancel() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Catálogo com cache
+// Catálogo com cache (CORRIGIDO PARA IGNORAR ACENTOS NAS COLUNAS)
 // ═══════════════════════════════════════════════════════════════════════════
 function loadCatalog() {
-    // Tenta cache primeiro
     try {
         const cached = localStorage.getItem('catalog_cache');
         if (cached) {
             const { ts, data } = JSON.parse(cached);
-            if (Date.now() - ts < 10 * 60 * 1000) { // 10 min
+            if (Date.now() - ts < 10 * 60 * 1000) { 
                 catalogProducts = data;
                 return;
             }
@@ -549,7 +533,19 @@ function loadCatalog() {
     Papa.parse(CATALOG_CSV_URL, {
         download: true, header: true, skipEmptyLines: true,
         complete: (res) => {
-            catalogProducts = res.data.filter(p => p.Nome && p['Disponível'] !== 'Não');
+            catalogProducts = res.data.map(p => {
+                // Mapeia flexível para ignorar acentos do cabeçalho
+                return {
+                    Nome: p['Nome'] || p['nome'],
+                    Categoria: p['Categoria'] || p['categoria'],
+                    Preco: p['Preco'] || p['Preço'] || p['preco'] || p['preço'],
+                    Disponivel: p['Disponivel'] || p['Disponível'] || p['disponivel'] || p['disponível']
+                }
+            }).filter(p => {
+                const disp = String(p.Disponivel || '').toLowerCase();
+                return p.Nome && disp !== 'não' && disp !== 'nao';
+            });
+            
             try { localStorage.setItem('catalog_cache', JSON.stringify({ ts: Date.now(), data: catalogProducts })); } catch(e) {}
         }
     });
@@ -801,3 +797,4 @@ startPolling();
 </script>
 </body>
 </html>
+
