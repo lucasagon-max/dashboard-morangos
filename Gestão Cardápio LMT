@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Cardápio LMT - Supabase</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SDK DO SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Loading overlay */
+        #loader { display: none; }
+        #loader.active { display: flex; }
+
+        /* Scrollbar customizada para o modal */
+        .modal-scroll::-webkit-scrollbar { width: 8px; }
+        .modal-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .modal-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- ⚙️ CONFIGURAÇÃO DO SUPABASE -->
+    <script>
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        // Usamos supabaseClient para não dar conflito com a biblioteca global
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+
+    <!-- Loading Screen -->
+    <div id="loader" class="fixed inset-0 z-[60] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+            <p class="mt-4 text-slate-600 font-medium">Conectando ao Supabase...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="https://lucasagon-max.github.io/dashboard-morangos/logo.png" alt="Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none'">
+                <h1 class="text-xl font-bold text-slate-800 hidden sm:block">Gestão de Cardápio</h1>
+            </div>
+            <button onclick="openModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">Novo Produto</span>
+                <span class="sm:hidden">Novo</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Filtros -->
+        <div class="mb-6 flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Buscar produto por nome ou descrição..." 
+                    class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all">
+            </div>
+            <select id="categoryFilter" class="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white cursor-pointer">
+                <option value="">Todas as Categorias</option>
+            </select>
+        </div>
+
+        <div id="productsHeader" class="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 bg-slate-50 rounded-t-xl">
+            <div class="col-span-6 lg:col-span-5">Produto</div>
+            <div class="col-span-3 lg:col-span-2">Categoria</div>
+            <div class="col-span-3 lg:col-span-3">Preço</div>
+            <div class="col-span-2 text-right">Ações</div>
+        </div>
+
+        <div id="productList" class="space-y-2 md:space-y-0 md:bg-white md:border md:border-slate-200 md:rounded-b-xl md:divide-y md:divide-slate-100"></div>
+
+        <div id="emptyState" class="hidden text-center py-20">
+            <i data-lucide="package-open" class="mx-auto h-12 w-12 text-slate-300"></i>
+            <h3 class="mt-2 text-sm font-medium text-slate-900">Nenhum produto encontrado</h3>
+            <p id="emptyMsg" class="mt-1 text-sm text-slate-500">Adicione produtos ou verifique a conexão.</p>
+        </div>
+    </main>
+
+    <!-- Modal Adicionar/Editar -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="flex items-start justify-center min-h-screen pt-4 sm:pt-10 px-4 pb-4 overflow-y-auto">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[90vh]">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl shrink-0">
+                    <h3 class="text-lg font-semibold text-slate-800" id="modalTitle">Novo Produto</h3>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto modal-scroll">
+                    <form id="productForm" onsubmit="handleSave(event)" class="space-y-5">
+                        <input type="hidden" id="editProductId">
+
+                        <div class="flex flex-col sm:flex-row gap-6">
+                            <!-- Imagem -->
+                            <div class="w-full sm:w-1/3 space-y-3">
+                                <label class="block text-sm font-medium text-slate-700">Imagem</label>
+                                <div class="aspect-square bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden group">
+                                    <img id="imagePreview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+                                    <div class="text-center text-slate-400 p-2" id="imagePlaceholder">
+                                        <i data-lucide="image" class="w-8 h-8 mx-auto mb-1"></i>
+                                        <span class="text-xs">Preview</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <input type="text" id="pImage" oninput="updateImagePreview(this.value)" placeholder="Cole a URL da imagem aqui" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Dados -->
+                            <div class="w-full sm:w-2/3 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nome do Produto</label>
+                                    <input type="text" id="pName" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                                        <input type="text" id="pCategory" list="categoriesList" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                                        <datalist id="categoriesList"></datalist>
+                                    </div>
+                                    <div class="flex flex-col justify-end">
+                                        <label class="flex items-center cursor-pointer mb-2">
+                                            <div class="relative">
+                                                <input type="checkbox" id="pAvailable" class="sr-only peer" checked>
+                                                <div class="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                                <span class="ml-3 text-sm font-medium text-slate-700">Disponível</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-sm font-bold text-slate-700">Preço</label>
+                                        <button type="button" id="togglePriceModeBtn" onclick="togglePriceMode()" class="text-xs text-red-600 font-medium hover:underline">Adicionar variações</button>
+                                    </div>
+                                    <div id="simplePriceContainer">
+                                        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">R$</span><input type="text" id="pPriceSimple" placeholder="0.00" class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"></div>
+                                    </div>
+                                    <div id="variationsContainer" class="hidden space-y-2">
+                                        <div id="variationsList" class="space-y-2"></div>
+                                        <button type="button" onclick="addVariationRow()" class="mt-2 text-sm flex items-center gap-1 text-slate-600 hover:text-red-600 font-medium transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar outra opção</button>
+                                    </div>
+                                    <input type="hidden" id="pPriceFinal">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                                    <textarea id="pDesc" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none text-sm"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3 shrink-0">
+                    <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white font-medium transition-colors">Cancelar</button>
+                    <button type="button" onclick="submitForm()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium shadow-sm transition-colors">Salvar Produto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Exclusão -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full relative">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"><i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i></div>
+                    <h3 class="text-lg font-medium text-slate-900">Excluir Produto?</h3>
+                    <p class="text-sm text-slate-500 mt-2">Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">Cancelar</button>
+                    <button onclick="confirmDelete()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+        let idToDelete = null;
+        let isVariationMode = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fetchProducts();
+            document.getElementById('searchInput').addEventListener('input', renderProducts);
+            document.getElementById('categoryFilter').addEventListener('change', renderProducts);
+        });
+
+        function showLoader(show) { document.getElementById('loader').classList.toggle('active', show); }
+
+        function togglePriceMode(forceMode = null) {
+            const btn = document.getElementById('togglePriceModeBtn');
+            const simpleContainer = document.getElementById('simplePriceContainer');
+            const varContainer = document.getElementById('variationsContainer');
+
+            isVariationMode = forceMode !== null ? forceMode : !isVariationMode;
+
+            if (isVariationMode) {
+                simpleContainer.classList.add('hidden');
+                varContainer.classList.remove('hidden');
+                btn.textContent = "Usar preço único";
+                if (document.getElementById('variationsList').children.length === 0) addVariationRow();
+            } else {
+                simpleContainer.classList.remove('hidden');
+                varContainer.classList.add('hidden');
+                btn.textContent = "Adicionar variações";
+            }
+        }
+
+        function addVariationRow(label = '', price = '') {
+            const list = document.getElementById('variationsList');
+            const div = document.createElement('div');
+            div.className = "flex gap-2 items-center";
+            div.innerHTML = `
+                <input type="text" placeholder="Tamanho/Tipo (ex: 500ml)" value="${label}" class="var-label w-2/3 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:border-red-500 outline-none">
+                <input type="text" placeholder="R$ Valor" value="${price}" class="var-price w-1/3 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:border-red-500 outline-none">
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            `;
+            list.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function getPriceValue() {
+            if (!isVariationMode) return document.getElementById('pPriceSimple').value.trim();
+            let parts = [];
+            document.querySelectorAll('#variationsList div.flex').forEach(row => {
+                const label = row.querySelector('.var-label').value.trim();
+                const price = row.querySelector('.var-price').value.trim();
+                if (label && price) parts.push(`${label}:${price}`);
+            });
+            return parts.join('|');
+        }
+
+        // --- INTEGRAÇÃO COM SUPABASE ---
+        async function fetchProducts() {
+            showLoader(true);
+            
+            // Verifica a busca no Supabase
+            const { data, error } = await supabaseClient
+                .from('produtos')
+                .select('*')
+                .order('nome', { ascending: true });
+                
+            if (error) {
+                console.error(error);
+                alert("Erro ao buscar dados do Supabase: " + error.message);
+            } else {
+                console.log("Produtos encontrados:", data.length);
+                products = data || [];
+                populateCategories();
+                renderProducts();
+            }
+            showLoader(false);
+        }
+
+        function submitForm() {
+            document.getElementById('pPriceFinal').value = getPriceValue();
+            document.getElementById('productForm').dispatchEvent(new Event('submit'));
+        }
+
+        async function handleSave(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editProductId').value;
+            const finalPrice = document.getElementById('pPriceFinal').value;
+            if (!finalPrice) return alert("Por favor, insira um preço ou variação.");
+
+            const payload = {
+                nome: document.getElementById('pName').value,
+                preco: finalPrice,
+                categoria: document.getElementById('pCategory').value || 'Geral',
+                imagem: document.getElementById('pImage').value,
+                descricao: document.getElementById('pDesc').value,
+                disponivel: document.getElementById('pAvailable').checked ? "Sim" : "Não"
+            };
+
+            showLoader(true);
+            let error;
+            if (editId) {
+                const res = await supabaseClient.from('produtos').update(payload).eq('id', editId);
+                error = res.error;
+            } else {
+                const res = await supabaseClient.from('produtos').insert([payload]);
+                error = res.error;
+            }
+
+            if (error) {
+                alert("Erro ao salvar: " + error.message);
+            } else { 
+                closeModal(); 
+                fetchProducts(); 
+            }
+            showLoader(false);
+        }
+
+        function deleteProduct(id) {
+            idToDelete = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        async function confirmDelete() {
+            if(!idToDelete) return;
+            closeDeleteModal();
+            showLoader(true);
+            const { error } = await supabaseClient.from('produtos').delete().eq('id', idToDelete);
+            if (error) alert("Erro ao excluir: " + error.message);
+            else fetchProducts();
+            showLoader(false);
+        }
+
+        // --- RENDERIZAÇÃO SEGURA ---
+        function populateCategories() {
+            // Usa encadeamento opcional para evitar erros se categoria for nula
+            const categories = [...new Set(products.map(p => p.categoria || 'Geral'))].sort();
+            document.getElementById('categoryFilter').innerHTML = '<option value="">Todas as Categorias</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('categoriesList').innerHTML = categories.map(c => `<option value="${c}">`).join('');
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('productList');
+            const empty = document.getElementById('emptyState');
+            const header = document.getElementById('productsHeader');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const catFilter = document.getElementById('categoryFilter').value;
+
+            container.innerHTML = '';
+            
+            // Filtro com travas de segurança (caso nome ou descricao seja null)
+            const filtered = products.filter(p => {
+                const nomeSeguro = p.nome ? String(p.nome).toLowerCase() : '';
+                const descSegura = p.descricao ? String(p.descricao).toLowerCase() : '';
+                const catSegura = p.categoria || 'Geral';
+                
+                const matchesSearch = nomeSeguro.includes(search) || descSegura.includes(search);
+                const matchesCat = catFilter ? catSegura === catFilter : true;
+                
+                return matchesSearch && matchesCat;
+            });
+
+            if (filtered.length === 0) {
+                empty.classList.remove('hidden'); 
+                header.classList.add('hidden');
+                return;
+            }
+            empty.classList.add('hidden'); 
+            header.classList.remove('hidden');
+
+            filtered.forEach(p => {
+                // Checagem robusta de disponibilidade
+                const isAv = String(p.disponivel).toLowerCase() === "sim" || p.disponivel === true;
+                const catSegura = p.categoria || 'Geral';
+                const descSegura = p.descricao || 'Sem descrição';
+                let priceDisplay = String(p.preco || '0');
+                
+                if (priceDisplay.includes('|')) {
+                    priceDisplay = priceDisplay.split('|').map(item => {
+                        const parts = item.split(':');
+                        const label = parts[0] || '';
+                        const val = parts[1] || '0';
+                        return `<span class="inline-block bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 text-[10px] mr-1 mb-1 border border-slate-200">${label}: R$${val}</span>`;
+                    }).join(' ');
+                } else {
+                    priceDisplay = `<span class="font-semibold text-slate-700">R$ ${priceDisplay}</span>`;
+                }
+
+                const imgHtml = p.imagem ? `<img src="${p.imagem}" class="h-full w-full object-cover">` : `<div class="h-full w-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-6 h-6"></i></div>`;
+                
+                const item = document.createElement('div');
+                item.className = `group bg-white rounded-lg border border-slate-200 md:border-0 md:rounded-none p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:bg-slate-50 transition-colors ${!isAv ? 'opacity-60' : ''}`;
+                
+                item.innerHTML = `
+                    <div class="col-span-12 md:col-span-6 lg:col-span-5 flex items-center gap-4 w-full">
+                        <div class="h-12 w-12 shrink-0 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative">
+                            ${imgHtml} ${!isAv ? '<div class="absolute inset-0 bg-white/50 flex items-center justify-center"><div class="h-2 w-2 rounded-full bg-red-500"></div></div>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-slate-900 truncate">${p.nome}</h4>
+                            <p class="text-xs text-slate-500 truncate hidden md:block">${descSegura}</p>
+                            <span class="md:hidden inline-block px-2 py-0.5 mt-1 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">${catSegura}</span>
+                        </div>
+                    </div>
+                    <div class="hidden md:block col-span-3 lg:col-span-2 text-sm text-slate-600"><span class="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 border border-slate-200">${catSegura}</span></div>
+                    <div class="col-span-12 md:col-span-3 lg:col-span-3 text-sm w-full md:w-auto mt-2 md:mt-0"><div class="flex flex-wrap items-center gap-1">${priceDisplay}</div></div>
+                    <div class="col-span-12 md:col-span-2 flex justify-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 mt-2 md:mt-0">
+                         <div class="flex items-center gap-2">
+                            <button onclick='openEditModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                            <button onclick="deleteProduct('${p.id}')" class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                         </div>
+                    </div>`;
+                container.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function openModal() {
+            document.getElementById('productForm').reset();
+            document.getElementById('editProductId').value = "";
+            document.getElementById('modalTitle').textContent = "Novo Produto";
+            updateImagePreview("");
+            document.getElementById('pAvailable').checked = true;
+            document.getElementById('variationsList').innerHTML = '';
+            togglePriceMode(false);
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function openEditModal(product) {
+            document.getElementById('modalTitle').textContent = "Editar Produto";
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('pName').value = product.nome || '';
+            document.getElementById('pCategory').value = product.categoria || '';
+            document.getElementById('pImage').value = product.imagem || '';
+            document.getElementById('pDesc').value = product.descricao || '';
+            document.getElementById('pAvailable').checked = (String(product.disponivel).toLowerCase() === "sim" || product.disponivel === true);
+            updateImagePreview(product.imagem);
+            
+            document.getElementById('variationsList').innerHTML = '';
+            const price = String(product.preco || '0');
+            if (price.includes('|') || price.includes(':')) {
+                togglePriceMode(true);
+                price.split('|').forEach(part => {
+                    const parts = part.split(':');
+                    addVariationRow(parts[0] || '', parts[1] || '0');
+                });
+            } else {
+                togglePriceMode(false);
+                document.getElementById('pPriceSimple').value = price;
+            }
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('productModal').classList.add('hidden'); }
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); idToDelete = null; }
+        function updateImagePreview(url) {
+            const img = document.getElementById('imagePreview');
+            const ph = document.getElementById('imagePlaceholder');
+            if(url) { img.src = url; img.classList.remove('hidden'); ph.classList.add('hidden'); } 
+            else { img.classList.add('hidden'); ph.classList.remove('hidden'); }
+        }
+    </script>
+</body>
+</html>
