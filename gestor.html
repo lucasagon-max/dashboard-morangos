@@ -42,7 +42,7 @@
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
     </style>
 </head>
-<body class="p-4 md:p-6">
+<body class="p-4 md:p-6" onclick="enableAudioContext()">
 
     <!-- ⚙️ CONFIGURAÇÃO DO SUPABASE -->
     <script>
@@ -73,7 +73,8 @@
 
             <!-- Botão de Som -->
             <button onclick="toggleSound()" class="bg-white hover:bg-slate-50 p-2.5 rounded-xl transition-colors shadow-sm border border-slate-200 active:scale-95 flex items-center justify-center" title="Ativar/Desativar Som">
-                <i data-lucide="volume-x" id="sound-icon" class="w-5 h-5 text-slate-400 transition-colors"></i>
+                <span id="icon-muted"><i data-lucide="volume-x" class="w-5 h-5 text-slate-400 transition-colors"></i></span>
+                <span id="icon-unmuted" class="hidden"><i data-lucide="volume-2" class="w-5 h-5 text-green-500 transition-colors"></i></span>
             </button>
 
             <button onclick="manualRefresh()" class="bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
@@ -219,8 +220,8 @@ let splitPayments      = [];
 let currentEditingId   = null;
 let currentCancelingId = null;
 
-// Arquivo de áudio ultra confiável do Google
-const alertSound = new Audio("https://actions.google.com/sounds/v1/alarms/ding_dong.ogg");
+// Arquivo de áudio em mp3 (100% compatível com Safari/iOS/Chrome)
+const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Utilitários
@@ -238,42 +239,43 @@ function parseMoney(val) {
 function normalizeStr(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; }
 
 function toggleSound() {
-    const btnIcon = document.getElementById('sound-icon');
-    
     if (!isAudioUnlocked) {
         // Primeira interação: desbloqueia o áudio no navegador
-        if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
+        isAudioUnlocked = true;
+        isMuted = false;
         
+        alertSound.load(); // Força o carregamento em dispositivos móveis
         alertSound.play().then(() => { 
             alertSound.pause(); 
             alertSound.currentTime = 0; 
-            isAudioUnlocked = true; 
-            isMuted = false;
-            updateSoundUI(btnIcon);
-            toast("Som ativado!", "#10B981");
         }).catch(err => {
-            console.warn("Não foi possível ativar o som:", err);
+            console.warn("Não foi possível ativar o som inicial:", err);
         });
+        
+        updateSoundUI();
+        toast("Som ativado!", "#10B981");
     } else {
         // Próximos cliques: apenas alterna o mudo
         isMuted = !isMuted;
-        updateSoundUI(btnIcon);
+        updateSoundUI();
         toast(isMuted ? "Som silenciado" : "Som ativado", isMuted ? "#f59e0b" : "#10B981");
     }
 }
 
-function updateSoundUI(iconElement) {
-    if (isMuted) {
-        iconElement.setAttribute('data-lucide', 'volume-x');
-        iconElement.classList.remove('text-green-500');
-        iconElement.classList.add('text-slate-400');
-    } else {
-        iconElement.setAttribute('data-lucide', 'volume-2');
-        iconElement.classList.remove('text-slate-400');
-        iconElement.classList.add('text-green-500');
+function updateSoundUI() {
+    const iconMuted = document.getElementById('icon-muted');
+    const iconUnmuted = document.getElementById('icon-unmuted');
+    
+    if (iconMuted && iconUnmuted) {
+        // Alterna a visibilidade dos ícones
+        if (isMuted) {
+            iconMuted.classList.remove('hidden');
+            iconUnmuted.classList.add('hidden');
+        } else {
+            iconMuted.classList.add('hidden');
+            iconUnmuted.classList.remove('hidden');
+        }
     }
-    lucide.createIcons();
 }
 
 function playSound() { 
