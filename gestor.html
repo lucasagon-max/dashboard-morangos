@@ -42,7 +42,7 @@
         @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
     </style>
 </head>
-<body class="p-4 md:p-6" onclick="enableAudioContext()">
+<body class="p-4 md:p-6">
 
     <!-- ⚙️ CONFIGURAÇÃO DO SUPABASE -->
     <script>
@@ -65,15 +65,20 @@
         </div>
 
         <!-- Status + Botão -->
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100" id="status-badge">
+        <div class="flex items-center gap-2 sm:gap-4">
+            <div class="hidden sm:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100" id="status-badge">
                 <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot" id="status-dot"></div>
                 <span class="text-xs font-bold text-emerald-700" id="status-text">Conectando...</span>
             </div>
 
-            <button onclick="manualRefresh()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
+            <!-- Botão de Som -->
+            <button onclick="toggleSound()" class="bg-white hover:bg-slate-50 p-2.5 rounded-xl transition-colors shadow-sm border border-slate-200 active:scale-95 flex items-center justify-center" title="Ativar/Desativar Som">
+                <i data-lucide="volume-x" id="sound-icon" class="w-5 h-5 text-slate-400 transition-colors"></i>
+            </button>
+
+            <button onclick="manualRefresh()" class="bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
                 <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
-                <span>Sincronizar</span>
+                <span class="hidden sm:inline">Sincronizar</span>
             </button>
         </div>
     </nav>
@@ -207,13 +212,15 @@ let knownNovoIds   = new Set();
 let renderedIds    = new Set(); // Controle visual
 let firstLoad      = true;
 let isAudioUnlocked= false;
+let isMuted        = true; // Som começa mutado até o primeiro clique
 let currentPaymentId   = null;
 let currentOrderTotal  = 0;
 let splitPayments      = [];
 let currentEditingId   = null;
 let currentCancelingId = null;
 
-const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+// Arquivo de áudio ultra confiável do Google
+const alertSound = new Audio("https://actions.google.com/sounds/v1/alarms/ding_dong.ogg");
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Utilitários
@@ -230,13 +237,58 @@ function parseMoney(val) {
 }
 function normalizeStr(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; }
 
-function enableAudioContext() {
-    if (isAudioUnlocked) return;
-    if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
-    alertSound.play().then(() => { alertSound.pause(); alertSound.currentTime = 0; isAudioUnlocked = true; }).catch(() => {});
+function toggleSound() {
+    const btnIcon = document.getElementById('sound-icon');
+    
+    if (!isAudioUnlocked) {
+        // Primeira interação: desbloqueia o áudio no navegador
+        if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
+        
+        alertSound.play().then(() => { 
+            alertSound.pause(); 
+            alertSound.currentTime = 0; 
+            isAudioUnlocked = true; 
+            isMuted = false;
+            updateSoundUI(btnIcon);
+            toast("Som ativado!", "#10B981");
+        }).catch(err => {
+            console.warn("Não foi possível ativar o som:", err);
+        });
+    } else {
+        // Próximos cliques: apenas alterna o mudo
+        isMuted = !isMuted;
+        updateSoundUI(btnIcon);
+        toast(isMuted ? "Som silenciado" : "Som ativado", isMuted ? "#f59e0b" : "#10B981");
+    }
 }
-function playSound() { alertSound.currentTime = 0; alertSound.play().catch(() => {}); }
+
+function updateSoundUI(iconElement) {
+    if (isMuted) {
+        iconElement.setAttribute('data-lucide', 'volume-x');
+        iconElement.classList.remove('text-green-500');
+        iconElement.classList.add('text-slate-400');
+    } else {
+        iconElement.setAttribute('data-lucide', 'volume-2');
+        iconElement.classList.remove('text-slate-400');
+        iconElement.classList.add('text-green-500');
+    }
+    lucide.createIcons();
+}
+
+function playSound() { 
+    if (isMuted) return; // Não toca se estiver mutado
+    try {
+        alertSound.currentTime = 0; 
+        let playPromise = alertSound.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Áudio bloqueado pelo navegador.");
+            });
+        }
+    } catch(e) {}
+}
+
 function toast(text, bg = "#3b82f6") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -260,8 +312,15 @@ async function loadOrders(silent = false) {
         if (newHash !== oldHash) {
             const novos = data.filter(o => o.status === 'Pendente' || o.status === 'Novo');
             let hasNew = false;
-            novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
+            
+            novos.forEach(o => { 
+                if (!knownNovoIds.has(o.id)) { 
+                    knownNovoIds.add(o.id); 
+                    hasNew = true; 
+                } 
+            });
 
+            // Só toca o som se não for a primeira vez carregando a tela
             if (hasNew && !firstLoad) {
                 playSound();
                 toast("🔔 Novo Pedido!", "#ef4444");
@@ -313,7 +372,7 @@ function setupRealtime() {
       });
       
     // 2. REDE DE SEGURANÇA (Polling Silencioso a cada 10s)
-    // Garante que os pedidos cheguem mesmo se a chavinha do Realtime estiver desligada lá no painel.
+    // Garante que os pedidos cheguem mesmo se a chavinha do Realtime estiver desligada lá no painel ou a internet falhar.
     setInterval(() => {
         loadOrders(true);
     }, 10000);
