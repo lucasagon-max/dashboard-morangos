@@ -2,11 +2,12 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Gestão de Comandas - Morangos Tatuí</title>
+    <title>Gestão de Comandas - Supabase</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- SDK DO SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
@@ -36,12 +37,19 @@
         .variation-badge { cursor:pointer; transition:all 0.2s; }
         .variation-badge:hover { background-color:#dbeafe; border-color:#3b82f6; }
         
-        /* Indicator pulso */
-        #live-indicator { transition: all 0.3s; }
-        #refresh-progress { transition: width 0.5s linear; }
+        /* Indicador Tempo Real */
+        .live-dot { animation: pulseGreen 2s infinite; }
+        @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
     </style>
 </head>
 <body class="p-4 md:p-6" onclick="enableAudioContext()">
+
+    <!-- ⚙️ CONFIGURAÇÃO DO SUPABASE -->
+    <script>
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
 
     <!-- BARRA DE NAVEGAÇÃO -->
     <nav class="bg-white shadow-sm rounded-2xl px-6 py-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-200">
@@ -57,24 +65,15 @@
         </div>
 
         <!-- Status + Botão -->
-        <div class="flex items-center gap-3">
-            <div class="flex flex-col items-end gap-0.5">
-                <div class="flex items-center gap-2 text-xs font-semibold" id="live-indicator">
-                    <span class="relative flex h-2.5 w-2.5">
-                        <span id="ping-outer" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span id="ping-inner" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                    </span>
-                    <span id="live-text" class="text-green-600">Ao vivo</span>
-                </div>
-                <div class="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="refresh-progress" class="h-full bg-green-400 rounded-full w-full"></div>
-                </div>
-                <span id="next-refresh-text" class="text-[10px] text-slate-400">próx. em 8s</span>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100" id="status-badge">
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot" id="status-dot"></div>
+                <span class="text-xs font-bold text-emerald-700" id="status-text">Tempo Real Ativo</span>
             </div>
 
-            <button id="btn-refresh" onclick="manualRefresh()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
+            <button onclick="loadOrders()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
                 <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
-                <span>Atualizar</span>
+                <span>Sincronizar</span>
             </button>
         </div>
     </nav>
@@ -106,10 +105,9 @@
         <p class="text-sm">Os novos pedidos aparecerão aqui automaticamente.</p>
     </div>
 
-    <!-- MODAIS (EDIÇÃO / PAGAMENTO / CANCELAMENTO) MANTIDOS EXATAMENTE IGUAIS -->
-    <!-- Modal Edição -->
+    <!-- MODAL EDIÇÃO -->
     <div id="edit-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center modal-overlay p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]" id="edit-modal-content">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div class="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="edit-3" class="w-5 h-5"></i></div>
@@ -149,7 +147,7 @@
         </div>
     </div>
 
-    <!-- Modal Pagamento -->
+    <!-- MODAL PAGAMENTO -->
     <div id="payment-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -180,7 +178,7 @@
         </div>
     </div>
 
-    <!-- Modal Cancelamento -->
+    <!-- MODAL CANCELAMENTO -->
     <div id="cancel-modal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
@@ -200,23 +198,13 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// ⚙️  CONFIGURAÇÕES
-// ═══════════════════════════════════════════════════════════════════════════
-const API_URL   = "https://script.google.com/macros/s/AKfycbwb55LSvxXFundENhp2ltj0S6NamuWgy-M8yuMQKIYu4DJdBUvwi1qwO_X58mh10lWh/exec";
-const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?gid=2044706631&single=true&output=csv";
-const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVNRiwoJGzvcWztTWoqJ-t_NkwczD1AVwdQ_DcxXuXkalN-OCTU3ojGLMgIDCsFz6IUzsxB5suqdX7/pub?single=true&output=csv"; 
-
-// Ajustado para 8 segundos para evitar bloqueio e tela piscando
-const POLL_INTERVAL = 8000;
-
-// ═══════════════════════════════════════════════════════════════════════════
 // Estado global
 // ═══════════════════════════════════════════════════════════════════════════
 let allOrdersData  = [];
 let catalogProducts = [];
 let isFetching     = false;
 let knownNovoIds   = new Set();
-let renderedIds    = new Set(); // Controle visual para não animar a tela toda hora
+let renderedIds    = new Set();
 let firstLoad      = true;
 let isAudioUnlocked= false;
 let currentPaymentId   = null;
@@ -224,9 +212,6 @@ let currentOrderTotal  = 0;
 let splitPayments      = [];
 let currentEditingId   = null;
 let currentCancelingId = null;
-let pollingTimer       = null;
-let progressTimer      = null;
-let progressStart      = null;
 
 const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
 
@@ -255,68 +240,41 @@ function playSound() { alertSound.currentTime = 0; alertSound.play().catch(() =>
 function toast(text, bg = "#3b82f6") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🚀 POLLING RÁPIDO via CSV — CORRIGIDO
+// 🚀 SUPABASE: BUSCA E TEMPO REAL
 // ═══════════════════════════════════════════════════════════════════════════
 async function loadOrders() {
     if (isFetching) return;
     isFetching = true;
-    setLiveStatus('loading');
-
+    
     try {
-        const url = `${ORDERS_CSV_URL}&t=${Date.now()}`;
-        const res = await fetch(url);
-        const csvText = await res.text();
+        // Ordena pela data de criação decrescente
+        const { data, error } = await supabaseClient
+            .from('pedidos')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        // 🛡️ TRAVA DE SEGURANÇA: Se o Google devolver erro HTML (Rate Limit), ignoramos.
-        // Isso evita que a tela fique vazia ("sumindo e voltando").
-        if (!csvText || csvText.includes('<!DOCTYPE') || csvText.includes('<html') || !csvText.includes('ID')) {
-            console.warn("Aviso: O Google não retornou os dados corretamente (Bloqueio temporário). Ignorando ciclo...");
-            setLiveStatus('error');
-            isFetching = false;
-            return; 
+        if (error) throw error;
+
+        // Compara dados para não re-renderizar à toa
+        const newHash = JSON.stringify(data.map(o => o.id + o.status + o.total + o.itens + o.obs));
+        const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total + o.itens + o.obs));
+        
+        if (newHash !== oldHash) {
+            const novos = data.filter(o => o.status === 'Pendente' || o.status === 'Novo');
+            let hasNew = false;
+            novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
+
+            if (hasNew && !firstLoad) {
+                playSound();
+                toast("🔔 Novo Pedido!", "#ef4444");
+            }
+
+            firstLoad = false;
+            allOrdersData = data;
+            renderBoard(allOrdersData);
         }
-
-        Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (result) => {
-                const data = result.data.map(r => ({
-                    id:        String(r['ID']   || r['id']   || '').split('.')[0].trim(),
-                    data:      r['Data']  || r['data']  || '',
-                    cliente:   r['Cliente'] || r['cliente'] || 'Cliente',
-                    tipo:      r['Tipo']   || r['tipo']   || '',
-                    itens:     r['Detalhes'] || r['itens'] || r['Itens'] || '',
-                    total:     r['Total']  || r['total']  || '0',
-                    status:    r['Status'] || r['status'] || 'Pendente',
-                    pagamento: r['Pagamento'] || r['pagamento'] || '',
-                    obs:       r['Obs']    || r['obs']    || ''
-                })).filter(r => r.id && r.id !== '');
-
-                // 🛡️ CORREÇÃO DO PISCAR: Ordenamos os dados ANTES de verificar se mudou
-                const sortedData = data.sort((a, b) => Number(b.id) - Number(a.id));
-
-                const newHash = JSON.stringify(sortedData.map(o => o.id + o.status + o.total + o.itens));
-                const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total + o.itens));
-                
-                if (newHash !== oldHash) {
-                    const novos = sortedData.filter(o => o.status === 'Pendente' || o.status === 'Novo');
-                    let hasNew = false;
-                    novos.forEach(o => { if (!knownNovoIds.has(o.id)) { knownNovoIds.add(o.id); hasNew = true; } });
-
-                    if (hasNew && !firstLoad) {
-                        playSound();
-                        toast("🔔 Novo Pedido!", "#ef4444");
-                    }
-
-                    firstLoad = false;
-                    allOrdersData = sortedData;
-                    renderBoard(allOrdersData);
-                }
-
-                setLiveStatus('ok');
-            },
-            error: () => setLiveStatus('error')
-        });
+        
+        setLiveStatus('ok');
     } catch (e) {
         console.error('Erro ao buscar pedidos:', e);
         setLiveStatus('error');
@@ -325,66 +283,52 @@ async function loadOrders() {
     }
 }
 
+async function loadCatalog() {
+    try {
+        const { data, error } = await supabaseClient.from('produtos').select('*').eq('disponivel', 'Sim');
+        if (!error && data) {
+            catalogProducts = data.map(p => ({
+                Nome: p.nome,
+                Categoria: p.categoria || 'Geral',
+                Preco: p.preco || '0'
+            }));
+        }
+    } catch(e) { console.error("Erro ao carregar catálogo:", e); }
+}
+
+function setupRealtime() {
+    // Inscreve no canal do Supabase para escutar todas as mudanças na tabela 'pedidos'
+    supabaseClient.channel('pedidos-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+          loadOrders(); // Recarrega a lista se alguém criou/editou um pedido
+      })
+      .subscribe();
+}
+
 function setLiveStatus(state) {
-    const text  = document.getElementById('live-text');
-    const outer = document.getElementById('ping-outer');
-    const inner = document.getElementById('ping-inner');
+    const text  = document.getElementById('status-text');
+    const badge = document.getElementById('status-badge');
+    const dot = document.getElementById('status-dot');
+    
     if (state === 'ok') {
-        text.textContent = 'Ao vivo'; text.className = 'text-green-600';
-        outer.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75';
-        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500';
-    } else if (state === 'loading') {
-        text.textContent = 'Atualizando…'; text.className = 'text-blue-500';
-        outer.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75';
-        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-400';
+        text.textContent = 'Tempo Real Ativo'; text.className = 'text-xs font-bold text-emerald-700';
+        badge.className = 'flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100';
+        dot.className = 'w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot';
     } else {
-        text.textContent = 'Sem conexão'; text.className = 'text-red-500';
-        outer.className = 'absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75';
-        inner.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500';
+        text.textContent = 'Desconectado'; text.className = 'text-xs font-bold text-red-700';
+        badge.className = 'flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100';
+        dot.className = 'w-2.5 h-2.5 bg-red-500 rounded-full';
     }
 }
 
-function startProgressBar() {
-    progressStart = Date.now();
-    const bar  = document.getElementById('refresh-progress');
-    const label= document.getElementById('next-refresh-text');
-    clearInterval(progressTimer);
-    progressTimer = setInterval(() => {
-        const elapsed = Date.now() - progressStart;
-        const pct = Math.max(0, 100 - (elapsed / POLL_INTERVAL) * 100);
-        bar.style.width = pct + '%';
-        const sec = Math.max(0, Math.ceil((POLL_INTERVAL - elapsed) / 1000));
-        label.textContent = `próx. em ${sec}s`;
-        if (elapsed >= POLL_INTERVAL) {
-            clearInterval(progressTimer);
-            bar.style.width = '100%';
-        }
-    }, 250);
-}
-
-function startPolling() {
-    clearInterval(pollingTimer);
-    pollingTimer = setInterval(() => {
-        loadOrders();
-        startProgressBar();
-    }, POLL_INTERVAL);
-    startProgressBar();
-}
-
-function manualRefresh() {
-    clearInterval(pollingTimer);
-    loadOrders();
-    startPolling();
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
-// Renderização do board — CORRIGIDO A ORDEM VISUAL
+// Renderização do board
 // ═══════════════════════════════════════════════════════════════════════════
 function getBarClass(tipo) {
     const t = normalizeStr(tipo || '');
     if (t.includes('mesa'))     return 'bar-mesa';
     if (t.includes('balcao') || t.includes('balcão') || t.includes('retirada')) return 'bar-balcao';
-    if (t.includes('delivery')) return 'bar-delivery';
+    if (t.includes('delivery') || t.includes('entrega')) return 'bar-delivery';
     return 'bar-default';
 }
 
@@ -403,7 +347,7 @@ function renderBoard(orders) {
 
     const totalAberto = visible.reduce((a, o) => a + parseMoney(o.total), 0);
     document.getElementById('count-total').textContent    = visible.length;
-    document.getElementById('count-pendente').textContent = visible.filter(o => normalizeStr(o.status) === 'pendente').length;
+    document.getElementById('count-pendente').textContent = visible.filter(o => normalizeStr(o.status) === 'pendente' || normalizeStr(o.status) === 'novo').length;
     document.getElementById('count-apagar').textContent   = visible.filter(o => (o.pagamento || '').toLowerCase().includes('pagar') || (o.pagamento || '').toLowerCase().includes('combinar')).length;
     document.getElementById('count-valor').textContent    = 'R$ ' + totalAberto.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
@@ -415,19 +359,17 @@ function renderBoard(orders) {
     }
     empty.classList.add('hidden');
 
-    // Limpamos o grid inteiro de forma rápida (resolve o bug de ficar bagunçado e invertido)
     grid.innerHTML = '';
 
     visible.forEach(o => {
         const obsContent = o.obs || '';
         const barClass = getBarClass(o.tipo);
         
-        // Verifica se é um item realmente novo para o usuário para aplicar a animação
+        // Verifica se é novo para aplicar animação de surgimento
         const isBrandNew = !renderedIds.has(o.id) && !firstLoad;
         renderedIds.add(o.id);
 
         const card = document.createElement('div');
-        // Só aplica o "card-new" se for realmente novo, senão ele renderiza direto sem piscar
         card.className = `comanda-card rounded-2xl overflow-hidden flex flex-col ${isBrandNew ? 'card-new' : ''}`;
         card.dataset.orderId = o.id;
         
@@ -435,7 +377,7 @@ function renderBoard(orders) {
             <div class="h-1.5 w-full ${barClass}"></div>
             <div class="p-5 flex-1 flex flex-col">
                 <div class="flex justify-between items-start mb-2">
-                    <span class="font-bold text-slate-400 text-xs">#${o.id.toString().slice(-4)}</span>
+                    <span class="font-bold text-slate-400 text-xs">#${String(o.id).slice(-4)}</span>
                     <div class="flex gap-1">
                         <button onclick="openEditModal('${o.id}')" class="text-blue-500 p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                         <button onclick="printOrder('${o.id}')" class="text-slate-400 p-1.5 hover:bg-slate-50 rounded-lg transition-colors" title="Imprimir"><i data-lucide="printer" class="w-4 h-4"></i></button>
@@ -444,7 +386,7 @@ function renderBoard(orders) {
                 </div>
                 <h4 class="font-bold text-slate-800 text-lg leading-tight mb-0.5 truncate">${o.cliente}</h4>
                 <p class="text-[10px] font-bold text-blue-600 uppercase mb-3">${o.tipo}</p>
-                <div class="bg-slate-50 p-3 rounded-xl text-sm text-slate-600 flex-1 mb-2 whitespace-pre-wrap leading-relaxed border border-slate-100 font-mono items-text">${o.itens.replace(/\|/g, '\n')}</div>
+                <div class="bg-slate-50 p-3 rounded-xl text-sm text-slate-600 flex-1 mb-2 whitespace-pre-wrap leading-relaxed border border-slate-100 font-mono items-text">${(o.itens || '').replace(/\|/g, '\n')}</div>
                 ${obsContent ? `
                 <div class="mb-3 bg-yellow-50 p-2.5 rounded-xl border border-yellow-200 text-yellow-800 text-xs font-bold">
                     <div class="flex items-center gap-1 mb-1 text-yellow-600 uppercase text-[10px]"><i data-lucide="alert-circle" class="w-3 h-3"></i> Obs</div>
@@ -467,29 +409,7 @@ function renderBoard(orders) {
 function filterComandas() { renderBoard(allOrdersData); }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Envio de dados para o Apps Script (POST) com retry
-// ═══════════════════════════════════════════════════════════════════════════
-async function sendPostData(payload, retries = 2) {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            });
-            return true;
-        } catch (err) {
-            console.warn(`Tentativa ${attempt + 1} falhou:`, err);
-            if (attempt < retries) await new Promise(r => setTimeout(r, 1500));
-        }
-    }
-    return false;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Cancelamento
+// Cancelamento via Supabase
 // ═══════════════════════════════════════════════════════════════════════════
 function openCancelModal(id) { currentCancelingId = id; document.getElementById('cancel-modal').classList.remove('hidden'); }
 function closeCancelModal() { document.getElementById('cancel-modal').classList.add('hidden'); }
@@ -497,58 +417,33 @@ function closeCancelModal() { document.getElementById('cancel-modal').classList.
 async function confirmCancel() {
     const reason = document.getElementById('cancel-reason').value;
     if (!reason) return toast("Motivo obrigatório.", "#f59e0b");
+    
     const btn = document.getElementById('btn-confirm-cancel');
     btn.disabled = true; btn.innerText = "Processando...";
-    const cleanId = String(currentCancelingId).split('.')[0].trim();
-    const success = await sendPostData({ action: "cancel", id: cleanId, motivo: reason });
-    if (success) {
+    
+    const order = allOrdersData.find(o => o.id == currentCancelingId);
+    let newObs = order.obs ? `${order.obs} | Cancelado: ${reason}` : `Cancelado: ${reason}`;
+
+    const { error } = await supabaseClient.from('pedidos').update({ status: 'Cancelado', obs: newObs }).eq('id', currentCancelingId);
+    
+    if (!error) {
         closeCancelModal();
         document.getElementById('cancel-reason').value = '';
         toast("Comanda cancelada.", "#ef4444");
-        setTimeout(loadOrders, 1000);
-    } else toast("Erro ao cancelar. Tente novamente.", "#ef4444");
+    } else {
+        toast("Erro ao cancelar.", "#ef4444");
+    }
     btn.disabled = false; btn.innerText = "Confirmar Cancelamento";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Catálogo com cache
+// Catálogo Busca Local
 // ═══════════════════════════════════════════════════════════════════════════
-function loadCatalog() {
-    try {
-        const cached = localStorage.getItem('catalog_cache');
-        if (cached) {
-            const { ts, data } = JSON.parse(cached);
-            if (Date.now() - ts < 10 * 60 * 1000) { 
-                catalogProducts = data;
-                return;
-            }
-        }
-    } catch(e) {}
-
-    Papa.parse(CATALOG_CSV_URL, {
-        download: true, header: true, skipEmptyLines: true,
-        complete: (res) => {
-            catalogProducts = res.data.map(p => {
-                return {
-                    Nome: p['Nome'] || p['nome'],
-                    Categoria: p['Categoria'] || p['categoria'],
-                    Preco: p['Preco'] || p['Preço'] || p['preco'] || p['preço'],
-                    Disponivel: p['Disponivel'] || p['Disponível'] || p['disponivel'] || p['disponível']
-                }
-            }).filter(p => {
-                const disp = String(p.Disponivel || '').toLowerCase();
-                return p.Nome && disp !== 'não' && disp !== 'nao';
-            });
-            
-            try { localStorage.setItem('catalog_cache', JSON.stringify({ ts: Date.now(), data: catalogProducts })); } catch(e) {}
-        }
-    });
-}
-
 function searchProducts(q) {
     const results = document.getElementById('product-results');
     document.getElementById('variation-selector').classList.add('hidden');
     if (q.length < 2) { results.classList.add('hidden'); return; }
+    
     const matches = catalogProducts.filter(p => normalizeStr(p.Nome).includes(normalizeStr(q))).slice(0, 12);
     results.innerHTML = matches.map(p =>
         `<div onclick="handleProductSelection('${p.Nome.replace(/'/g, "\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between items-center">
@@ -628,14 +523,14 @@ function addExtraToEdit(nome, preco) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Modal Edição
+// Modal Edição via Supabase
 // ═══════════════════════════════════════════════════════════════════════════
 function openEditModal(id) {
     const order = allOrdersData.find(o => o.id == id);
     if (!order) return;
     currentEditingId = id;
-    document.getElementById('edit-modal-id').innerText = '#' + id;
-    document.getElementById('edit-items-input').value = order.itens.replace(/\|/g, '\n');
+    document.getElementById('edit-modal-id').innerText = '#' + String(id).slice(-4);
+    document.getElementById('edit-items-input').value = (order.itens || '').replace(/\|/g, '\n');
     document.getElementById('edit-total-input').value = formatMoney(parseMoney(order.total));
     document.getElementById('edit-modal').classList.remove('hidden');
     lucide.createIcons();
@@ -647,18 +542,25 @@ async function saveOrderChanges() {
     const btn = document.getElementById('btn-save-edit');
     btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Salvando...';
     lucide.createIcons();
+    
     const newItems  = document.getElementById('edit-items-input').value.replace(/\n/g, ' | ');
     const rawTotal  = parseMoney(document.getElementById('edit-total-input').value);
-    const cleanId   = String(currentEditingId).split('.')[0].trim();
-    const success = await sendPostData({ action: "update", id: cleanId, itens: newItems, total: rawTotal });
-    if (success) { toast("Alterações Salvas!", "#3b82f6"); closeEditModal(); setTimeout(loadOrders, 1200); }
-    else toast("Erro ao salvar. Tente novamente.", "#ef4444");
+    
+    const { error } = await supabaseClient.from('pedidos').update({ itens: newItems, total: formatMoney(rawTotal) }).eq('id', currentEditingId);
+
+    if (!error) { 
+        toast("Alterações Salvas!", "#3b82f6"); 
+        closeEditModal(); 
+    } else {
+        toast("Erro ao salvar. Tente novamente.", "#ef4444");
+    }
+    
     btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-2"></i>Salvar Alterações';
     lucide.createIcons();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Modal Pagamento
+// Modal Pagamento via Supabase
 // ═══════════════════════════════════════════════════════════════════════════
 function openPaymentModal(id) {
     const order = allOrdersData.find(o => o.id == id);
@@ -705,17 +607,18 @@ async function processFinalPayment() {
     const btn = document.getElementById('btn-finalize-order');
     btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline"></i>'; btn.disabled = true;
     lucide.createIcons();
+    
     const detail       = splitPayments.map(p => `${p.method}: ${formatMoney(p.amount)}`).join(' | ');
-    const cleanId      = String(currentPaymentId).split('.')[0].trim();
     const orderToPrint = allOrdersData.find(o => o.id == currentPaymentId);
     const paysToPrint  = [...splitPayments];
     const totalToPrint = currentOrderTotal;
-    const success = await sendPostData({ action: "update", id: cleanId, status: 'Concluído', pagamento: detail });
-    if (success) {
+    
+    const { error } = await supabaseClient.from('pedidos').update({ status: 'Concluído', pagamento: detail }).eq('id', currentPaymentId);
+
+    if (!error) {
         document.getElementById('payment-modal').classList.add('hidden');
         toast("✅ Comanda Finalizada!", "#10B981");
-        if (orderToPrint) printReceipt(cleanId, orderToPrint.cliente, totalToPrint, paysToPrint);
-        setTimeout(loadOrders, 1200);
+        if (orderToPrint) printReceipt(currentPaymentId, orderToPrint.cliente, totalToPrint, paysToPrint);
     } else {
         alert("Falha ao atualizar. Tente novamente.");
         btn.innerHTML = 'FINALIZAR COMANDA'; btn.disabled = false;
@@ -739,12 +642,12 @@ function printOrder(id) {
         .meta{font-size:14px;margin-bottom:5px}.total-section{text-align:right;margin-top:15px}
         .total-value{font-size:24px;font-weight:900}
     </style></head><body>
-        <div class="header"><h2>MORANGOS TATUÍ</h2><p>Pedido #${id}</p><p>${o.data || ''}</p></div>
+        <div class="header"><h2>MORANGOS TATUÍ</h2><p>Pedido #${String(id).slice(-4)}</p><p>${o.data || ''}</p></div>
         <div class="divider"></div>
         <div class="meta">Tipo: <b>${o.tipo}</b></div>
         <div class="client-name">${o.cliente}</div>
         <div class="divider"></div>
-        <div class="items">${o.itens.replace(/\|/g, '\n')}</div>
+        <div class="items">${(o.itens||'').replace(/\|/g, '\n')}</div>
         ${obs ? `<div class="divider"></div><div style="font-size:20px;font-weight:bold;margin:10px 0">OBS: ${obs}</div>` : ''}
         <div class="divider"></div>
         <div class="total-section"><span style="font-size:16px">TOTAL:</span><div class="total-value">${formatMoney(parseMoney(o.total))}</div></div>
@@ -756,7 +659,7 @@ function printOrder(id) {
 
 function printReceipt(id, cliente, total, payments) {
     const lines = payments.map(p => `<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px"><span>${p.method}</span><span style="font-weight:bold">${formatMoney(p.amount)}</span></div>`).join('');
-    const win = window.open('', '', 'width:450,height:600');
+    const win = window.open('', '', 'width=450,height=600');
     win.document.write(`<html><head><title>Recibo #${id}</title><style>
         @page{margin:0}body{font-family:'Courier New',monospace;width:290px;margin:0 auto;padding:10px;color:#000}
         .header{text-align:center;margin-bottom:15px}.header h2{margin:0;font-size:16px;font-weight:bold}
@@ -769,7 +672,7 @@ function printReceipt(id, cliente, total, payments) {
         .footer{text-align:center;margin-top:20px;font-size:11px}
     </style></head><body>
         <div class="header"><h2>MORANGOS TATUÍ</h2><div class="title">Comprovante de Pagamento</div></div>
-        <div style="text-align:center;font-size:14px">Pedido: <b>#${id}</b></div>
+        <div style="text-align:center;font-size:14px">Pedido: <b>#${String(id).slice(-4)}</b></div>
         <div class="client-info"><div class="client-label">Cliente</div><div class="client-name">${cliente}</div></div>
         <div class="box">
             <div style="font-size:12px;font-weight:bold;margin-bottom:8px;text-transform:uppercase">Formas de Pagamento:</div>
@@ -787,7 +690,7 @@ function printReceipt(id, cliente, total, payments) {
 // ═══════════════════════════════════════════════════════════════════════════
 loadOrders();
 loadCatalog();
-startPolling();
+setupRealtime(); // <-- O SEGREDO DO SUPABASE ESTÁ AQUI
 </script>
 </body>
 </html>
