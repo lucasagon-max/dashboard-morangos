@@ -170,7 +170,6 @@
 
         async function init() {
             try {
-                // Busca no Supabase em vez do Google Sheets
                 const { data: rawData, error } = await supabaseClient
                     .from('produtos')
                     .select('*');
@@ -480,7 +479,7 @@
             updateCartUI();
         }
 
-        // 🚀 ENVIO DE PEDIDO PARA O SUPABASE
+        // 🚀 ENVIO DE PEDIDO PARA O SUPABASE (CORRIGIDO)
         async function sendOrder() {
             const table = document.getElementById('selected-table').value;
             if(!table) return alert("Selecione a MESA no carrinho!");
@@ -514,10 +513,10 @@
                 tipo: `Mesa ${table}`,
                 itens: itemsFormatted,
                 total: formatMoney(cart.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0)),
-                status: 'Novo', // Importantíssimo: Aciona a animação de "Novo Pedido" no Gestor!
+                status: 'Novo', 
                 pagamento: 'A Pagar no Caixa',
-                obs: 'Atendimento Garçom',
-                endereco: 'Salão'
+                obs: 'Atendimento Garçom'
+                // REMOVIDO: endereco (A tabela pedidos no Supabase não possui essa coluna)
             };
 
             try {
