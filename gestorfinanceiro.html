@@ -3,771 +3,775 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Morangos Tatuí · Dashboard</title>
-<link rel="icon" type="image/jpeg" href="https://lucasagon-max.github.io/dashboard-morangos/favicon.jpg">
-<link rel="apple-touch-icon" href="https://lucasagon-max.github.io/dashboard-morangos/favicon.jpg">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --red:#c0271b;--red2:#e8372a;--red3:rgba(192,39,27,0.08);--red4:rgba(192,39,27,0.15);
-  --black:#111111;--dark:#222222;--mid:#555555;--muted:#888888;
-  --border:#e8e8e8;--border2:rgba(192,39,27,0.15);
-  --bg:#ffffff;--bg2:#f8f8f8;--bg3:#f2f2f2;
-  --green:#1a8a4a;--green2:rgba(26,138,74,0.1);
-  --shadow:0 1px 12px rgba(0,0,0,0.07);--shadow2:0 4px 24px rgba(0,0,0,0.1);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);font-family:'Outfit',sans-serif;color:var(--black);min-height:100vh}
+<title>Morangos Tatuí · Financeiro</title>
+<link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+<link rel="apple-touch-icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
-/* HEADER */
-header{background:#fff;border-bottom:3px solid var(--red);height:70px;
-  display:flex;align-items:center;justify-content:space-between;padding:0 40px;
-  position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
-.logo{display:flex;align-items:center;gap:14px}
-.logo-svg{width:42px;height:42px;flex-shrink:0}
-.logo-text{display:flex;flex-direction:column;line-height:1}
-.logo-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:900;color:var(--black);letter-spacing:-0.01em}
-.logo-sub{font-size:10px;font-weight:600;color:var(--red);letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}
-.header-right{display:flex;align-items:center;gap:12px}
-.period-label{font-size:12px;font-weight:500;color:var(--muted);background:var(--bg2);
-  border:1px solid var(--border);border-radius:20px;padding:5px 14px;letter-spacing:0.02em}
-.live-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
-  color:var(--green);background:var(--green2);border-radius:20px;padding:5px 12px;
-  letter-spacing:0.04em;text-transform:uppercase}
-.live-pill::before{content:'';width:6px;height:6px;background:var(--green);
-  border-radius:50%;animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.btn-refresh{background:#fff;border:1.5px solid var(--border);border-radius:8px;
-  padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--dark);
-  font-family:'Outfit',sans-serif;display:flex;align-items:center;gap:6px;transition:all 0.2s}
-.btn-refresh:hover{border-color:var(--red);color:var(--red)}
-.btn-refresh svg{transition:transform 0.6s}
-.btn-refresh.spin svg{transform:rotate(360deg)}
-
-/* LOGIN */
-#loginScreen{display:flex;flex-direction:column;align-items:center;
-  justify-content:center;min-height:calc(100vh - 70px);padding:40px 20px}
-.login-card{background:#fff;border-radius:20px;padding:56px 52px;max-width:440px;width:100%;
-  text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow2)}
-.login-logo{margin-bottom:24px}
-.login-logo svg{width:80px;height:80px}
-.login-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--black);margin-bottom:8px}
-.login-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:32px}
-.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;
-  width:100%;background:var(--red);color:#fff;border:none;border-radius:12px;
-  padding:16px 32px;font-size:15px;font-weight:600;cursor:pointer;
-  font-family:'Outfit',sans-serif;transition:all 0.2s;letter-spacing:0.02em}
-.btn-google:hover{background:var(--red2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(192,39,27,0.3)}
-.login-note{margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.6}
-
-/* LOADING / ERROR */
-#loadingScreen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 70px);gap:18px}
-.spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin 0.75s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;color:var(--muted);font-weight:500}
-#errorScreen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 70px);padding:40px 20px}
-.error-card{background:#fff;border-radius:16px;padding:40px;border:1.5px solid var(--border);text-align:center;max-width:440px;box-shadow:var(--shadow)}
-.error-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--red);margin-bottom:10px}
-.error-msg{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:22px}
-.btn-retry{background:var(--red);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif}
-
-/* FILTER BAR */
-#filterBar{display:none;background:#fff;border-bottom:1px solid var(--border);
-  padding:10px 40px;align-items:center;gap:10px;flex-wrap:wrap;
-  position:sticky;top:70px;z-index:90}
-.filter-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-right:2px}
-.filter-btns{display:flex;gap:6px;flex-wrap:wrap}
-.fbtn{padding:6px 15px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
-  font-size:12px;font-weight:600;color:var(--mid);cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
-.fbtn:hover{border-color:var(--red);color:var(--red)}
-.fbtn.active{background:var(--red);border-color:var(--red);color:#fff}
-.custom-range{display:none;align-items:center;gap:8px;margin-left:4px}
-.custom-range.open{display:flex}
-.date-input{border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:500;color:var(--dark);font-family:'Outfit',sans-serif;outline:none;transition:border 0.15s}
-.date-input:focus{border-color:var(--red)}
-.btn-apply{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif}
-
-/* NAV TABS */
-#navTabs{display:none;background:#fff;border-bottom:1px solid var(--border);padding:0 40px;position:sticky;top:111px;z-index:80}
-.tab-btn{padding:13px 18px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;
-  cursor:pointer;border-bottom:2.5px solid transparent;font-family:'Outfit',sans-serif;transition:all 0.15s}
-.tab-btn:hover{color:var(--dark)}
-.tab-btn.active{color:var(--red);border-bottom-color:var(--red)}
-
-/* PANELS */
-.tab-panel{display:none;max-width:1280px;margin:32px auto 64px;padding:0 40px;animation:fadeUp 0.35s ease both}
-.tab-panel.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-
-/* SECTION */
-.sec{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:var(--black);
-  margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.sec::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px}
-.kpi{background:#fff;border-radius:12px;padding:22px 20px;border:1.5px solid var(--border);
-  box-shadow:var(--shadow);position:relative;overflow:hidden;transition:all 0.2s}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2);border-color:var(--border2)}
-.kpi-stripe{position:absolute;top:0;left:0;right:0;height:3px;background:var(--red)}
-.kpi-stripe.g{background:var(--green)} .kpi-stripe.b{background:var(--black)} .kpi-stripe.x{background:#bbb}
-.kpi-icon{position:absolute;top:16px;right:16px;font-size:22px;opacity:0.1}
-.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:8px;font-weight:700}
-.kpi-val{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--black);line-height:1;margin-bottom:6px}
-.kpi-sub{font-size:11.5px;color:var(--muted)}
-.kpi-sub .up{color:var(--green);font-weight:600} .kpi-sub .dn{color:var(--red);font-weight:600}
-
-/* CHART CARDS */
-.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.cgrid.w31{grid-template-columns:3fr 2fr}
-.cc{background:#fff;border-radius:12px;padding:22px;border:1.5px solid var(--border);box-shadow:var(--shadow)}
-.cc.s2{grid-column:1/-1}
-.ch{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
-.ct{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--black)}
-.cs{font-size:11px;color:var(--muted);margin-top:3px}
-.badge{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
-.br{background:var(--red3);color:var(--red)} .bg{background:var(--green2);color:var(--green)}
-.bb{background:rgba(0,0,0,0.07);color:var(--dark)} .bx{background:var(--bg3);color:var(--muted)}
-.hw{height:260px;position:relative} .ht{height:300px;position:relative} .hx{height:320px;position:relative}
-
-/* ALERT */
-.alert{background:rgba(192,39,27,0.05);border-left:3px solid var(--red);
-  border-radius:0 10px 10px 0;padding:12px 16px;font-size:13px;color:var(--dark);margin-bottom:20px;line-height:1.6}
-.alert strong{color:var(--red)}
-
-/* TABLE */
-.tcard{background:#fff;border-radius:12px;border:1.5px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px}
-.thead{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.ttitle{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
-.twrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{padding:10px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;
-  color:var(--muted);background:var(--bg2);font-weight:700;border-bottom:1px solid var(--border)}
-tbody tr{border-bottom:1px solid rgba(0,0,0,0.04);transition:background 0.1s}
-tbody tr:hover{background:var(--bg2)} tbody tr:last-child{border-bottom:none}
-td{padding:11px 16px;vertical-align:middle}
-.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10.5px;font-weight:700}
-.pr{background:var(--red3);color:var(--red)} .pg{background:var(--green2);color:var(--green)}
-.pb{background:rgba(0,0,0,0.07);color:var(--dark)} .px{background:var(--bg3);color:var(--muted)}
-.barw{height:4px;background:var(--bg3);border-radius:2px;width:80px;overflow:hidden}
-.barf{height:100%;border-radius:2px;background:var(--red)}
-
-/* FP */
-.fp-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
-.fp-row:last-child{border-bottom:none}
-.fp-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0}
-.fp-name{font-size:13px;font-weight:600;flex:1;color:var(--dark)}
-.fp-sub{font-size:11px;color:var(--muted)}
-.fp-val{font-family:'Playfair Display',serif;font-size:14px;font-weight:700}
-
-/* PARCELA */
-.prow{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border)}
-.prow:last-child{border-bottom:none}
-.pmes{font-size:13px;font-weight:500;color:var(--dark)}
-.pval{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
-.pval.hi{color:var(--red)} .pval.md{color:#b07a00} .pval.lo{color:var(--green)}
-
-/* LEGEND */
-.leglist{display:flex;flex-direction:column;gap:7px}
-.legitem{display:flex;align-items:center;gap:8px;font-size:12px}
-.legdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.legname{flex:1;color:var(--dark);font-weight:500} .legval{color:var(--muted);font-size:11px}
-
-/* INFO */
-.igrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.icard{background:#fff;border-radius:12px;padding:20px;border:1.5px solid var(--border);box-shadow:var(--shadow)}
-.ilbl{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:12px;font-weight:700}
-
-.empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
-
-/* PARCELAS ENHANCED */
-.cartao-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:28px}
-.cartao-card{background:#fff;border-radius:14px;border:1.5px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
-.cartao-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-.cartao-header.red{background:var(--red);} .cartao-header.black{background:var(--black);}
-.cartao-header.gray{background:#444;} .cartao-header.boleto{background:#b07a00;}
-.cartao-nome{font-size:13px;font-weight:700;color:#fff;letter-spacing:0.02em}
-.cartao-id{font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;letter-spacing:0.08em}
-.cartao-total{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#fff;text-align:right}
-.cartao-total-lbl{font-size:10px;color:rgba(255,255,255,0.6);text-align:right;margin-top:1px}
-.cartao-meta{padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);
-  display:flex;gap:20px;font-size:11px;color:var(--muted)}
-.cartao-meta span strong{color:var(--dark)}
-.cartao-compras{padding:0}
-.compra-row{padding:12px 20px;border-bottom:1px solid rgba(0,0,0,0.04);transition:background 0.1s}
-.compra-row:hover{background:var(--bg2)} .compra-row:last-child{border-bottom:none}
-.compra-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.compra-desc{font-size:13px;font-weight:600;color:var(--dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.compra-val{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--red);flex-shrink:0}
-.compra-bottom{display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap}
-.compra-tag{font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:3px}
-.compra-parcrow{margin-top:6px;display:flex;flex-direction:column;gap:3px}
-.parc-mini{display:flex;justify-content:space-between;align-items:center;
-  background:var(--bg2);border-radius:6px;padding:5px 10px;font-size:11.5px}
-.parc-mini-desc{color:var(--mid);flex:1}
-.parc-mini-data{color:var(--muted);font-size:10.5px;margin:0 8px}
-.parc-mini-val{font-weight:700;color:var(--dark)}
-.parc-mini-val.vence-hoje{color:var(--red)}
-.parc-mini-val.vence-breve{color:#b07a00}
-.expand-btn{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;
-  font-family:'Outfit',sans-serif;font-weight:600;padding:2px 0;display:flex;align-items:center;gap:3px}
-.expand-btn:hover{text-decoration:underline}
-.compra-parcelas{display:none} .compra-parcelas.open{display:block}
-
-@media(max-width:900px){
-  header,#filterBar,#navTabs,.tab-panel{padding-left:20px;padding-right:20px}
-  .cgrid,.cgrid.w31,.igrid{grid-template-columns:1fr}
-  .cc.s2{grid-column:1} .kpi-grid{grid-template-columns:1fr 1fr}
-  #navTabs{top:108px}
-}
-@media(max-width:520px){
-  .kpi-grid{grid-template-columns:1fr}
-  .tab-btn{font-size:11px;padding:11px 10px}
-  header{padding:0 16px}
-}
-</style>
-</head>
-<body>
-
-<header>
-  <div class="logo">
-    <img src="https://lucasagon-max.github.io/dashboard-morangos/logo.png" class="logo-svg" alt="Morangos Tatuí" style="object-fit:contain;border-radius:0">
-    <div class="logo-text">
-      <div class="logo-name">Morangos Tatuí</div>
-      <div class="logo-sub">Dashboard Financeiro</div>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="period-label" id="periodLabel">—</div>
-    <div class="live-pill" id="livePill" style="display:none">Ao vivo</div>
-    <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" style="display:none">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-      </svg>
-      Atualizar
-    </button>
-  </div>
-</header>
-
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">
-      <img src="https://lucasagon-max.github.io/dashboard-morangos/logo.png" alt="Morangos Tatuí" style="width:200px;height:auto;object-fit:contain">
-    </div>
-    <div class="login-title">Morangos Tatuí</div>
-    <div class="login-sub">Dashboard financeiro interno. Conecte sua conta Google para carregar os dados em tempo real.</div>
-    <button class="btn-google" onclick="signIn()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path fill="rgba(255,255,255,0.8)" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="rgba(255,255,255,0.8)" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="rgba(255,255,255,0.8)" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-        <path fill="rgba(255,255,255,0.8)" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Entrar com Google
-    </button>
-    <div class="login-note">Apenas você terá acesso. Nenhum dado é armazenado neste arquivo.</div>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div id="loadingScreen"><div class="spinner"></div><div class="loading-text" id="loadingText">Carregando…</div></div>
-
-<!-- ERROR -->
-<div id="errorScreen">
-  <div class="error-card">
-    <div class="error-title">Erro ao carregar</div>
-    <div class="error-msg" id="errorMsg">Não foi possível acessar a planilha.</div>
-    <button class="btn-retry" onclick="retryLoad()">Tentar novamente</button>
-  </div>
-</div>
-
-<!-- FILTER BAR -->
-<div id="filterBar">
-  <span class="filter-label">Período</span>
-  <div class="filter-btns">
-    <button class="fbtn active" onclick="setFilter('all',this)">Tudo</button>
-    <button class="fbtn" onclick="setFilter('month',this)">Este mês</button>
-    <button class="fbtn" onclick="setFilter('lastmonth',this)">Mês passado</button>
-    <button class="fbtn" onclick="setFilter('week',this)">Esta semana</button>
-    <button class="fbtn" onclick="setFilter('yesterday',this)">Ontem</button>
-    <button class="fbtn" onclick="setFilter('custom',this)">Personalizado</button>
-  </div>
-  <div class="custom-range" id="customRange">
-    <input type="date" class="date-input" id="dateFrom">
-    <span style="font-size:12px;color:var(--muted)">até</span>
-    <input type="date" class="date-input" id="dateTo">
-    <button class="btn-apply" onclick="applyCustom()">Aplicar</button>
-  </div>
-</div>
-
-<!-- TABS -->
-<nav id="navTabs">
-  <button class="tab-btn active" onclick="setTab('visao',this)">📊 Visão Geral</button>
-  <button class="tab-btn" onclick="setTab('caixa',this)">💰 Fluxo de Caixa</button>
-  <button class="tab-btn" onclick="setTab('saidas',this)">📤 Saídas</button>
-  <button class="tab-btn" onclick="setTab('pagamentos',this)">💳 Pagamentos</button>
-  <button class="tab-btn" onclick="setTab('parcelas',this)">📅 Parcelas</button>
-</nav>
-
-<div id="tab-visao" class="tab-panel active"></div>
-<div id="tab-caixa" class="tab-panel"></div>
-<div id="tab-saidas" class="tab-panel"></div>
-<div id="tab-pagamentos" class="tab-panel"></div>
-<div id="tab-parcelas" class="tab-panel"></div>
+<!-- Supabase / Chart.js / Tailwind / Lucide / Google Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-// Origem: https://ferramentas.morangostatui.com.br
-// Repo: https://github.com/lucasagon-max/dashboard-morangos
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+        colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
+      }
+    }
+  }
+</script>
+
+<style>
+  body { background-color: #f8fafc; color: #0f172a; }
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  
+  .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); border-bottom: 1px solid #e2e8f0; }
+  .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .tab-btn { position: relative; }
+  .tab-btn.active { color: #e11d48; font-weight: 600; }
+  .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #e11d48; border-radius: 2px 2px 0 0; }
+  
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 12px 12px 0 0; }
+  .kpi-brand::before { background-color: #e11d48; }
+  .kpi-green::before { background-color: #10b981; }
+  .kpi-dark::before { background-color: #1e293b; }
+  .kpi-gray::before { background-color: #94a3b8; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ── HEADER ── -->
+<header class="glass-header sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-10 h-10 object-contain rounded-lg">
+    <div class="flex flex-col">
+      <h1 class="font-serif text-lg font-black text-slate-900 leading-none">Morangos Tatuí</h1>
+      <span class="text-[10px] font-bold text-brand-600 uppercase tracking-widest mt-1">Gestão Financeira</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="periodLabel" class="text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-4 py-1.5 hidden md:block">—</div>
+    <div id="livePill" class="hidden items-center gap-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5 uppercase tracking-wider">
+      <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Ao Vivo
+    </div>
+    <button id="btnRefresh" onclick="refreshData()" class="hidden items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-brand-500 hover:text-brand-600 transition-colors">
+      <i data-lucide="refresh-cw" class="w-3.5 h-3.5 transition-transform duration-500" id="refreshIcon"></i> Atualizar
+    </button>
+  </div>
+</header>
+
+<!-- ── LOGIN SCREEN ── -->
+<main id="loginScreen" class="flex-1 flex flex-col items-center justify-center p-6">
+  <div class="bg-white border border-slate-200 rounded-2xl p-10 max-w-md w-full text-center shadow-sm">
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-24 mx-auto mb-6">
+    <h2 class="font-serif text-2xl font-black text-slate-900 mb-2">Painel Financeiro</h2>
+    <p class="text-sm text-slate-500 mb-8">Conecte sua conta Google autorizada para ler os dados da planilha de gestão.</p>
+    <button onclick="signIn()" class="w-full flex items-center justify-center gap-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-3.5 text-sm font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Acessar com Google
+    </button>
+    <p class="text-xs text-slate-400 mt-6">Apenas contas gerenciais permitidas.</p>
+  </div>
+</main>
+
+<!-- ── LOADING SCREEN ── -->
+<main id="loadingScreen" class="hidden flex-1 flex-col items-center justify-center p-6 gap-4">
+  <i data-lucide="loader-2" class="w-10 h-10 text-brand-600 animate-spin"></i>
+  <div id="loadingText" class="text-sm font-medium text-slate-500">Carregando dados estruturais...</div>
+</main>
+
+<!-- ── ERROR SCREEN ── -->
+<main id="errorScreen" class="hidden flex-1 flex-col items-center justify-center p-6">
+  <div class="bg-white border border-rose-200 rounded-2xl p-8 max-w-sm w-full text-center shadow-sm">
+    <i data-lucide="alert-triangle" class="w-12 h-12 text-rose-500 mx-auto mb-4"></i>
+    <h3 class="font-serif text-xl font-bold text-slate-900 mb-2">Acesso Negado ou Erro</h3>
+    <p id="errorMsg" class="text-sm text-slate-500 mb-6">Não foi possível ler as planilhas.</p>
+    <button onclick="retryLoad()" class="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">Tentar Novamente</button>
+  </div>
+</main>
+
+<!-- ── MAIN APP SHELL ── -->
+<div id="appShell" class="hidden flex-col flex-1">
+  
+  <!-- Filter Bar -->
+  <div class="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center gap-3 flex-wrap sticky top-[65px] z-40">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Filtro</span>
+    <button class="fbtn active px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white [&.active]:bg-brand-600 [&.active]:border-brand-600 [&.active]:text-white" onclick="setFilter('all',this)">Tudo</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('month',this)">Este mês</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('lastmonth',this)">Mês passado</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('week',this)">Esta semana</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('custom',this)">Personalizado</button>
+    
+    <div id="customRange" class="hidden items-center gap-2 ml-2">
+      <input type="date" id="dateFrom" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-brand-500">
+      <span class="text-xs text-slate-400">até</span>
+      <input type="date" id="dateTo" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-brand-500">
+      <button onclick="applyCustom()" class="bg-slate-900 text-white rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-slate-800">Aplicar</button>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <nav class="bg-white border-b border-slate-200 px-6 flex overflow-x-auto sticky top-[113px] z-30">
+    <button class="tab-btn active px-4 py-3.5 text-sm font-medium text-slate-500 hover:text-slate-900 whitespace-nowrap flex items-center gap-2" onclick="setTab('visao',this)"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Visão Geral</button>
+    <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 hover:text-slate-900 whitespace-nowrap flex items-center gap-2" onclick="setTab('caixa',this)"><i data-lucide="wallet" class="w-4 h-4"></i> Fluxo de Caixa</button>
+    <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 hover:text-slate-900 whitespace-nowrap flex items-center gap-2" onclick="setTab('saidas',this)"><i data-lucide="trending-down" class="w-4 h-4"></i> Saídas & Despesas</button>
+    <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 hover:text-slate-900 whitespace-nowrap flex items-center gap-2" onclick="setTab('pagamentos',this)"><i data-lucide="credit-card" class="w-4 h-4"></i> Pagamentos</button>
+    <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 hover:text-slate-900 whitespace-nowrap flex items-center gap-2" onclick="setTab('parcelas',this)"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Parcelas & Cartões</button>
+  </nav>
+
+  <!-- Panels Container -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto">
+    <div id="tab-visao" class="tab-panel fade-in block"></div>
+    <div id="tab-caixa" class="tab-panel fade-in hidden"></div>
+    <div id="tab-saidas" class="tab-panel fade-in hidden"></div>
+    <div id="tab-pagamentos" class="tab-panel fade-in hidden"></div>
+    <div id="tab-parcelas" class="tab-panel fade-in hidden"></div>
+  </main>
+  
+  <footer class="py-6 text-center text-xs text-slate-400 mt-auto">
+    Morangos Tatuí · Sistema de Gestão Financeira · AppSheet Data
+  </footer>
+</div>
+
+<script>
+// ── CONFIG & STATE ──
 const CLIENT_ID='781310015266-iff0bmklrbkv3mt6no32gel47tfs3jeu.apps.googleusercontent.com';
 const SHEET_ID='1cyM1DI29ob_hF3BomDazojTo-nn3j8kJowpbqh7R8Tg';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets.readonly';
 
-let tokenClient,accessToken=null,charts={};
-let RAW_MOV=[],RAW_FEC=[],RAW_PARC=[],RAW_CART=[],RAW_COMP=[];
-let currentFilter='all',customFrom=null,customTo=null;
+let tokenClient, accessToken=null, charts={};
+let RAW_MOV=[], RAW_FEC=[], RAW_PARC=[], RAW_CART=[], RAW_COMP=[];
+let currentFilter='all', customFrom=null, customTo=null;
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
+// Initialize Lucide Icons
+lucide.createIcons();
+
+// ── AUTH ──
 function loadGIS(){
-  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';
-  s.onload=()=>{tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,
-    callback:async r=>{if(r.error){showError('Erro no login: '+r.error);return;}accessToken=r.access_token;await loadAllData();}});};
-  document.head.appendChild(s);
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';
+  s.onload=()=>{
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID, scope:SCOPES,
+      callback:async r=>{
+        if(r.error){showError('Erro no login: '+r.error);return;}
+        accessToken=r.access_token; await loadAllData();
+      }
+    });
+  };
+  document.head.appendChild(s);
 }
-function signIn(){if(!tokenClient){showError('Aguarde e tente novamente.');return;}tokenClient.requestAccessToken({prompt:'consent'});}
-async function refreshData(){const b=document.getElementById('btnRefresh');b.classList.add('spin');await loadAllData();setTimeout(()=>b.classList.remove('spin'),600);}
-function retryLoad(){document.getElementById('errorScreen').style.display='none';document.getElementById('loginScreen').style.display='flex';}
 
-// ── FETCH ─────────────────────────────────────────────────────────────────────
+function signIn(){
+  if(!tokenClient){showError('Aguarde e tente novamente.');return;}
+  tokenClient.requestAccessToken({prompt:'consent'});
+}
+
+async function refreshData(){
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('animate-spin');
+  await loadAllData();
+  setTimeout(()=>icon.classList.remove('animate-spin'), 600);
+}
+
+function retryLoad(){
+  document.getElementById('errorScreen').classList.add('hidden');
+  document.getElementById('errorScreen').classList.remove('flex');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+// ── FETCH ──
 async function fetchSheet(name){
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name)}`,{headers:{Authorization:`Bearer ${accessToken}`}});
-  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'Erro: '+name);}
-  const j=await r.json();const[h,...rows]=j.values||[];if(!h)return[];
-  return rows.map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]??'');return o;});
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name)}`,{headers:{Authorization:`Bearer ${accessToken}`}});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'Erro: '+name);}
+  const j=await r.json(); const [h,...rows]=j.values||[]; if(!h)return[];
+  return rows.map(r=>{const o={}; h.forEach((k,i)=>o[k]=r[i]??''); return o;});
 }
+
 async function loadAllData(){
-  try{
-    showLoading('Lendo Movimentações…');RAW_MOV=await fetchSheet('Movimentacoes');
-    showLoading('Lendo Fechamentos…');RAW_FEC=await fetchSheet('Fechamento');
-    showLoading('Lendo Parcelas…');try{RAW_PARC=await fetchSheet('Parcelas');}catch(e){RAW_PARC=[];}
-    showLoading('Lendo Cartões…');try{RAW_CART=await fetchSheet('Cartoes_Emprestimos');}catch(e){RAW_CART=[];}
-    showLoading('Lendo Compras…');try{RAW_COMP=await fetchSheet('Compras_Cartao');}catch(e){RAW_COMP=[];}
-    showLoading('Processando…');renderAll();showDashboard();
-  }catch(err){console.error(err);showError(err.message||'Erro desconhecido.');}
+  try{
+    showLoading('Lendo Movimentações…'); RAW_MOV=await fetchSheet('Movimentacoes');
+    showLoading('Lendo Fechamentos…'); RAW_FEC=await fetchSheet('Fechamento');
+    showLoading('Lendo Parcelas…'); try{RAW_PARC=await fetchSheet('Parcelas');}catch(e){RAW_PARC=[];}
+    showLoading('Lendo Cartões…'); try{RAW_CART=await fetchSheet('Cartoes_Emprestimos');}catch(e){RAW_CART=[];}
+    showLoading('Lendo Compras…'); try{RAW_COMP=await fetchSheet('Compras_Cartao');}catch(e){RAW_COMP=[];}
+    showLoading('Processando Inteligência…'); renderAll(); showDashboard();
+  }catch(err){
+    console.error(err); showError(err.message||'Erro desconhecido ao carregar os dados.');
+  }
 }
 
-// ── FILTER ────────────────────────────────────────────────────────────────────
+// ── FILTER ──
 function parseDate(v){
-  if(!v)return null;const s=String(v).trim();
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/');return new Date(+y,+m-1,+d);}
-  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s.substring(0,10));
-  return new Date(s);
+  if(!v)return null; const s=String(v).trim();
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const[d,m,y]=s.split('/');return new Date(+y,+m-1,+d);}
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s.substring(0,10));
+  return new Date(s);
 }
+
 function getRange(){
-  const now=new Date(),td=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  if(currentFilter==='all')return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
-  if(currentFilter==='month')return{f:new Date(td.getFullYear(),td.getMonth(),1),t:new Date(td.getFullYear(),td.getMonth()+1,0)};
-  if(currentFilter==='lastmonth')return{f:new Date(td.getFullYear(),td.getMonth()-1,1),t:new Date(td.getFullYear(),td.getMonth(),0)};
-  if(currentFilter==='week'){const day=td.getDay()||7;const m=new Date(td);m.setDate(td.getDate()-day+1);const s=new Date(m);s.setDate(m.getDate()+6);return{f:m,t:s};}
-  if(currentFilter==='yesterday'){const y=new Date(td);y.setDate(td.getDate()-1);return{f:y,t:y};}
-  if(currentFilter==='custom'&&customFrom&&customTo)return{f:customFrom,t:customTo};
-  return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
+  const now=new Date(), td=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(currentFilter==='all')return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
+  if(currentFilter==='month')return{f:new Date(td.getFullYear(),td.getMonth(),1),t:new Date(td.getFullYear(),td.getMonth()+1,0)};
+  if(currentFilter==='lastmonth')return{f:new Date(td.getFullYear(),td.getMonth()-1,1),t:new Date(td.getFullYear(),td.getMonth(),0)};
+  if(currentFilter==='week'){const day=td.getDay()||7; const m=new Date(td); m.setDate(td.getDate()-day+1); const s=new Date(m); s.setDate(m.getDate()+6); return{f:m,t:s};}
+  if(currentFilter==='yesterday'){const y=new Date(td); y.setDate(td.getDate()-1); return{f:y,t:y};}
+  if(currentFilter==='custom'&&customFrom&&customTo)return{f:customFrom,t:customTo};
+  return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
 }
+
 function filterRows(rows,field){
-  const{f,t}=getRange();
-  return rows.filter(r=>{const d=parseDate(r[field]);if(!d||isNaN(d))return false;
-    const day=new Date(d.getFullYear(),d.getMonth(),d.getDate());return day>=f&&day<=t;});
+  const{f,t}=getRange();
+  return rows.filter(r=>{
+    const d=parseDate(r[field]); if(!d||isNaN(d))return false;
+    const day=new Date(d.getFullYear(),d.getMonth(),d.getDate()); return day>=f&&day<=t;
+  });
 }
-function setFilter(name,btn){
-  currentFilter=name;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
-  document.getElementById('customRange').classList.toggle('open',name==='custom');
-  if(name!=='custom')renderAll();
+
+function setFilter(name, btn){
+  currentFilter=name;
+  document.querySelectorAll('.fbtn').forEach(b=>{b.classList.remove('active'); b.classList.add('text-slate-600','bg-white');});
+  
+  const fbtns = document.querySelectorAll('.fbtn');
+  for(let b of fbtns) {
+      if(b === btn) {
+          b.classList.add('active', 'bg-brand-600', 'border-brand-600', 'text-white');
+          b.classList.remove('text-slate-600', 'bg-white');
+      } else {
+          b.classList.remove('active', 'bg-brand-600', 'border-brand-600', 'text-white');
+          b.classList.add('text-slate-600', 'bg-white');
+      }
+  }
+
+  document.getElementById('customRange').style.display = name==='custom' ? 'flex' : 'none';
+  if(name!=='custom') renderAll();
 }
+
 function applyCustom(){
-  const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;
-  if(f&&t){customFrom=new Date(f);customTo=new Date(t);renderAll();}
+  const f=document.getElementById('dateFrom').value, t=document.getElementById('dateTo').value;
+  if(f&&t){customFrom=new Date(f); customTo=new Date(t); renderAll();}
 }
+
 function periodText(){
-  const{f,t}=getRange();const fd=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-  if(currentFilter==='all')return'Período completo';if(currentFilter==='month')return'Este mês';
-  if(currentFilter==='lastmonth')return'Mês passado';if(currentFilter==='week')return'Esta semana';
-  if(currentFilter==='yesterday')return'Ontem';return`${fd(f)} – ${fd(t)}`;
+  const{f,t}=getRange(); const fd=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  if(currentFilter==='all')return'Período completo'; if(currentFilter==='month')return'Este mês';
+  if(currentFilter==='lastmonth')return'Mês passado'; if(currentFilter==='week')return'Esta semana';
+  if(currentFilter==='yesterday')return'Ontem'; return`${fd(f)} até ${fd(t)}`;
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
+// ── UTILS ──
 const R=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const COLORS=['#c0271b','#111111','#555','#888','#d4622a','#1a8a4a','#2e6fcf','#7b3fa0','#b07a00','#999'];
-const BF={family:'Outfit'};
-const AX={grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:BF,color:'#888',size:11}};
+const COLORS=['#e11d48','#0f172a','#64748b','#94a3b8','#f59e0b','#10b981','#3b82f6','#8b5cf6','#d97706','#cbd5e1'];
+const BF={family:'"DM Sans", sans-serif'};
+const AX={grid:{color:'#f1f5f9'}, ticks:{font:BF, color:'#64748b', size:11}};
 const NL={plugins:{legend:{display:false}}};
-function num(v){if(!v||v==='')return 0;return parseFloat(String(v).replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.'))||0;}
-function fmtD(d){if(!d||isNaN(d))return'';return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
-function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={};}
+function num(v){if(!v||v==='')return 0; return parseFloat(String(v).replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.'))||0;}
+function fmtD(d){if(!d||isNaN(d))return''; return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
+function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy()); charts={};}
 
-// ── RENDER ALL ────────────────────────────────────────────────────────────────
+// ── RENDER ALL ──
 function renderAll(){
-  destroyCharts();
-  const mov=filterRows(RAW_MOV,'Data'),fec=filterRows(RAW_FEC,'Data_Caixa');
-  document.getElementById('periodLabel').textContent=periodText();
-  const data=processData(mov,fec,RAW_PARC,RAW_CART,RAW_COMP);
-  buildVisao(data);buildCaixa(data);buildSaidas(data);buildPagamentos(data);buildParcelas(data);
+  destroyCharts();
+  const mov=filterRows(RAW_MOV,'Data'), fec=filterRows(RAW_FEC,'Data_Caixa');
+  document.getElementById('periodLabel').textContent=periodText();
+  const data=processData(mov,fec,RAW_PARC,RAW_CART,RAW_COMP);
+  buildVisao(data); buildCaixa(data); buildSaidas(data); buildPagamentos(data); buildParcelas(data);
+  lucide.createIcons(); 
 }
 
-// ── PROCESS ───────────────────────────────────────────────────────────────────
+// ── PROCESS ──
 function processData(mov,fec,parc,cart,comp){
-  const vMap={};
-  mov.filter(r=>r.Categoria==='Vendas').forEach(r=>{
-    const d=parseDate(r.Data);if(!d||isNaN(d))return;
-    const k=fmtD(d)+'/'+(d.getFullYear()+'').slice(2);
-    vMap[k]=(vMap[k]||0)+num(r.Valor);
-  });
-  const fecData=fec.map(r=>{const d=parseDate(r.Data_Caixa);
-    return{data:fmtD(d)+'/'+(d?.getFullYear()+'').slice(2),entradas:num(r.Total_Entradas),saidas:num(r.Total_Saidas),saldo:num(r.Saldo_Real)};
-  }).filter(r=>r.data&&!r.data.includes('undefined'));
-  const vRows=mov.filter(r=>r.Categoria==='Vendas');
-  const vBruto=vRows.reduce((a,r)=>a+num(r.Valor),0);
-  const vLiq=vRows.reduce((a,r)=>a+num(r.Valor_Liquido||r.Valor),0);
-  const tEnt=fec.reduce((a,r)=>a+num(r.Total_Entradas),0);
-  const tSai=fec.reduce((a,r)=>a+num(r.Total_Saidas),0);
-  const saldo=fecData.length?fecData[fecData.length-1].saldo:0;
-  const taxa=mov.filter(r=>r.Categoria==='Taxa maquininha').reduce((a,r)=>a+num(r.Valor),0);
-  const saiMap={};
-  mov.filter(r=>r.Tipo==='Saída').forEach(r=>{const c=r.Categoria||'Outros';saiMap[c]=(saiMap[c]||0)+num(r.Valor);});
-  const saidas=Object.entries(saiMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([c,v])=>({c,v}));
-  const fpMap={},fpLiq={};
-  mov.filter(r=>r.Tipo==='Entrada').forEach(r=>{
-    const fp=r.Forma_Pagamento||'Outros';fpMap[fp]=(fpMap[fp]||0)+num(r.Valor);fpLiq[fp]=(fpLiq[fp]||0)+num(r.Valor_Liquido||r.Valor);
-  });
-  const entFP=Object.entries(fpMap).sort((a,b)=>b[1]-a[1]).map(([fp,v])=>({fp,bruto:v,liq:fpLiq[fp]||v,taxa:v>0?+((v-(fpLiq[fp]||v))/v*100).toFixed(2):0}));
-  const pMap={};
-  parc.filter(r=>(r.Status||'').toLowerCase().includes('pend')).forEach(r=>{
-    const mes=(r.Fatura_Mes||'').replace(/^\d+\s+/,'');pMap[mes]=(pMap[mes]||0)+num(r.Valor_Parcela);
-  });
-  const parcelas=Object.entries(pMap).map(([mes,v])=>({mes,v}));
-  const pessoalCats=['Gastos pessoais','Alimentação','Gasolina'];
-  const negocioCats=['Insumos','Fornecedores','Valdeci','BM Foods Supercongelados','Frios','Embalagem'];
-  const pessoal=pessoalCats.reduce((a,c)=>a+(saiMap[c]||0),0);
-  const negocio=negocioCats.reduce((a,c)=>a+(saiMap[c]||0),0);
+  const vMap={};
+  mov.filter(r=>r.Categoria==='Vendas').forEach(r=>{
+    const d=parseDate(r.Data); if(!d||isNaN(d))return;
+    const k=fmtD(d)+'/'+(d.getFullYear()+'').slice(2);
+    vMap[k]=(vMap[k]||0)+num(r.Valor);
+  });
+  const fecData=fec.map(r=>{
+    const d=parseDate(r.Data_Caixa);
+    return{data:fmtD(d)+'/'+(d?.getFullYear()+'').slice(2), entradas:num(r.Total_Entradas), saidas:num(r.Total_Saidas), saldo:num(r.Saldo_Real)};
+  }).filter(r=>r.data&&!r.data.includes('undefined'));
+  
+  const vRows=mov.filter(r=>r.Categoria==='Vendas');
+  const vBruto=vRows.reduce((a,r)=>a+num(r.Valor),0);
+  const vLiq=vRows.reduce((a,r)=>a+num(r.Valor_Liquido||r.Valor),0);
+  const tEnt=fec.reduce((a,r)=>a+num(r.Total_Entradas),0);
+  const tSai=fec.reduce((a,r)=>a+num(r.Total_Saidas),0);
+  const saldo=fecData.length?fecData[fecData.length-1].saldo:0;
+  const taxa=mov.filter(r=>r.Categoria==='Taxa maquininha').reduce((a,r)=>a+num(r.Valor),0);
+  
+  const saiMap={};
+  mov.filter(r=>r.Tipo==='Saída').forEach(r=>{const c=r.Categoria||'Outros'; saiMap[c]=(saiMap[c]||0)+num(r.Valor);});
+  const saidas=Object.entries(saiMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([c,v])=>({c,v}));
+  
+  const fpMap={}, fpLiq={};
+  mov.filter(r=>r.Tipo==='Entrada').forEach(r=>{
+    const fp=r.Forma_Pagamento||'Outros'; fpMap[fp]=(fpMap[fp]||0)+num(r.Valor); fpLiq[fp]=(fpLiq[fp]||0)+num(r.Valor_Liquido||r.Valor);
+  });
+  const entFP=Object.entries(fpMap).sort((a,b)=>b[1]-a[1]).map(([fp,v])=>({fp, bruto:v, liq:fpLiq[fp]||v, taxa:v>0?+((v-(fpLiq[fp]||v))/v*100).toFixed(2):0}));
+  
+  const pMap={};
+  parc.filter(r=>(r.Status||'').toLowerCase().includes('pend')).forEach(r=>{
+    const mes=(r.Fatura_Mes||'').replace(/^\d+\s+/,''); pMap[mes]=(pMap[mes]||0)+num(r.Valor_Parcela);
+  });
+  const parcelas=Object.entries(pMap).map(([mes,v])=>({mes,v}));
+  
+  const pessoalCats=['Gastos pessoais','Alimentação','Gasolina'];
+  const negocioCats=['Insumos','Fornecedores','Valdeci','BM Foods Supercongelados','Frios','Embalagem'];
+  const pessoal=pessoalCats.reduce((a,c)=>a+(saiMap[c]||0),0);
+  const negocio=negocioCats.reduce((a,c)=>a+(saiMap[c]||0),0);
 
-  // ── Cartões com parcelas agrupadas ──
-  const cartMap={};
-  (cart||[]).forEach(c=>{ if(c.ID_Cartao) cartMap[c.ID_Cartao]={...c,compras:[],totalPendente:0}; });
+  const cartMap={};
+  (cart||[]).forEach(c=>{ if(c.ID_Cartao) cartMap[c.ID_Cartao]={...c, compras:[], totalPendente:0}; });
 
-  // Parcelas pendentes por compra
-  const parcPorCompra={};
-  (parc||[]).filter(p=>(p.Status||'').toLowerCase().includes('pend')).forEach(p=>{
-    if(!parcPorCompra[p.ID_Compra_Ref])parcPorCompra[p.ID_Compra_Ref]=[];
-    parcPorCompra[p.ID_Compra_Ref].push(p);
-  });
+  const parcPorCompra={};
+  (parc||[]).filter(p=>(p.Status||'').toLowerCase().includes('pend')).forEach(p=>{
+    if(!parcPorCompra[p.ID_Compra_Ref]) parcPorCompra[p.ID_Compra_Ref]=[];
+    parcPorCompra[p.ID_Compra_Ref].push(p);
+  });
 
-  // Compras agrupadas por cartão
-  const comprasSemCartao=[];
-  (comp||[]).forEach(c=>{
-    const parcC=parcPorCompra[c.ID_Compra]||[];
-    const totPend=parcC.reduce((a,p)=>a+num(p.Valor_Parcela),0);
-    if(totPend===0)return; // skip se já pago
-    const desc=String(c.Descricao||'').length>60?String(c.Descricao).substring(0,60)+'…':String(c.Descricao||'');
-    const item={...c,desc,parcelas:parcC,totPend,proxVenc:parcC.length?parcC[0].Data_Vencimento:''};
-    if(c.Cartao&&cartMap[c.Cartao]){
-      cartMap[c.Cartao].compras.push(item);
-      cartMap[c.Cartao].totalPendente+=totPend;
-    } else {
-      comprasSemCartao.push(item);
-    }
-  });
+  const comprasSemCartao=[];
+  (comp||[]).forEach(c=>{
+    const parcC=parcPorCompra[c.ID_Compra]||[];
+    const totPend=parcC.reduce((a,p)=>a+num(p.Valor_Parcela),0);
+    if(totPend===0) return;
+    const desc=String(c.Descricao||'').length>60?String(c.Descricao).substring(0,60)+'…':String(c.Descricao||'');
+    const item={...c, desc, parcelas:parcC, totPend, proxVenc:parcC.length?parcC[0].Data_Vencimento:''};
+    if(c.Cartao&&cartMap[c.Cartao]){
+      cartMap[c.Cartao].compras.push(item);
+      cartMap[c.Cartao].totalPendente+=totPend;
+    } else {
+      comprasSemCartao.push(item);
+    }
+  });
 
-  // Boletos pendentes direto das parcelas sem compra vinculada a cartão
-  const boletosPendentes=(parc||[]).filter(p=>{
-    const c=(comp||[]).find(c=>c.ID_Compra===p.ID_Compra_Ref);
-    return (p.Status||'').toLowerCase().includes('pend') && c && (!c.Cartao || c.Cartao==='BOLETO' || c.Tipo_Lancamento==='Boleto');
-  });
-
-  return{vendasDia:Object.entries(vMap).map(([d,v])=>({d,v})),fecData,saidas,entFP,parcelas,
-         cartoes:Object.values(cartMap),comprasSemCartao,
-         kpis:{vBruto,vLiq,tEnt,tSai,saldo,taxa,pessoal,negocio}};
+  return{vendasDia:Object.entries(vMap).map(([d,v])=>({d,v})), fecData, saidas, entFP, parcelas, cartoes:Object.values(cartMap), comprasSemCartao, kpis:{vBruto,vLiq,tEnt,tSai,saldo,taxa,pessoal,negocio}};
 }
 
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function setTab(name,btn){
-  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.remove('active');p.style.display='none';});
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const p=document.getElementById('tab-'+name);p.classList.add('active');p.style.display='block';
-  if(btn)btn.classList.add('active');
+// ── TABS LOGIC ──
+function setTab(name, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.add('hidden'); p.classList.remove('block');});
+  document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('active','text-slate-900'); b.classList.add('text-slate-500');});
+  
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.getElementById('tab-'+name).classList.add('block');
+  if(btn){
+      btn.classList.add('active', 'text-slate-900');
+      btn.classList.remove('text-slate-500');
+  }
 }
 
-// ── VISÃO GERAL ───────────────────────────────────────────────────────────────
+function secTitle(title, icon) {
+  return `<div class="font-serif text-xl font-bold text-slate-900 flex items-center gap-3 mb-6 border-b border-slate-200 pb-3"><i data-lucide="${icon}" class="text-brand-600"></i> ${title}</div>`;
+}
+
+// ── VISÃO GERAL ──
 function buildVisao(d){
-  const k=d.kpis,maxV=Math.max(...d.vendasDia.map(x=>x.v),1);
-  document.getElementById('tab-visao').innerHTML=`
-  <div class="sec">Indicadores do Período</div>
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-stripe"></div><div class="kpi-icon">💰</div><div class="kpi-label">Vendas Brutas</div><div class="kpi-val">${R(k.vBruto)}</div><div class="kpi-sub">${d.vendasDia.length} dias com venda</div></div>
-    <div class="kpi"><div class="kpi-stripe g"></div><div class="kpi-icon">✅</div><div class="kpi-label">Vendas Líquidas</div><div class="kpi-val">${R(k.vLiq)}</div><div class="kpi-sub"><span class="dn">− ${R(k.taxa)}</span> em taxas</div></div>
-    <div class="kpi"><div class="kpi-stripe b"></div><div class="kpi-icon">📤</div><div class="kpi-label">Total Saídas</div><div class="kpi-val">${R(k.tSai)}</div><div class="kpi-sub">${d.fecData.length} dias de operação</div></div>
-    <div class="kpi"><div class="kpi-stripe"></div><div class="kpi-icon">🏦</div><div class="kpi-label">Saldo em Caixa</div><div class="kpi-val">${R(k.saldo)}</div><div class="kpi-sub">Último fechamento</div></div>
-    <div class="kpi"><div class="kpi-stripe x"></div><div class="kpi-icon">⚠️</div><div class="kpi-label">Taxas Maquininha</div><div class="kpi-val">${R(k.taxa)}</div><div class="kpi-sub"><span class="dn">${k.vBruto>0?(k.taxa/k.vBruto*100).toFixed(2):0}% das vendas</span></div></div>
-  </div>
-  <div class="cgrid"><div class="cc s2">
-    <div class="ch"><div><div class="ct">Faturamento Diário de Vendas</div><div class="cs">Receita bruta por dia no período selecionado</div></div><span class="badge br">Vendas</span></div>
-    <div class="ht"><canvas id="cVD"></canvas></div>
-  </div></div>
-  <div class="cgrid w31">
-    <div class="cc"><div class="ch"><div><div class="ct">Entradas vs Saídas</div><div class="cs">Comparativo por semana</div></div><span class="badge bg">Caixa</span></div><div class="hw"><canvas id="cES"></canvas></div></div>
-    <div class="cc"><div class="ch"><div><div class="ct">Top 5 Saídas</div><div class="cs">Por categoria</div></div><span class="badge bb">Despesas</span></div>
-      <div style="display:flex;align-items:center;gap:16px;height:240px">
-        <div style="height:190px;width:190px;flex-shrink:0;position:relative"><canvas id="cDN"></canvas></div>
-        <div class="leglist" id="dnLeg"></div>
-      </div>
-    </div>
-  </div>`;
+  const k=d.kpis, maxV=Math.max(...d.vendasDia.map(x=>x.v),1);
+  
+  document.getElementById('tab-visao').innerHTML=`
+  ${secTitle('Indicadores do Período', 'bar-chart-3')}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="kpi-card kpi-brand bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-brand-200 group">
+      <i data-lucide="circle-dollar-sign" class="absolute top-4 right-4 w-10 h-10 text-slate-100 group-hover:text-brand-50 transition-colors"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Vendas Brutas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.vBruto)}</div>
+      <div class="text-xs text-slate-500">${d.vendasDia.length} dias de venda</div>
+    </div>
+    <div class="kpi-card kpi-green bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-emerald-200 group">
+      <i data-lucide="check-circle-2" class="absolute top-4 right-4 w-10 h-10 text-slate-100 group-hover:text-emerald-50 transition-colors"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Vendas Líquidas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.vLiq)}</div>
+      <div class="text-xs text-slate-500"><span class="text-rose-600 font-medium">− ${R(k.taxa)}</span> em taxas</div>
+    </div>
+    <div class="kpi-card kpi-dark bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-slate-300 group">
+      <i data-lucide="arrow-up-right" class="absolute top-4 right-4 w-10 h-10 text-slate-100 group-hover:text-slate-50 transition-colors"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Total Saídas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.tSai)}</div>
+      <div class="text-xs text-slate-500">${d.fecData.length} dias de fechamento</div>
+    </div>
+    <div class="kpi-card kpi-brand bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-brand-200 group">
+      <i data-lucide="landmark" class="absolute top-4 right-4 w-10 h-10 text-slate-100 group-hover:text-brand-50 transition-colors"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Saldo em Caixa</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.saldo)}</div>
+      <div class="text-xs text-slate-500">Último fechamento</div>
+    </div>
+    <div class="kpi-card kpi-gray bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-slate-300 group">
+      <i data-lucide="percent" class="absolute top-4 right-4 w-10 h-10 text-slate-100 group-hover:text-slate-50 transition-colors"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Taxas Maquininha</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.taxa)}</div>
+      <div class="text-xs text-slate-500"><span class="text-rose-600 font-medium">${k.vBruto>0?(k.taxa/k.vBruto*100).toFixed(2):0}% das vendas</span></div>
+    </div>
+  </div>
 
-  charts.vd=new Chart(document.getElementById('cVD'),{type:'bar',
-    data:{labels:d.vendasDia.map(x=>x.d),datasets:[{data:d.vendasDia.map(x=>x.v),
-      backgroundColor:d.vendasDia.map(x=>x.v===maxV?'#c0271b':'rgba(192,39,27,0.28)'),borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,...NL,
-      plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
-              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
+    <div class="flex justify-between items-start mb-6">
+      <div><h3 class="font-serif text-base font-bold text-slate-900">Faturamento Diário de Vendas</h3><p class="text-xs text-slate-500 mt-0.5">Receita bruta por dia no período selecionado</p></div>
+      <span class="text-[10px] font-bold px-3 py-1 bg-brand-50 text-brand-600 rounded-full uppercase tracking-wider">Vendas</span>
+    </div>
+    <div class="h-72"><canvas id="cVD"></canvas></div>
+  </div>
 
-  const wE={},wS={};
-  d.fecData.forEach(r=>{const p=r.data.split('/');const dd=parseInt(p[0]||0);const wk=dd<=7?1:dd<=14?2:dd<=21?3:4;const k=`${p[1]||'?'}/S${wk}`;wE[k]=(wE[k]||0)+r.entradas;wS[k]=(wS[k]||0)+r.saidas;});
-  const wk=[...new Set(Object.keys(wE))];
-  charts.es=new Chart(document.getElementById('cES'),{type:'bar',
-    data:{labels:wk,datasets:[{label:'Entradas',data:wk.map(k=>wE[k]||0),backgroundColor:'rgba(26,138,74,0.75)',borderRadius:5,borderSkipped:false},{label:'Saídas',data:wk.map(k=>wS[k]||0),backgroundColor:'rgba(192,39,27,0.7)',borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#222',boxWidth:10,padding:12}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm lg:col-span-2">
+      <div class="flex justify-between items-start mb-6">
+        <div><h3 class="font-serif text-base font-bold text-slate-900">Entradas vs Saídas</h3><p class="text-xs text-slate-500 mt-0.5">Comparativo por semana (fechamentos)</p></div>
+        <span class="text-[10px] font-bold px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full uppercase tracking-wider">Caixa</span>
+      </div>
+      <div class="h-64"><canvas id="cES"></canvas></div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div class="flex justify-between items-start mb-6">
+        <div><h3 class="font-serif text-base font-bold text-slate-900">Top 5 Saídas</h3><p class="text-xs text-slate-500 mt-0.5">Maiores despesas</p></div>
+      </div>
+      <div class="flex flex-col items-center gap-6">
+        <div class="h-44 w-44"><canvas id="cDN"></canvas></div>
+        <div class="w-full flex flex-col gap-2" id="dnLeg"></div>
+      </div>
+    </div>
+  </div>`;
 
-  const t5=d.saidas.slice(0,5);
-  charts.dn=new Chart(document.getElementById('cDN'),{type:'doughnut',
-    data:{labels:t5.map(x=>x.c),datasets:[{data:t5.map(x=>x.v),backgroundColor:COLORS.slice(0,5),borderWidth:0,hoverOffset:5}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'66%',...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed)}}}}});
-  const lg=document.getElementById('dnLeg');
-  t5.forEach((x,i)=>lg.innerHTML+=`<div class="legitem"><div class="legdot" style="background:${COLORS[i]}"></div><div class="legname">${x.c}</div><div class="legval">${R(x.v)}</div></div>`);
+  charts.vd=new Chart(document.getElementById('cVD'),{type:'bar',
+    data:{labels:d.vendasDia.map(x=>x.d),datasets:[{data:d.vendasDia.map(x=>x.v), backgroundColor:d.vendasDia.map(x=>x.v===maxV?'#e11d48':'#ffe4e6'), borderRadius:4, borderSkipped:false}]},
+    options:{responsive:true, maintainAspectRatio:false, ...NL, plugins:{...NL.plugins, tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}}, scales:{x:{...AX, grid:{display:false}}, y:{...AX, ticks:{...AX.ticks, callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  const wE={},wS={};
+  d.fecData.forEach(r=>{const p=r.data.split('/');const dd=parseInt(p[0]||0);const wk=dd<=7?1:dd<=14?2:dd<=21?3:4;const k=`${p[1]||'?'}/S${wk}`;wE[k]=(wE[k]||0)+r.entradas;wS[k]=(wS[k]||0)+r.saidas;});
+  const wk=[...new Set(Object.keys(wE))];
+  charts.es=new Chart(document.getElementById('cES'),{type:'bar',
+    data:{labels:wk,datasets:[{label:'Entradas',data:wk.map(k=>wE[k]||0),backgroundColor:'#10b981',borderRadius:4},{label:'Saídas',data:wk.map(k=>wS[k]||0),backgroundColor:'#e11d48',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#475569'}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  const t5=d.saidas.slice(0,5);
+  charts.dn=new Chart(document.getElementById('cDN'),{type:'doughnut',
+    data:{labels:t5.map(x=>x.c),datasets:[{data:t5.map(x=>x.v),backgroundColor:COLORS.slice(0,5),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed)}}}}
+  });
+  
+  const lg=document.getElementById('dnLeg');
+  t5.forEach((x,i)=>lg.innerHTML+=`<div class="flex items-center gap-2 text-xs"><div class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${COLORS[i]}"></div><div class="flex-1 text-slate-700 font-medium truncate">${x.c}</div><div class="text-slate-500">${R(x.v)}</div></div>`);
 }
 
-// ── CAIXA ─────────────────────────────────────────────────────────────────────
+// ── CAIXA ──
 function buildCaixa(d){
-  const k=d.kpis,res=k.tEnt-k.tSai;
-  document.getElementById('tab-caixa').innerHTML=`
-  <div class="sec">Fluxo de Caixa</div>
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-stripe g"></div><div class="kpi-icon">⬆️</div><div class="kpi-label">Total Entradas</div><div class="kpi-val">${R(k.tEnt)}</div><div class="kpi-sub">Período selecionado</div></div>
-    <div class="kpi"><div class="kpi-stripe"></div><div class="kpi-icon">⬇️</div><div class="kpi-label">Total Saídas</div><div class="kpi-val">${R(k.tSai)}</div><div class="kpi-sub">Período selecionado</div></div>
-    <div class="kpi"><div class="kpi-stripe ${res>=0?'g':''}"></div><div class="kpi-icon">💼</div><div class="kpi-label">Resultado Líquido</div><div class="kpi-val">${res>=0?'+':''} ${R(res)}</div><div class="kpi-sub"><span class="${res>=0?'up':'dn'}">${res>=0?'Positivo':'Negativo'}</span></div></div>
-    <div class="kpi"><div class="kpi-stripe b"></div><div class="kpi-icon">📍</div><div class="kpi-label">Saldo Atual</div><div class="kpi-val">${R(k.saldo)}</div><div class="kpi-sub">Último fechamento</div></div>
-  </div>
-  <div class="cgrid"><div class="cc s2"><div class="ch"><div><div class="ct">Evolução do Saldo de Caixa</div><div class="cs">Saldo real por dia de fechamento</div></div><span class="badge bb">Saldo Real</span></div><div class="hx"><canvas id="cSaldo"></canvas></div></div></div>
-  <div class="cgrid"><div class="cc s2"><div class="ch"><div><div class="ct">Entradas vs Saídas Diárias</div><div class="cs">Por dia de fechamento</div></div><span class="badge bg">Caixa</span></div><div class="ht"><canvas id="cESF"></canvas></div></div></div>`;
+  const k=d.kpis, res=k.tEnt-k.tSai;
+  document.getElementById('tab-caixa').innerHTML=`
+  ${secTitle('Fluxo de Caixa Consolidado', 'wallet')}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="kpi-card kpi-green bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="arrow-down-to-line" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Total Entradas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.tEnt)}</div>
+      <div class="text-xs text-slate-500">Período selecionado</div>
+    </div>
+    <div class="kpi-card kpi-brand bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="arrow-up-from-line" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Total Saídas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.tSai)}</div>
+      <div class="text-xs text-slate-500">Período selecionado</div>
+    </div>
+    <div class="kpi-card ${res>=0?'kpi-green':'kpi-brand'} bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="calculator" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Resultado Líquido</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${res>=0?'+':''} ${R(res)}</div>
+      <div class="text-xs font-medium ${res>=0?'text-emerald-600':'text-rose-600'}">${res>=0?'Positivo':'Negativo'} no período</div>
+    </div>
+    <div class="kpi-card kpi-dark bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="piggy-bank" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Saldo Atual (Caixa)</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.saldo)}</div>
+      <div class="text-xs text-slate-500">Último fechamento</div>
+    </div>
+  </div>
 
-  charts.saldo=new Chart(document.getElementById('cSaldo'),{type:'line',
-    data:{labels:d.fecData.map(r=>r.data),datasets:[{label:'Saldo Real',data:d.fecData.map(r=>r.saldo),
-      borderColor:'#111',backgroundColor:'rgba(17,17,17,0.05)',fill:true,tension:0.35,
-      pointBackgroundColor:d.fecData.map(r=>r.saldo<500?'#c0271b':r.saldo>2000?'#1a8a4a':'#111'),
-      pointRadius:4,pointHoverRadius:7,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
-              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
+    <div class="flex justify-between items-start mb-6">
+      <div><h3 class="font-serif text-base font-bold text-slate-900">Evolução do Saldo de Caixa</h3><p class="text-xs text-slate-500 mt-0.5">Saldo real apurado por fechamento</p></div>
+    </div>
+    <div class="h-80"><canvas id="cSaldo"></canvas></div>
+  </div>
+  
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
+    <div class="flex justify-between items-start mb-6">
+      <div><h3 class="font-serif text-base font-bold text-slate-900">Entradas vs Saídas Diárias</h3><p class="text-xs text-slate-500 mt-0.5">Por dia de fechamento de caixa</p></div>
+    </div>
+    <div class="h-72"><canvas id="cESF"></canvas></div>
+  </div>`;
 
-  charts.esf=new Chart(document.getElementById('cESF'),{type:'bar',
-    data:{labels:d.fecData.map(r=>r.data),datasets:[{label:'Entradas',data:d.fecData.map(r=>r.entradas),backgroundColor:'rgba(26,138,74,0.7)',borderRadius:4,borderSkipped:false},{label:'Saídas',data:d.fecData.map(r=>r.saidas),backgroundColor:'rgba(192,39,27,0.65)',borderRadius:4,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#222',boxWidth:10,padding:12}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:45,minRotation:45}},
-              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
+  charts.saldo=new Chart(document.getElementById('cSaldo'),{type:'line',
+    data:{labels:d.fecData.map(r=>r.data),datasets:[{label:'Saldo Real',data:d.fecData.map(r=>r.saldo),borderColor:'#0f172a',backgroundColor:'rgba(15,23,42,0.05)',fill:true,tension:0.3,pointBackgroundColor:d.fecData.map(r=>r.saldo<500?'#e11d48':r.saldo>2000?'#10b981':'#0f172a'),pointRadius:4,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
+
+  charts.esf=new Chart(document.getElementById('cESF'),{type:'bar',
+    data:{labels:d.fecData.map(r=>r.data),datasets:[{label:'Entradas',data:d.fecData.map(r=>r.entradas),backgroundColor:'#10b981',borderRadius:4},{label:'Saídas',data:d.fecData.map(r=>r.saidas),backgroundColor:'#e11d48',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#475569'}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+  });
 }
 
-// ── SAÍDAS ────────────────────────────────────────────────────────────────────
+// ── SAÍDAS ──
 function buildSaidas(d){
-  const k=d.kpis,tot=d.saidas.reduce((a,x)=>a+x.v,0);
-  const tipos={'Cartão de Crédito 💳':'Financeiro','Valdeci':'Insumo','Salário':'RH','Insumos':'Insumo','Gastos pessoais':'Pessoal','Empréstimo':'Financeiro','Fornecedores':'Insumo','BM Foods Supercongelados':'Insumo','BM Foods':'Insumo','Aluguel':'Fixo','Taxa maquininha':'Operacional'};
-  const pCls={'Financeiro':'pr','Insumo':'pg','RH':'pb','Pessoal':'px','Fixo':'pb','Operacional':'px'};
-  const rows=d.saidas.map((x,i)=>{const pct=(x.v/tot*100).toFixed(1);const t=tipos[x.c]||'Outro';
-    return`<tr><td><strong style="color:var(--muted)">${i+1}</strong></td><td><strong>${x.c}</strong></td><td><strong>${R(x.v)}</strong></td><td>${pct}%</td><td><div class="barw"><div class="barf" style="width:${(x.v/d.saidas[0].v*100).toFixed(0)}%"></div></div></td><td><span class="pill ${pCls[t]||'px'}">${t}</span></td></tr>`;
-  }).join('')||'<tr><td colspan="6"><div class="empty">Nenhum dado no período.</div></td></tr>';
+  const k=d.kpis, tot=d.saidas.reduce((a,x)=>a+x.v,0);
+  const tipos={'Cartão de Crédito 💳':'Financeiro','Valdeci':'Insumo','Salário':'RH','Insumos':'Insumo','Gastos pessoais':'Pessoal','Empréstimo':'Financeiro','Fornecedores':'Insumo','BM Foods Supercongelados':'Insumo','BM Foods':'Insumo','Aluguel':'Fixo','Taxa maquininha':'Operacional'};
+  const pCls={'Financeiro':'bg-rose-50 text-rose-600','Insumo':'bg-emerald-50 text-emerald-600','RH':'bg-blue-50 text-blue-600','Pessoal':'bg-slate-100 text-slate-600','Fixo':'bg-blue-50 text-blue-600','Operacional':'bg-slate-100 text-slate-600'};
+  
+  const rows=d.saidas.map((x,i)=>{const pct=(x.v/tot*100).toFixed(1);const t=tipos[x.c]||'Outro';
+    return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors"><td class="py-3 px-4 font-bold text-slate-400">${i+1}</td><td class="py-3 px-4 font-medium text-slate-900">${x.c}</td><td class="py-3 px-4 font-bold text-slate-900">${R(x.v)}</td><td class="py-3 px-4 text-slate-500">${pct}%</td><td class="py-3 px-4"><div class="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-brand-500 rounded-full" style="width:${(x.v/d.saidas[0].v*100).toFixed(0)}%"></div></div></td><td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${pCls[t]||'bg-slate-100 text-slate-600'}">${t}</span></td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="py-8 text-center text-slate-400 text-sm">Nenhum dado no período.</td></tr>';
 
-  document.getElementById('tab-saidas').innerHTML=`
-  <div class="sec">Análise de Saídas</div>
-  ${k.pessoal>0?`<div class="alert">⚠️ <strong>Atenção:</strong> Gastos pessoais somam <strong>${R(k.pessoal)}</strong> no período. Separar contas pessoais das empresariais revela a real rentabilidade do negócio.</div>`:''}
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-stripe"></div><div class="kpi-icon">🛒</div><div class="kpi-label">Insumos do Negócio</div><div class="kpi-val">${R(k.negocio)}</div><div class="kpi-sub">Fornecedores, insumos, frios…</div></div>
-    <div class="kpi"><div class="kpi-stripe x"></div><div class="kpi-icon">🏠</div><div class="kpi-label">Gastos Pessoais</div><div class="kpi-val">${R(k.pessoal)}</div><div class="kpi-sub">Pessoal, alimentação, gasolina</div></div>
-    <div class="kpi"><div class="kpi-stripe b"></div><div class="kpi-icon">📊</div><div class="kpi-label">Total Saídas</div><div class="kpi-val">${R(tot)}</div><div class="kpi-sub">${d.saidas.length} categorias</div></div>
-  </div>
-  <div class="cgrid"><div class="cc s2"><div class="ch"><div><div class="ct">Top 10 Categorias de Saída</div><div class="cs">Valor total por categoria no período</div></div><span class="badge br">Despesas</span></div><div class="ht"><canvas id="cSC"></canvas></div></div></div>
-  <div class="tcard"><div class="thead"><div class="ttitle">Detalhamento por Categoria</div><span class="badge bx">Top 10</span></div>
-  <div class="twrap"><table><thead><tr><th>#</th><th>Categoria</th><th>Valor Total</th><th>%</th><th>Participação</th><th>Tipo</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  document.getElementById('tab-saidas').innerHTML=`
+  ${secTitle('Análise de Saídas e Despesas', 'trending-down')}
+  
+  ${k.pessoal>0?`<div class="flex items-start gap-3 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg p-4 mb-6"><i data-lucide="alert-circle" class="text-rose-600 mt-0.5"></i><p class="text-sm text-rose-900"><strong>Atenção:</strong> Gastos pessoais somam <strong>${R(k.pessoal)}</strong> no período. Separar as contas pessoais das empresariais é vital para revelar a rentabilidade real da Morangos Tatuí.</p></div>`:''}
+  
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="kpi-card kpi-brand bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="shopping-cart" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Insumos do Negócio</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.negocio)}</div>
+      <div class="text-xs text-slate-500">Fornecedores, insumos, etc</div>
+    </div>
+    <div class="kpi-card kpi-gray bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="home" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Gastos Pessoais</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(k.pessoal)}</div>
+      <div class="text-xs text-slate-500">Pessoal, alimentação, gasolina</div>
+    </div>
+    <div class="kpi-card kpi-dark bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+      <i data-lucide="bar-chart-2" class="absolute top-4 right-4 w-10 h-10 text-slate-100"></i>
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Total Saídas</div>
+      <div class="font-serif text-3xl font-black text-slate-900 leading-none mb-1">${R(tot)}</div>
+      <div class="text-xs text-slate-500">${d.saidas.length} categorias identificadas</div>
+    </div>
+  </div>
 
-  charts.sc=new Chart(document.getElementById('cSC'),{type:'bar',
-    data:{labels:d.saidas.map(x=>x.c),datasets:[{data:d.saidas.map(x=>x.v),backgroundColor:COLORS,borderRadius:6,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.x)}}},
-      scales:{x:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}},
-              y:{...AX,grid:{display:false},ticks:{...AX.ticks,font:{...BF,size:12}}}}}});
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
+    <div class="flex justify-between items-start mb-6">
+      <div><h3 class="font-serif text-base font-bold text-slate-900">Top 10 Categorias de Saída</h3><p class="text-xs text-slate-500 mt-0.5">Valor total por categoria no período</p></div>
+    </div>
+    <div class="h-80"><canvas id="cSC"></canvas></div>
+  </div>
+  
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+      <h3 class="font-serif text-base font-bold text-slate-900">Detalhamento por Categoria</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-white border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+          <tr><th class="py-3 px-4">#</th><th class="py-3 px-4">Categoria</th><th class="py-3 px-4">Valor Total</th><th class="py-3 px-4">%</th><th class="py-3 px-4">Impacto</th><th class="py-3 px-4">Tipo</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  charts.sc=new Chart(document.getElementById('cSC'),{type:'bar',
+    data:{labels:d.saidas.map(x=>x.c),datasets:[{data:d.saidas.map(x=>x.v),backgroundColor:COLORS,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.x)}}},scales:{x:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}},y:{...AX,grid:{display:false},ticks:{...AX.ticks,font:{...BF,size:12}}}}}
+  });
 }
 
-// ── PAGAMENTOS ────────────────────────────────────────────────────────────────
+// ── PAGAMENTOS ──
 function buildPagamentos(d){
-  const icons={'Crédito a vista':'💳','Crédito à Vista':'💳','PIX':'⚡','Debito':'🏧','Débito':'🏧','Dinheiro':'💵','Transferência I Pix':'🔄','Link de pagamento':'🔗'};
-  const totB=d.entFP.reduce((a,x)=>a+x.bruto,0),totL=d.entFP.reduce((a,x)=>a+x.liq,0);
-  const fpRows=d.entFP.map(x=>`<div class="fp-row"><div class="fp-dot"></div><div><div class="fp-name">${icons[x.fp]||'💰'} ${x.fp}</div><div class="fp-sub">${x.taxa>0?`Taxa: ${x.taxa}% → ${R(x.bruto-x.liq)}`:'Sem taxa'}</div></div><div class="fp-val">${R(x.bruto)}</div></div>`).join('');
+  const icons={'Crédito a vista':'credit-card','Crédito à Vista':'credit-card','PIX':'zap','Debito':'nfc','Débito':'nfc','Dinheiro':'banknote','Transferência I Pix':'zap','Link de pagamento':'link'};
+  const totB=d.entFP.reduce((a,x)=>a+x.bruto,0), totL=d.entFP.reduce((a,x)=>a+x.liq,0);
+  
+  const fpRows=d.entFP.map(x=>`
+    <div class="flex items-center gap-4 py-3 border-b border-slate-100 last:border-0">
+      <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0"><i data-lucide="${icons[x.fp]||'coins'}" class="w-5 h-5 text-slate-600"></i></div>
+      <div class="flex-1">
+        <div class="text-sm font-semibold text-slate-900">${x.fp}</div>
+        <div class="text-xs text-slate-500 mt-0.5">${x.taxa>0?`Taxa: ${x.taxa}% → <span class="text-rose-500 font-medium">− ${R(x.bruto-x.liq)}</span>`:'Sem taxa'}</div>
+      </div>
+      <div class="font-serif text-base font-bold text-slate-900">${R(x.bruto)}</div>
+    </div>
+  `).join('');
 
-  document.getElementById('tab-pagamentos').innerHTML=`
-  <div class="sec">Formas de Pagamento</div>
-  <div class="cgrid w31">
-    <div class="cc"><div class="ch"><div><div class="ct">Volume por Modalidade</div><div class="cs">Bruto vs Líquido</div></div><span class="badge bb">Recebimentos</span></div><div class="hw"><canvas id="cFP"></canvas></div></div>
-    <div class="cc"><div class="ch"><div><div class="ct">Taxas por Modalidade</div><div class="cs">Impacto no recebimento</div></div><span class="badge br">Taxas</span></div><div style="padding-top:4px">${fpRows}</div></div>
-  </div>
-  <div class="igrid">
-    <div class="icard"><div class="ilbl">💡 Dica de Gestão</div><p style="font-size:13px;color:var(--mid);line-height:1.7">Receber via <strong>PIX direto no banco</strong> (sem maquininha) elimina as taxas de antecipação. Verifique se o PIX da maquininha pode ser substituído para aumentar a margem.</p></div>
-    <div class="icard"><div class="ilbl">📊 Resumo de Taxas</div>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--mid)">Total bruto recebido</span><span style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700">${R(totB)}</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--mid)">Taxas cobradas</span><span style="color:var(--red);font-weight:700">− ${R(totB-totL)}</span></div>
-        <div style="height:1px;background:var(--border)"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700">Valor líquido</span><span style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--green)">${R(totL)}</span></div>
-      </div>
-    </div>
-  </div>`;
+  document.getElementById('tab-pagamentos').innerHTML=`
+  ${secTitle('Meios de Pagamento e Taxas', 'credit-card')}
+  
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm lg:col-span-2">
+      <div class="flex justify-between items-start mb-6">
+        <div><h3 class="font-serif text-base font-bold text-slate-900">Volume por Modalidade</h3><p class="text-xs text-slate-500 mt-0.5">Bruto vs Líquido</p></div>
+      </div>
+      <div class="h-64"><canvas id="cFP"></canvas></div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col">
+      <div class="flex justify-between items-start mb-4">
+        <div><h3 class="font-serif text-base font-bold text-slate-900">Taxas e Recebimentos</h3></div>
+      </div>
+      <div class="flex-1 overflow-y-auto pr-2">${fpRows}</div>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div class="text-[10px] uppercase tracking-widest text-brand-600 font-bold mb-3 flex items-center gap-2"><i data-lucide="lightbulb" class="w-4 h-4"></i> Dica de Gestão</div>
+      <p class="text-sm text-slate-600 leading-relaxed">Incentivar o recebimento via <strong>PIX direto na conta</strong> (usando o seu QR Code no balcão) em vez da maquininha elimina as taxas de antecipação. Esta é a forma mais rápida de aumentar a sua margem de lucro líquido em cada pedido!</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-4">Resumo de Taxas do Período</div>
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center"><span class="text-sm text-slate-500">Total bruto recebido</span><span class="font-serif text-lg font-bold text-slate-900">${R(totB)}</span></div>
+        <div class="flex justify-between items-center"><span class="text-sm text-slate-500">Taxas cobradas</span><span class="text-rose-600 font-bold">− ${R(totB-totL)}</span></div>
+        <div class="h-px bg-slate-200 my-1"></div>
+        <div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-900">Valor líquido</span><span class="font-serif text-2xl font-black text-emerald-600">${R(totL)}</span></div>
+      </div>
+    </div>
+  </div>`;
 
-  charts.fp=new Chart(document.getElementById('cFP'),{type:'bar',
-    data:{labels:d.entFP.map(x=>x.fp),datasets:[{label:'Bruto',data:d.entFP.map(x=>x.bruto),backgroundColor:'rgba(17,17,17,0.75)',borderRadius:5,borderSkipped:false},{label:'Líquido',data:d.entFP.map(x=>x.liq),backgroundColor:'rgba(192,39,27,0.65)',borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#222',boxWidth:10,padding:12}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-      scales:{x:{...AX,grid:{display:false},ticks:{...AX.ticks,maxRotation:30}},
-              y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}}}}});
+  charts.fp=new Chart(document.getElementById('cFP'),{type:'bar',
+    data:{labels:d.entFP.map(x=>x.fp),datasets:[{label:'Bruto',data:d.entFP.map(x=>x.bruto),backgroundColor:'#1e293b',borderRadius:4},{label:'Líquido',data:d.entFP.map(x=>x.liq),backgroundColor:'#e11d48',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:BF,color:'#475569'}},tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(0)+'k'}}}}
+  });
 }
 
-// ── PARCELAS ──────────────────────────────────────────────────────────────────
+// ── PARCELAS ──
 function fmtDate(v){
-  if(!v)return'—';
-  const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
-  if(isNaN(d))return String(v).substring(0,10);
-  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  if(!v)return'—'; const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
+  if(isNaN(d))return String(v).substring(0,10);
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
 }
 function diasAte(v){
-  if(!v)return 999;
-  const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
-  if(isNaN(d))return 999;
-  return Math.round((d-new Date())/(1000*60*60*24));
+  if(!v)return 999; const d=new Date(String(v).includes('/')?v.split('/').reverse().join('-'):v);
+  if(isNaN(d))return 999; return Math.round((d-new Date())/(1000*60*60*24));
 }
 function toggleParcelas(id){
-  const el=document.getElementById(id);
-  if(el)el.classList.toggle('open');
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle('hidden');
 }
 
 function buildParcelas(d){
-  const tot=d.parcelas.reduce((a,x)=>a+x.v,0);
-  const totalCartoes=d.cartoes.reduce((a,c)=>a+c.totalPendente,0);
+  const tot=d.parcelas.reduce((a,x)=>a+x.v,0);
+  const totalCartoes=d.cartoes.reduce((a,c)=>a+c.totalPendente,0);
 
-  // ── Cores por cartão ──
-  const cartColors={'CARD01':'red','CARD02':'black','CARD03':'gray','LCRED01':'gray','BOLETO':'boleto'};
-  const cartIcons={'CARD01':'💳','CARD02':'💳','CARD03':'💳','LCRED01':'🏦','BOLETO':'📄'};
+  const cartColors={'CARD01':'bg-brand-600','CARD02':'bg-slate-900','CARD03':'bg-slate-600','LCRED01':'bg-slate-600','BOLETO':'bg-amber-600'};
 
-  // ── Cards de cartões ──
-  const cartoesHTML=d.cartoes.filter(c=>c.totalPendente>0||c.compras.length>0).map(c=>{
-    const cor=cartColors[c.ID_Cartao]||'gray';
-    const icon=cartIcons[c.ID_Cartao]||'💳';
-    const metaFech=c.Dia_Fechamento?`Fechamento dia <strong>${c.Dia_Fechamento}</strong>`:'';
-    const metaVenc=c.Dia_Vencimento?`Vencimento dia <strong>${c.Dia_Vencimento}</strong>`:'';
-    const metaLim=c.Limite_Total?`Limite <strong>${R(Number(c.Limite_Total))}</strong>`:'';
+  const cartoesHTML=d.cartoes.filter(c=>c.totalPendente>0||c.compras.length>0).map(c=>{
+    const cor=cartColors[c.ID_Cartao]||'bg-slate-500';
+    const metaFech=c.Dia_Fechamento?`Fecha dia <strong class="text-slate-700">${c.Dia_Fechamento}</strong>`:'';
+    const metaVenc=c.Dia_Vencimento?`Vence dia <strong class="text-slate-700">${c.Dia_Vencimento}</strong>`:'';
+    
+    const comprasHTML=c.compras.map((cp,i)=>{
+      const uid=`p_${c.ID_Cartao}_${i}`; const proxP=cp.parcelas[0]; const dias=proxP?diasAte(proxP.Data_Vencimento):999;
+      const venceClass=dias<=3?'text-rose-600':dias<=10?'text-amber-600':'text-slate-900';
+      
+      const parcelasDetalhe=cp.parcelas.map(p=>`
+        <div class="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 text-xs mb-1">
+          <div class="text-slate-600 truncate flex-1">${p.Descricao_Parcela||p.Fatura_Mes||'—'}</div>
+          <div class="text-slate-500 mx-3 whitespace-nowrap"><i data-lucide="calendar" class="w-3 h-3 inline pb-0.5"></i> ${fmtDate(p.Data_Vencimento)}</div>
+          <div class="font-bold ${diasAte(p.Data_Vencimento)<=3?'text-rose-600':diasAte(p.Data_Vencimento)<=10?'text-amber-600':'text-slate-900'}">${R(num(p.Valor_Parcela))}</div>
+        </div>`).join('');
+        
+      return`
+        <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+          <div class="flex justify-between items-center mb-1 gap-2">
+            <div class="font-semibold text-sm text-slate-900 truncate" title="${cp.Descricao||''}">${cp.desc}</div>
+            <div class="font-serif text-base font-bold text-brand-600 shrink-0">${R(cp.totPend)}</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+            <span class="flex items-center gap-1"><i data-lucide="package" class="w-3 h-3"></i> ${cp.Qtd_Parcelas||1}x · ${cp.Tipo_Lancamento||'Cartão'}</span>
+            ${proxP?`<span class="flex items-center gap-1 ${venceClass}"><i data-lucide="calendar-clock" class="w-3 h-3"></i> Próx: ${fmtDate(proxP.Data_Vencimento)}${dias<=10?' · <span class="font-bold">'+dias+' dias</span>':''}</span>`:''}
+            ${cp.parcelas.length>1?`<button onclick="toggleParcelas('${uid}')" class="text-brand-600 font-semibold hover:underline flex items-center gap-1 ml-auto">Ver parcelas <i data-lucide="chevron-down" class="w-3 h-3"></i></button>`:''}
+          </div>
+          ${cp.parcelas.length>1?`<div id="${uid}" class="hidden mt-3 pt-2 border-t border-slate-100">${parcelasDetalhe}</div>`:''}
+        </div>`;
+    }).join('') || '<div class="p-4 text-xs text-slate-400">Nenhuma compra pendente.</div>';
 
-    const comprasHTML=c.compras.map((cp,i)=>{
-      const uid=`p_${c.ID_Cartao}_${i}`;
-      const proxP=cp.parcelas[0];
-      const dias=proxP?diasAte(proxP.Data_Vencimento):999;
-      const venceClass=dias<=3?'vence-hoje':dias<=10?'vence-breve':'';
-      const parcelasDetalhe=cp.parcelas.map(p=>`
-        <div class="parc-mini">
-          <div class="parc-mini-desc">${p.Descricao_Parcela||p.Fatura_Mes||'—'}</div>
-          <div class="parc-mini-data">📅 ${fmtDate(p.Data_Vencimento)}</div>
-          <div class="parc-mini-val ${diasAte(p.Data_Vencimento)<=3?'vence-hoje':diasAte(p.Data_Vencimento)<=10?'vence-breve':''}">${R(num(p.Valor_Parcela))}</div>
-        </div>`).join('');
-      return`<div class="compra-row">
-        <div class="compra-top">
-          <div class="compra-desc" title="${cp.Descricao||''}">${icon} ${cp.desc}</div>
-          <div class="compra-val">${R(cp.totPend)}</div>
-        </div>
-        <div class="compra-bottom">
-          <span class="compra-tag">📦 ${cp.Qtd_Parcelas||1}x · ${cp.Tipo_Lancamento||'Cartão'}</span>
-          ${proxP?`<span class="compra-tag ${venceClass}">🗓 Próx: ${fmtDate(proxP.Data_Vencimento)}${dias<=10?' · <strong style="color:var(--red)">'+dias+' dias</strong>':''}</span>`:''}
-          ${cp.parcelas.length>1?`<button class="expand-btn" onclick="toggleParcelas('${uid}')">▼ ver parcelas</button>`:''}
-        </div>
-        ${cp.parcelas.length>1?`<div class="compra-parcelas" id="${uid}"><div class="compra-parcrow">${parcelasDetalhe}</div></div>`:''}
-      </div>`;
-    }).join('') || '<div style="padding:14px 20px;font-size:12px;color:var(--muted)">Nenhuma compra pendente.</div>';
+    return`
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="${cor} px-5 py-4 flex justify-between items-center text-white">
+          <div><div class="font-bold text-sm tracking-wide">${c.Nome_Conta||c.ID_Cartao}</div><div class="text-[10px] text-white/70 uppercase tracking-widest mt-0.5">${c.ID_Cartao}</div></div>
+          <div class="text-right"><div class="font-serif text-xl font-black">${R(c.totalPendente)}</div><div class="text-[10px] text-white/70 uppercase tracking-widest mt-0.5">Pendente</div></div>
+        </div>
+        ${(metaFech||metaVenc)?`<div class="bg-slate-50 px-5 py-2 border-b border-slate-200 flex gap-4 text-xs text-slate-500">${[metaFech,metaVenc].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
+        <div>${comprasHTML}</div>
+      </div>`;
+  }).join('');
 
-    return`<div class="cartao-card">
-      <div class="cartao-header ${cor}">
-        <div><div class="cartao-nome">${c.Nome_Conta||c.ID_Cartao}</div><div class="cartao-id">${c.ID_Cartao}</div></div>
-        <div><div class="cartao-total">${R(c.totalPendente)}</div><div class="cartao-total-lbl">pendente</div></div>
-      </div>
-      ${(metaFech||metaVenc||metaLim)?`<div class="cartao-meta">${[metaFech,metaVenc,metaLim].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
-      <div class="cartao-compras">${comprasHTML}</div>
-    </div>`;
-  }).join('');
+  const parcelasOrdenadas=[...d.parcelas].sort((a,b)=>{
+    const order=['Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro','Janeiro'];
+    return order.findIndex(m=>a.mes.includes(m))-order.findIndex(m=>b.mes.includes(m));
+  });
 
-  // ── Gráfico de vencimentos ──
-  const parcelasOrdenadas=[...d.parcelas].sort((a,b)=>{
-    const order=['Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro','Janeiro'];
-    return order.findIndex(m=>a.mes.includes(m))-order.findIndex(m=>b.mes.includes(m));
-  });
+  document.getElementById('tab-parcelas').innerHTML=`
+  ${secTitle('Cartões e Parcelamentos', 'calendar-clock')}
+  
+  ${tot>0?`<div class="flex items-center gap-3 bg-brand-50 border border-brand-200 rounded-lg p-4 mb-8 text-sm text-brand-900"><i data-lucide="info" class="text-brand-600 shrink-0"></i><p>Total pendente em cartões/boletos: <strong>${R(totalCartoes)}</strong> distribuídos em ${d.cartoes.filter(c=>c.totalPendente>0).length} contas. Planeie o seu fluxo de caixa para cobrir estes vencimentos.</p></div>`:''}
 
-  document.getElementById('tab-parcelas').innerHTML=`
-  <div class="sec">Compromissos Futuros</div>
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-8">
+    <div class="flex justify-between items-start mb-6">
+      <div><h3 class="font-serif text-base font-bold text-slate-900">Vencimentos por Mês</h3><p class="text-xs text-slate-500 mt-0.5">Soma global das parcelas pendentes</p></div>
+    </div>
+    <div class="h-64"><canvas id="cPC"></canvas></div>
+  </div>
 
-  ${tot>0?`<div class="alert">💳 Total pendente em cartões e boletos: <strong>${R(totalCartoes)}</strong> distribuídos em ${d.cartoes.filter(c=>c.totalPendente>0).length} contas. Planeje o caixa para cobrir os vencimentos.</div>`:''}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    ${cartoesHTML||'<div class="col-span-2 text-center p-8 text-slate-400 text-sm border border-slate-200 border-dashed rounded-xl">Nenhuma parcela pendente.</div>'}
+  </div>`;
 
-  <div class="cgrid"><div class="cc s2">
-    <div class="ch"><div><div class="ct">Vencimentos por Mês</div><div class="cs">Soma de todas as parcelas pendentes</div></div><span class="badge br">Pendente</span></div>
-    <div class="hw"><canvas id="cPC"></canvas></div>
-  </div></div>
-
-  <div class="sec">Por Cartão e Conta</div>
-  <div class="cartao-grid">${cartoesHTML||'<div class="empty">Nenhuma parcela pendente encontrada.</div>'}</div>
-
-  <div class="sec">Calendário Consolidado</div>
-  <div class="tcard">
-    <div class="thead"><div class="ttitle">Resumo por Mês</div><span class="badge bx">${R(tot)} no total</span></div>
-    <div>${parcelasOrdenadas.map(x=>{const c=x.v>2000?'hi':x.v>1000?'md':'lo';
-      return`<div class="prow"><div class="pmes">📅 ${x.mes}</div><div class="pval ${c}">${R(x.v)}</div></div>`;
-    }).join('')||'<div class="empty">Sem parcelas.</div>'}</div>
-  </div>`;
-
-  if(parcelasOrdenadas.length){
-    charts.pc=new Chart(document.getElementById('cPC'),{type:'bar',
-      data:{labels:parcelasOrdenadas.map(x=>x.mes.replace(' - 2026','').replace(' - 2027',' /27')),
-        datasets:[{data:parcelasOrdenadas.map(x=>x.v),
-          backgroundColor:parcelasOrdenadas.map(x=>x.v>2000?'#c0271b':x.v>1000?'#111':'rgba(17,17,17,0.3)'),
-          borderRadius:7,borderSkipped:false}]},
-      options:{responsive:true,maintainAspectRatio:false,...NL,
-        plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},
-        scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}});
-  }
+  if(parcelasOrdenadas.length){
+    charts.pc=new Chart(document.getElementById('cPC'),{type:'bar',
+      data:{labels:parcelasOrdenadas.map(x=>x.mes.replace(' - 2026','').replace(' - 2027',' /27')),datasets:[{data:parcelasOrdenadas.map(x=>x.v),backgroundColor:parcelasOrdenadas.map(x=>x.v>2000?'#e11d48':x.v>1000?'#0f172a':'#cbd5e1'),borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,...NL,plugins:{...NL.plugins,tooltip:{callbacks:{label:c=>' '+R(c.parsed.y)}}},scales:{x:{...AX,grid:{display:false}},y:{...AX,ticks:{...AX.ticks,callback:v=>'R$'+Number(v/1000).toFixed(1)+'k'}}}}
+    });
+  }
 }
 
-// ── UI STATE ──────────────────────────────────────────────────────────────────
+// ── UI STATE ──
 function showLoading(msg){
-  ['loginScreen','errorScreen'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('loadingScreen').style.display='flex';
-  document.getElementById('loadingText').textContent=msg;
-  ['filterBar','navTabs'].forEach(id=>document.getElementById(id).style.display='none');
-  document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display='none';p.classList.remove('active');});
-}
-function showError(msg){
-  ['loginScreen','loadingScreen'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('errorScreen').style.display='flex';
-  document.getElementById('errorMsg').textContent=msg;
-  ['filterBar','navTabs'].forEach(id=>document.getElementById(id).style.display='none');
-}
-function showDashboard(){
-  ['loginScreen','loadingScreen','errorScreen'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('filterBar').style.display='flex';
-  document.getElementById('navTabs').style.display='block';
-  document.getElementById('livePill').style.display='flex';
-  document.getElementById('btnRefresh').style.display='flex';
-  const p=document.getElementById('tab-visao');p.style.display='block';p.classList.add('active');
-  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('errorScreen').classList.add('hidden');
+  document.getElementById('appShell').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('hidden');
+  document.getElementById('loadingScreen').classList.add('flex');
+  if(msg) document.getElementById('loadingText').textContent=msg;
 }
 
+function showError(msg){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('flex');
+  document.getElementById('appShell').classList.add('hidden');
+  document.getElementById('errorScreen').classList.remove('hidden');
+  document.getElementById('errorScreen').classList.add('flex');
+  if(msg) document.getElementById('errorMsg').textContent=msg;
+}
+
+function showDashboard(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('flex');
+  document.getElementById('errorScreen').classList.add('hidden');
+  
+  document.getElementById('appShell').classList.remove('hidden');
+  document.getElementById('appShell').classList.add('flex');
+  
+  document.getElementById('periodLabel').classList.remove('hidden');
+  
+  document.getElementById('livePill').classList.remove('hidden');
+  document.getElementById('livePill').classList.add('flex');
+  
+  document.getElementById('btnRefresh').classList.remove('hidden');
+  document.getElementById('btnRefresh').classList.add('flex');
+  
+  setTab('visao', document.querySelector('.tab-btn'));
+}
+
+// ── INIT ──
 loadGIS();
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
