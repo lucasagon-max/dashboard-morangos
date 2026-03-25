@@ -38,7 +38,7 @@
 
         .heatmap-grid { display: grid; grid-template-columns: 50px repeat(7, 1fr); gap: 4px; }
         .heatmap-cell { height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: all 0.2s; cursor: default; }
-        .heatmap-cell:hover { transform: scale(1.05); shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .heatmap-cell:hover { transform: scale(1.05); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .heatmap-header { height: 24px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .heatmap-label { height: 36px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: #94a3b8; font-size: 11px; font-weight: 700; }
     </style>
@@ -312,9 +312,10 @@ let supaClient = null;
 let currentPeriod = 'today';
 let customStart = null, customEnd = null;
 let charts = {};
+let catalogProducts = []; // Para extrair os preços verdadeiros dos produtos/adicionais
 
 // ──────────────────────────────────────────────────────────────
-// LOGIN
+// LOGIN E INICIALIZAÇÃO
 // ──────────────────────────────────────────────────────────────
 function doLogin() {
     const u = document.getElementById('login-user').value.trim().toLowerCase();
@@ -334,14 +335,16 @@ document.addEventListener('keydown', e => {
 
 function doLogout() { location.reload(); }
 
-// ──────────────────────────────────────────────────────────────
-// INIT
-// ──────────────────────────────────────────────────────────────
-function initApp() {
+async function initApp() {
     Chart.register(ChartDataLabels);
     lucide.createIcons();
     
     supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // 1. Carrega o Catálogo ANTES das vendas para saber o valor exato de cada Adicional
+    await loadCatalog();
+    
+    // 2. Carrega as vendas e inicia o Tempo Real
     loadData();
     setupRealtime();
 }
@@ -354,8 +357,22 @@ function setupRealtime() {
       .subscribe();
 }
 
+async function loadCatalog() {
+    try {
+        // Busca TODOS os produtos para referências passadas, independentemente de estarem disponíveis ou não
+        const { data, error } = await supaClient.from('produtos').select('*');
+        if (!error && data) {
+            catalogProducts = data.map(p => ({
+                Nome: p.nome,
+                Categoria: p.categoria || 'Geral',
+                Preco: p.preco || '0'
+            }));
+        }
+    } catch(e) { console.error("Erro ao carregar catálogo:", e); }
+}
+
 // ──────────────────────────────────────────────────────────────
-// PERIOD SELECTION
+// SELEÇÃO DE PERÍODO (DATAS)
 // ──────────────────────────────────────────────────────────────
 function updateFilterUI(activeBtn) {
     document.querySelectorAll('.filter-btn').forEach(b => {
@@ -387,7 +404,7 @@ function getPeriodRange() {
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const tz = "-03:00"; // Brasil Timezone offset
+    const tz = "-03:00"; // Fuso horário do Brasil
 
     if (currentPeriod === 'custom' && customStart && customEnd) {
         return { start: customStart + 'T00:00:00' + tz, end: customEnd + 'T23:59:59' + tz };
@@ -411,7 +428,7 @@ function getPeriodRange() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// DATA LOADING
+// CARREGAMENTO DOS DADOS (VENDAS)
 // ──────────────────────────────────────────────────────────────
 async function loadData(silent = false) {
     if (!silent) showLoading(true);
@@ -444,41 +461,72 @@ function showLoading(v) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// PARSERS
+// LÓGICA FINANCEIRA E PARSERS (ÁREA CORRIGIDA)
 // ──────────────────────────────────────────────────────────────
-function parseMoney(str) {
-    if (!str) return 0;
-    const s = String(str).replace(/[^\d,]/g,'').replace(',','.');
-    return parseFloat(s) || 0;
+
+// NOVA FUNÇÃO parseMoney: Completamente imune a bugs de milhares e decimais portugueses/brasileiros
+function parseMoney(val) {
+    if (!val) return 0;
+    
+    // Limpa a string base removendo símbolos da moeda e espaços estranhos
+    let clean = String(val).replace('R$', '').replace(/\s/g, '').trim();
+    let sign = 1;
+    
+    if (clean.includes('-')) { 
+        sign = -1; 
+        clean = clean.replace('-', ''); 
+    }
+    
+    // Tratamento de pontuação padrão BR (ex: 1.500,00 -> 1500.00)
+    if (clean.includes(',') && clean.includes('.')) {
+        clean = clean.replace(/\./g, '').replace(',', '.');
+    } else if (clean.includes(',')) {
+        clean = clean.replace(',', '.');
+    }
+    
+    return (parseFloat(clean) * sign) || 0;
 }
 
-function fmtMoney(v) { return 'R$ ' + (v || 0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function fmtMoney(v) { 
+    return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
+}
+
+function normalizeStr(str) { 
+    return str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; 
+}
 
 function parseItens(itensStr) {
     if (!itensStr) return [];
     const parts = String(itensStr).split('|').map(s => s.trim()).filter(Boolean);
     const result = [];
+    
     for (const part of parts) {
-        const qtyMatch = part.match(/^(\d+)x\s+(.+?)(?:\s*\[R\$\s*([\d,.]+)\])?$/);
+        // Regex robusto que extrai: "1x Nome do Produto (+Adicional) [R$ 15,50]"
+        const qtyMatch = part.match(/^(\d+)x\s+(.+?)(?:\s*\[R\$\s*([\d\.,]+)\])?$/);
         if (!qtyMatch) continue;
+        
         const qty = parseInt(qtyMatch[1]) || 1;
         let fullName = qtyMatch[2].trim();
         const priceStr = qtyMatch[3] || '0';
-        const price = parseMoney(priceStr.replace(',','.'));
+        
+        // A extração usa a nossa função blindada para não corromper casas decimais
+        const price = parseMoney(priceStr); 
+        
         const addMatch = fullName.match(/\(\+([^)]+)\)/);
         const adicional = addMatch ? addMatch[1].trim() : null;
         const baseName = fullName.replace(/\(.*\)/, '').trim();
+        
         result.push({ qty, baseName, adicional, price, fullName });
     }
     return result;
 }
 
 function parsePagamento(pagStr) {
-    if (!pagStr || pagStr === 'A Pagar' || pagStr === 'A Pagar no Caixa') return {};
+    if (!pagStr || pagStr.includes('A Pagar')) return {};
     const methods = {};
     const parts = String(pagStr).split('|').map(s => s.trim()).filter(Boolean);
     for (const part of parts) {
-        const m = part.match(/^(.+?):\s*R\$\s*([\d,.]+)/);
+        const m = part.match(/^(.+?):\s*R\$\s*([\d\.,]+)/);
         if (m) {
             const method = m[1].trim();
             const val = parseMoney(m[2]);
@@ -517,7 +565,7 @@ function parseDate(pedido) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// RENDER ALL
+// CENTRAL DE RENDERIZAÇÃO
 // ──────────────────────────────────────────────────────────────
 function renderAll(concluidos, todos) {
     renderKPIs(concluidos);
@@ -527,7 +575,7 @@ function renderAll(concluidos, todos) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// KPIs
+// KPIs 
 // ──────────────────────────────────────────────────────────────
 function renderKPIs(concluidos) {
     let total = 0;
@@ -613,24 +661,54 @@ function renderPagamentos(concluidos) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// PRODUTOS
+// INTELIGÊNCIA DE PRODUTOS E MATEMÁTICA DE ADICIONAIS (CORRIGIDO)
 // ──────────────────────────────────────────────────────────────
 function renderProdutos(concluidos) {
     const prodQty = {}, prodFat = {}, adicionalFat = {}, adicionalQty = {};
+
+    // 1. Constrói um pequeno dicionário com os preços dos adicionais oficiais do cardápio
+    // Isso evita a necessidade de "adivinhar" o valor do adicional com base no preço do lanche inteiro.
+    const addonPrices = {};
+    catalogProducts.forEach(p => {
+        const cat = normalizeStr(p.Categoria || '');
+        if (cat.includes('adicional') || cat.includes('extra') || cat.includes('acrescimo')) {
+            addonPrices[normalizeStr(p.Nome)] = parseMoney(p.Preco);
+        }
+    });
 
     concluidos.forEach(p => {
         const itens = parseItens(p.itens);
         itens.forEach(item => {
             prodQty[item.baseName] = (prodQty[item.baseName] || 0) + item.qty;
-            prodFat[item.baseName] = (prodFat[item.baseName] || 0) + (item.price * item.qty);
+            
+            let totalAddonsThisLine = 0;
+
             if (item.adicional) {
-                // Split multiple addons if separated by comma
-                const adds = item.adicional.split(',').map(a=>a.trim());
+                // Se houver mais do que um adicional na mesma linha separados por vírgula
+                const adds = item.adicional.split(',').map(a => a.trim());
                 adds.forEach(add => {
-                   adicionalFat[add] = (adicionalFat[add] || 0) + (item.price * item.qty / adds.length); // estimate if multiple
+                   const addKey = normalizeStr(add);
+                   
+                   // Vai buscar o valor verdadeiro unitário do adicional ao Catálogo. 
+                   // Se não encontrar (apagado), assume 0 para não corromper os dados.
+                   const unitPrice = addonPrices[addKey] || 0; 
+                   const addonTotalRevenue = unitPrice * item.qty;
+                   
+                   totalAddonsThisLine += addonTotalRevenue;
+                   adicionalFat[add] = (adicionalFat[add] || 0) + addonTotalRevenue;
                    adicionalQty[add] = (adicionalQty[add] || 0) + item.qty;
                 });
             }
+
+            // Atenção à magia aqui: item.price extraído de "[R$ 15,00]" JÁ É O TOTAL desta linha.
+            // Para saber a receita puramente gerada pelo produto base, subtraímos os adicionais.
+            // Não multiplicamos a quantidade de novo!
+            let baseFat = item.price - totalAddonsThisLine;
+            
+            // Garantia de segurança caso um preço de catálogo tenha sido alterado drasticamente
+            if (baseFat < 0) baseFat = 0;
+
+            prodFat[item.baseName] = (prodFat[item.baseName] || 0) + baseFat;
         });
     });
 
@@ -640,7 +718,7 @@ function renderProdutos(concluidos) {
             <span class="w-6 text-center font-black text-sm ${num===1?'text-amber-500':num===2?'text-slate-400':num===3?'text-orange-400':'text-slate-300'}">${num}</span>
             <div class="flex-1">
                 <div class="flex justify-between items-end mb-1">
-                    <span class="text-xs font-bold text-slate-700 truncate w-40">${name}</span>
+                    <span class="text-xs font-bold text-slate-700 truncate w-40" title="${name}">${name}</span>
                     <span class="text-[10px] font-black ${isMoney?'text-emerald-600':'text-slate-500'}">${val}</span>
                 </div>
                 <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
