@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDV Garçom - Supabase</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SDK DO SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <style>
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: #f1f5f9; 
+            -webkit-tap-highlight-color: transparent; 
+            padding-bottom: 40px; 
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .cart-pulse { animation: pulse-cart 2s infinite; }
+        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
+        @keyframes zoomIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <!-- ⚙️ CONFIGURAÇÃO DO SUPABASE -->
+    <script>
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+
+    <header class="bg-slate-800 text-white p-3 sticky top-0 z-40 shadow-md flex flex-col gap-2">
+        <div class="flex gap-2">
+            <div class="relative flex-grow">
+                <input type="text" id="search-input" placeholder="Buscar produto..." class="w-full bg-slate-100 text-slate-800 rounded-lg py-2.5 pl-9 pr-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-inner">
+                <i data-lucide="search" class="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400"></i>
+            </div>
+            <button onclick="openCart()" id="header-cart-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold flex flex-col items-center justify-center min-w-[80px] shadow-lg active:scale-95 transition-all leading-tight border border-blue-500">
+                <div class="flex items-center gap-1">
+                    <i data-lucide="shopping-cart" class="w-3 h-3"></i>
+                    <span id="header-cart-count" class="text-[10px] bg-blue-800 px-1.5 rounded-full">0</span>
+                </div>
+                <span id="header-cart-total" class="text-xs mt-0.5">R$ 0,00</span>
+            </button>
+        </div>
+        <div id="category-list" class="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1 items-center"></div>
+    </header>
+
+    <div id="error-message" class="hidden m-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm">
+        <strong class="font-bold">Erro de Conexão!</strong>
+        <span class="block sm:inline">Não foi possível carregar o cardápio do Supabase. Verifique sua internet.</span>
+        <button onclick="location.reload()" class="mt-2 bg-red-500 text-white px-3 py-1 rounded text-xs font-bold">Tentar Novamente</button>
+    </div>
+
+    <main id="product-list" class="p-2 space-y-2 max-w-md mx-auto">
+        <div class="text-center py-10 flex flex-col items-center text-gray-400">
+            <i data-lucide="loader-2" class="animate-spin w-8 h-8 mb-2"></i>
+            <span class="text-sm">Carregando cardápio...</span>
+        </div>
+    </main>
+
+    <div id="options-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center px-4 pb-4 pt-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeOptionsModal()"></div>
+        <div class="bg-white rounded-2xl w-full max-w-sm p-5 max-h-[85vh] overflow-y-auto flex flex-col shadow-2xl relative z-10 animate-[zoomIn_0.2s_ease-out]">
+            <div class="flex justify-between items-start mb-4 border-b pb-3">
+                <div>
+                    <h3 id="modal-title" class="font-bold text-lg text-slate-800 leading-tight">Nome</h3>
+                    <p id="modal-desc" class="text-xs text-gray-400 mt-1">Desc</p>
+                </div>
+                <button onclick="closeOptionsModal()" class="bg-gray-100 p-1.5 rounded-full hover:bg-gray-200 transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-xl flex justify-between items-center mb-5 border border-blue-100">
+                <span class="text-xs font-bold text-blue-800 uppercase">Preço Unitário</span>
+                <span id="modal-price" class="text-lg font-black text-blue-600">R$ 0,00</span>
+            </div>
+
+            <div id="sizes-container" class="mb-5 hidden">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Tamanho</label>
+                <div id="sizes-list" class="grid grid-cols-2 gap-2"></div>
+            </div>
+
+            <div id="addons-container" class="mb-6 hidden">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Adicionais</label>
+                <div id="addons-list" class="space-y-1"></div>
+            </div>
+            
+            <div class="mb-5">
+                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Observação (Opcional)</label>
+                 <textarea id="item-obs" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" rows="2" placeholder="Ex: Sem cebola, bem passado..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-between mb-5 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <span class="text-sm font-bold text-gray-700 uppercase ml-1">Quantidade</span>
+                <div class="flex items-center gap-4 bg-white rounded-lg border border-gray-300 p-1 shadow-sm">
+                    <button onclick="adjustModalQty(-1)" class="w-10 h-10 flex items-center justify-center text-red-500 font-bold text-xl hover:bg-red-50 rounded transition-colors">-</button>
+                    <span id="modal-qty-display" class="text-xl font-black text-slate-800 w-8 text-center">1</span>
+                    <button onclick="adjustModalQty(1)" class="w-10 h-10 flex items-center justify-center text-green-500 font-bold text-xl hover:bg-green-50 rounded transition-colors">+</button>
+                </div>
+            </div>
+
+            <button onclick="confirmAddItem()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-100 flex justify-center gap-2 items-center active:scale-95 transition-all">
+                <span>Adicionar ao Pedido</span>
+                <span id="modal-btn-total" class="bg-white/20 px-2 py-0.5 rounded text-xs">R$ 0,00</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="cart-modal" class="fixed inset-0 z-[120] hidden bg-white flex flex-col">
+        <div class="bg-slate-800 text-white p-4 flex justify-between items-center shadow-md">
+            <button onclick="closeCart()" class="flex items-center gap-1 text-gray-300 hover:text-white"><i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar</button>
+            <h2 class="font-bold text-lg">Resumo</h2>
+            <button onclick="clearCart()" class="text-red-400 text-xs font-bold uppercase">Limpar</button>
+        </div>
+
+        <div id="cart-list" class="flex-grow overflow-y-auto p-4 space-y-3 bg-slate-50"></div>
+
+        <div class="p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.05)] safe-area-pb">
+            
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mesa</label>
+                <select id="selected-table" class="w-full bg-white border border-gray-300 rounded-lg py-3 px-3 text-sm font-bold focus:outline-none focus:border-blue-500 text-slate-700 shadow-sm">
+                    <option value="" disabled selected>Selecione a Mesa...</option>
+                    <option value="1">Mesa 01</option><option value="2">Mesa 02</option><option value="3">Mesa 03</option>
+                    <option value="4">Mesa 04</option><option value="5">Mesa 05</option><option value="6">Mesa 06</option>
+                    <option value="7">Mesa 07</option><option value="8">Mesa 08</option><option value="9">Mesa 09</option>
+                    <option value="10">Mesa 10</option><option value="BALCAO">BALCÃO</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Cliente</label>
+                <input type="text" id="client-name" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:border-blue-500 outline-none bg-gray-50" placeholder="Ex: João Silva">
+            </div>
+
+            <div class="flex justify-between items-center mb-4 bg-slate-100 p-3 rounded-lg">
+                <span class="text-gray-800 font-bold text-sm">Total Final:</span>
+                <span id="cart-final-total" class="font-black text-2xl text-slate-800">R$ 0,00</span>
+            </div>
+
+            <button onclick="sendOrder()" id="btn-send" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl shadow-xl flex justify-center items-center gap-2 text-lg transition-all active:scale-95">
+                <i data-lucide="send"></i> Enviar para Cozinha
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const CATEGORY_ORDER = [
+            "Promoções", "Salgados", "Sucos Frescos", "Sucos Especiais", 
+            "Smoothies", "Milk Shakes", "Bebidas Geladas", "Cafés", 
+            "Cafés Especiais", "Chás Gelados", "Sobremesas", "Doces",
+            "Morangos Frescos", "Frutas Congeladas", "Artesanatos"
+        ];
+        
+        const SPECIAL_CATEGORIES = ["Morangos Frescos", "Frutas Congeladas", "Artesanatos"];
+
+        let allProducts = [];
+        let addonsList = [];
+        let cart = [];
+        let currentCategory = 'Todos';
+        let searchQuery = '';
+        let currentItem = null;
+
+        async function init() {
+            try {
+                // Busca no Supabase em vez do Google Sheets
+                const { data: rawData, error } = await supabaseClient
+                    .from('produtos')
+                    .select('*');
+
+                if (error) throw error;
+
+                if (rawData && rawData.length > 0) {
+                    addonsList = []; allProducts = [];
+                    
+                    rawData.forEach((item, index) => {
+                        const nome = item.nome || '';
+                        if (!nome.trim()) return;
+
+                        const catRaw = (item.categoria || 'Geral').trim();
+                        const catLower = catRaw.toLowerCase();
+                        
+                        const obj = { 
+                            Nome: item.nome,
+                            Categoria: item.categoria || 'Geral',
+                            Preco: item.preco || '0',
+                            Descricao: item.descricao || '',
+                            originalIndex: index 
+                        };
+
+                        const statusRaw = String(item.disponivel || 'sim').toLowerCase().trim();
+                        if (['não', 'nao', 'off', 'false', '0', 'n'].includes(statusRaw)) return;
+
+                        if (catLower.startsWith('adicionais')) {
+                            let targets = ['all'];
+                            if (catRaw.includes(':')) targets = catRaw.split(':')[1].split(',').map(x => x.trim().toLowerCase());
+                            addonsList.push({ ...obj, targetCategories: targets });
+                        } else {
+                            allProducts.push(obj);
+                        }
+                    });
+                    
+                    renderCategories();
+                    renderProducts();
+                    lucide.createIcons();
+                } else {
+                    document.getElementById('product-list').innerHTML = '<div class="text-center py-10 text-gray-400">Cardápio vazio no banco de dados.</div>';
+                }
+            } catch (error) {
+                console.error("Erro Supabase:", error);
+                showError();
+            }
+        }
+
+        function showError() {
+            document.getElementById('product-list').innerHTML = '';
+            document.getElementById('error-message').classList.remove('hidden');
+        }
+
+        function renderCategories() {
+            const cats = ['Todos', ...new Set(allProducts.map(p => p.Categoria ? p.Categoria.trim() : 'Geral'))]
+                .sort((a,b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b));
+            
+            let html = "";
+            let separatorAdded = false;
+
+            cats.forEach(c => {
+                const isSpecial = SPECIAL_CATEGORIES.includes(c);
+                let styleClasses = "category-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors ";
+                
+                let extraMargin = "";
+                if (isSpecial && !separatorAdded) {
+                    extraMargin = "ml-4 border-l-2 border-slate-300 pl-6";
+                    separatorAdded = true;
+                }
+
+                if (currentCategory === c) {
+                    styleClasses += isSpecial 
+                        ? "bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-200" 
+                        : "bg-blue-600 text-white border-blue-600 shadow-md"; 
+                } else {
+                    styleClasses += isSpecial 
+                        ? "bg-white text-red-600 border-red-200 hover:bg-red-50 ring-1 ring-red-100" 
+                        : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"; 
+                }
+
+                html += `
+                <div class="${extraMargin}">
+                    <button onclick="setCategory('${c}')" class="${styleClasses}">
+                        ${c}
+                    </button>
+                </div>
+                `;
+            });
+            document.getElementById('category-list').innerHTML = html;
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            list.innerHTML = '';
+            
+            const filtered = allProducts.filter(p => {
+                if (searchQuery) {
+                    return p.Nome.toLowerCase().includes(searchQuery.toLowerCase());
+                }
+                return currentCategory === 'Todos' || p.Categoria === currentCategory;
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-400">Nenhum item encontrado</div>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const hasVariations = p.Preco.toString().includes('|');
+                const catLower = (p.Categoria || '').toLowerCase();
+                const hasAddons = addonsList.some(a => a.targetCategories.includes('all') || a.targetCategories.some(t => catLower.includes(t)));
+                const needsModal = hasVariations || hasAddons;
+                
+                let displayPrice = p.Preco;
+                if(hasVariations) {
+                    const parts = p.Preco.split('|')[0].split(':');
+                    displayPrice = parts[1] || parts[0];
+                }
+
+                const btnAction = needsModal 
+                    ? `openModal(${p.originalIndex})` 
+                    : `quickAdd(${p.originalIndex})`;
+
+                const btnColor = 'bg-blue-600'; 
+                const btnIcon = 'plus';
+
+                list.innerHTML += `
+                    <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center gap-3">
+                        <div class="flex-grow" onclick="${btnAction}">
+                            <div class="font-bold text-slate-800 text-sm">${p.Nome}</div>
+                            <div class="text-xs text-gray-500 line-clamp-1">${p.Descricao || ''}</div>
+                            <div class="font-black text-slate-900 mt-1">${formatMoney(displayPrice)}</div>
+                        </div>
+                        <button onclick="${btnAction}" class="w-10 h-10 ${btnColor} text-white rounded-full flex items-center justify-center shadow active:scale-90 transition-transform">
+                            <i data-lucide="${btnIcon}" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function quickAdd(index) {
+            const p = allProducts.find(x => x.originalIndex === index);
+            if(!p) return;
+            addItemToCart({ ...p, finalPrice: parsePrice(p.Preco), addons: [], obs: '', sizeLabel: '', quantity: 1 });
+            Toastify({ text: `${p.Nome} adicionado!`, duration: 1000, gravity: "bottom", style: { background: "#10b981", marginBottom: "80px" } }).showToast();
+        }
+
+        function openModal(index) {
+            const p = allProducts.find(x => x.originalIndex === index);
+            if(!p) return;
+
+            currentItem = { ...p, selectedAddons: [], basePrice: 0, selectedSize: null, quantity: 1 };
+            document.getElementById('modal-title').innerText = p.Nome;
+            document.getElementById('modal-desc').innerText = p.Descricao || '';
+            document.getElementById('item-obs').value = '';
+            document.getElementById('modal-qty-display').innerText = '1';
+
+            const rawPrice = String(p.Preco);
+            const sizesDiv = document.getElementById('sizes-container');
+            if (rawPrice.includes('|')) {
+                sizesDiv.classList.remove('hidden');
+                const sizes = rawPrice.split('|').map(s => {
+                   const parts = s.split(':');
+                   return { label: parts[0].trim(), price: parsePrice(parts[1] || parts[0]) };
+                });
+                currentItem.sizes = sizes;
+                document.getElementById('sizes-list').innerHTML = sizes.map((s, i) => `
+                    <label class="cursor-pointer">
+                        <input type="radio" name="size_opt" class="peer sr-only" value="${i}" ${i===0?'checked':''} onchange="selectSize(${i})">
+                        <div class="peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 border border-gray-300 rounded-lg p-2 text-center transition-all bg-white text-gray-600">
+                            <div class="font-bold text-sm">${s.label}</div>
+                            <div class="text-[10px]">${formatMoney(s.price)}</div>
+                        </div>
+                    </label>
+                `).join('');
+                selectSize(0);
+            } else {
+                sizesDiv.classList.add('hidden');
+                currentItem.basePrice = parsePrice(rawPrice);
+                currentItem.sizes = null;
+                updateModalTotal();
+            }
+
+            const catItem = (p.Categoria || '').toLowerCase();
+            const compatible = addonsList.filter(a => a.targetCategories.includes('all') || a.targetCategories.some(t => catItem.includes(t)));
+            const addonsDiv = document.getElementById('addons-container');
+            
+            if(compatible.length > 0) {
+                addonsDiv.classList.remove('hidden');
+                document.getElementById('addons-list').innerHTML = compatible.map((ad, i) => `
+                    <label class="flex justify-between items-center p-2 border rounded-lg bg-white">
+                        <span class="text-sm font-medium text-gray-700">${ad.Nome}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-gray-500">+${formatMoney(ad.Preco)}</span>
+                            <input type="checkbox" onchange="toggleAddon('${ad.Nome.replace(/'/g, "\\'")}', ${ad.Preco}, this.checked)" class="w-5 h-5 text-blue-600 rounded">
+                        </div>
+                    </label>
+                `).join('');
+            } else { addonsDiv.classList.add('hidden'); }
+
+            document.getElementById('options-modal').classList.remove('hidden');
+        }
+
+        window.adjustModalQty = (delta) => {
+            if (!currentItem) return;
+            const newQty = currentItem.quantity + delta;
+            if (newQty >= 1) {
+                currentItem.quantity = newQty;
+                document.getElementById('modal-qty-display').innerText = newQty;
+                updateModalTotal();
+            }
+        };
+
+        window.selectSize = (idx) => {
+            if(!currentItem || !currentItem.sizes) return;
+            const s = currentItem.sizes[idx];
+            currentItem.basePrice = s.price;
+            currentItem.selectedSize = s.label;
+            updateModalTotal();
+        }
+
+        window.toggleAddon = (name, price, checked) => {
+            if(checked) currentItem.selectedAddons.push({ Nome: name, Preco: price });
+            else currentItem.selectedAddons = currentItem.selectedAddons.filter(a => a.Nome !== name);
+            updateModalTotal();
+        }
+
+        function updateModalTotal() {
+            const unitTotal = currentItem.basePrice + currentItem.selectedAddons.reduce((acc, a) => acc + parseFloat(a.Preco), 0);
+            const total = unitTotal * currentItem.quantity;
+            document.getElementById('modal-price').innerText = formatMoney(currentItem.basePrice);
+            document.getElementById('modal-btn-total').innerText = formatMoney(total);
+        }
+
+        function confirmAddItem() {
+            const obs = document.getElementById('item-obs').value.trim();
+            const unitPrice = currentItem.basePrice + currentItem.selectedAddons.reduce((acc, a) => acc + parseFloat(a.Preco), 0);
+            addItemToCart({ 
+                ...currentItem, 
+                finalPrice: unitPrice, 
+                addons: [...currentItem.selectedAddons], 
+                obs: obs, 
+                sizeLabel: currentItem.selectedSize,
+                quantity: currentItem.quantity 
+            });
+            closeOptionsModal();
+        }
+
+        function addItemToCart(item) {
+            const uniqueId = `${item.Nome}-${item.sizeLabel}-${item.addons.map(a=>a.Nome).sort().join('')}-${item.obs}`;
+            const existing = cart.find(x => x.uniqueId === uniqueId);
+            const qtyToAdd = item.quantity || 1;
+
+            if(existing) {
+                existing.quantity += qtyToAdd;
+            } else {
+                cart.push({ 
+                    uniqueId, 
+                    Nome: item.Nome, 
+                    quantity: qtyToAdd, 
+                    unitPrice: item.finalPrice, 
+                    sizeLabel: item.sizeLabel, 
+                    addons: item.addons, 
+                    obs: item.obs 
+                });
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const count = cart.reduce((acc, i) => acc + i.quantity, 0);
+            const total = cart.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0);
+            
+            // Header Button
+            document.getElementById('header-cart-total').innerText = formatMoney(total);
+            document.getElementById('header-cart-count').innerText = count;
+            
+            // Modal Total
+            document.getElementById('cart-final-total').innerText = formatMoney(total);
+            
+            const list = document.getElementById('cart-list');
+            list.innerHTML = cart.map(i => `
+                <div class="bg-white p-3 rounded-lg border shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-bold text-slate-800 text-sm">${i.quantity}x ${i.Nome} ${i.sizeLabel ? `(${i.sizeLabel})` : ''}</div>
+                            ${i.addons.length ? `<div class="text-[10px] text-gray-500">+ ${i.addons.map(a=>a.Nome).join(', ')}</div>` : ''}
+                            ${i.obs ? `<div class="text-[10px] text-yellow-600 bg-yellow-50 px-1 rounded mt-1 inline-block">Obs: ${i.obs}</div>` : ''}
+                        </div>
+                        <div class="font-black text-slate-900 text-sm">${formatMoney(i.unitPrice * i.quantity)}</div>
+                    </div>
+                    <div class="flex justify-end mt-2 gap-2">
+                        <button onclick="changeQty('${i.uniqueId.replace(/'/g, "\\'")}', -1)" class="bg-gray-100 px-3 py-1 rounded font-bold text-gray-600">-</button>
+                        <button onclick="changeQty('${i.uniqueId.replace(/'/g, "\\'")}', 1)" class="bg-gray-100 px-3 py-1 rounded font-bold text-green-600">+</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.changeQty = (uid, delta) => {
+            const idx = cart.findIndex(x => x.uniqueId === uid);
+            if(idx === -1) return;
+            cart[idx].quantity += delta;
+            if(cart[idx].quantity <= 0) cart.splice(idx, 1);
+            updateCartUI();
+        }
+
+        // 🚀 ENVIO DE PEDIDO PARA O SUPABASE
+        async function sendOrder() {
+            const table = document.getElementById('selected-table').value;
+            if(!table) return alert("Selecione a MESA no carrinho!");
+            if(cart.length === 0) return alert("Carrinho vazio!");
+
+            const btn = document.getElementById('btn-send');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Enviando...'; 
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const clientName = document.getElementById('client-name').value.trim();
+            const clientDisplay = clientName ? `${clientName} (Mesa ${table})` : `Mesa ${table}`;
+
+            const itemsFormatted = cart.map(i => {
+                const totalLine = i.unitPrice * i.quantity;
+                const addText = i.addons.length ? ` (+${i.addons.map(a => a.Nome).join(', ')})` : '';
+                const sizeText = i.sizeLabel ? ` (${i.sizeLabel})` : '';
+                const obsText = i.obs ? ` [Obs: ${i.obs}]` : '';
+                return `${i.quantity}x ${i.Nome}${sizeText}${addText}${obsText} [${formatMoney(totalLine)}]`;
+            }).join(' | ');
+
+            // Formatação do ID e Data
+            const orderId = new Date().getTime().toString().slice(-6);
+            const dataAtual = new Date().toLocaleString("pt-BR");
+
+            const payload = {
+                id: orderId,
+                data: dataAtual,
+                cliente: clientDisplay, 
+                tipo: `Mesa ${table}`,
+                itens: itemsFormatted,
+                total: formatMoney(cart.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0)),
+                status: 'Novo', // Importantíssimo: Aciona a animação de "Novo Pedido" no Gestor!
+                pagamento: 'A Pagar no Caixa',
+                obs: 'Atendimento Garçom',
+                endereco: 'Salão'
+            };
+
+            try {
+                // Envia para a tabela 'pedidos' do Supabase
+                const { error } = await supabaseClient.from('pedidos').insert([payload]);
+                if (error) throw error;
+
+                Toastify({ text: "Pedido Enviado p/ Cozinha! 🚀", duration: 3000, style: { background: "#16a34a", fontSize: "18px" } }).showToast();
+                cart = []; 
+                document.getElementById('client-name').value = ''; 
+                document.getElementById('selected-table').value = '';
+                updateCartUI(); 
+                closeCart();
+            } catch (e) {
+                alert("Erro ao enviar. Tente novamente.");
+                console.error(e);
+            } finally {
+                btn.innerHTML = originalHTML; btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        function setCategory(c) { currentCategory = c; renderCategories(); renderProducts(); }
+        document.getElementById('search-input').addEventListener('input', (e) => { searchQuery = e.target.value; renderProducts(); });
+        function openCart() { document.getElementById('cart-modal').classList.remove('hidden'); }
+        function closeCart() { document.getElementById('cart-modal').classList.add('hidden'); }
+        function closeOptionsModal() { document.getElementById('options-modal').classList.add('hidden'); }
+        function clearCart() { if(confirm('Limpar pedido?')) { cart=[]; updateCartUI(); closeCart(); } }
+        
+        const parsePrice = (v) => {
+            if (!v) return 0;
+            let str = String(v).replace('R$', '').trim();
+            if (str.includes(',')) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            }
+            return parseFloat(str) || 0;
+        };
+
+        const formatMoney = (v) => {
+            const val = typeof v === 'string' ? parsePrice(v) : v;
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+
+        // Inicia o App
+        lucide.createIcons();
+        init();
+    </script>
+</body>
+</html>
