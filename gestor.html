@@ -68,10 +68,10 @@
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100" id="status-badge">
                 <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot" id="status-dot"></div>
-                <span class="text-xs font-bold text-emerald-700" id="status-text">Tempo Real Ativo</span>
+                <span class="text-xs font-bold text-emerald-700" id="status-text">Conectando...</span>
             </div>
 
-            <button onclick="loadOrders()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
+            <button onclick="manualRefresh()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-md text-sm font-bold group">
                 <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
                 <span>Sincronizar</span>
             </button>
@@ -204,7 +204,7 @@ let allOrdersData  = [];
 let catalogProducts = [];
 let isFetching     = false;
 let knownNovoIds   = new Set();
-let renderedIds    = new Set();
+let renderedIds    = new Set(); // Controle visual
 let firstLoad      = true;
 let isAudioUnlocked= false;
 let currentPaymentId   = null;
@@ -242,12 +242,11 @@ function toast(text, bg = "#3b82f6") { Toastify({ text, duration: 3000, style: {
 // ═══════════════════════════════════════════════════════════════════════════
 // 🚀 SUPABASE: BUSCA E TEMPO REAL
 // ═══════════════════════════════════════════════════════════════════════════
-async function loadOrders() {
+async function loadOrders(silent = false) {
     if (isFetching) return;
     isFetching = true;
     
     try {
-        // Ordena pela data de criação decrescente
         const { data, error } = await supabaseClient
             .from('pedidos')
             .select('*')
@@ -255,7 +254,6 @@ async function loadOrders() {
 
         if (error) throw error;
 
-        // Compara dados para não re-renderizar à toa
         const newHash = JSON.stringify(data.map(o => o.id + o.status + o.total + o.itens + o.obs));
         const oldHash = JSON.stringify(allOrdersData.map(o => o.id + o.status + o.total + o.itens + o.obs));
         
@@ -274,13 +272,17 @@ async function loadOrders() {
             renderBoard(allOrdersData);
         }
         
-        setLiveStatus('ok');
     } catch (e) {
         console.error('Erro ao buscar pedidos:', e);
         setLiveStatus('error');
     } finally {
         isFetching = false;
     }
+}
+
+function manualRefresh() {
+    loadOrders(false);
+    toast("Sincronizado", "#10B981");
 }
 
 async function loadCatalog() {
@@ -297,12 +299,24 @@ async function loadCatalog() {
 }
 
 function setupRealtime() {
-    // Inscreve no canal do Supabase para escutar todas as mudanças na tabela 'pedidos'
-    supabaseClient.channel('pedidos-updates')
+    // 1. Inscrição via WebSocket (Requer Replication ativado no Supabase)
+    supabaseClient.channel('pedidos-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
-          loadOrders(); // Recarrega a lista se alguém criou/editou um pedido
+          loadOrders(true); 
       })
-      .subscribe();
+      .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+              setLiveStatus('ok');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              setLiveStatus('error');
+          }
+      });
+      
+    // 2. REDE DE SEGURANÇA (Polling Silencioso a cada 10s)
+    // Garante que os pedidos cheguem mesmo se a chavinha do Realtime estiver desligada lá no painel.
+    setInterval(() => {
+        loadOrders(true);
+    }, 10000);
 }
 
 function setLiveStatus(state) {
@@ -315,9 +329,9 @@ function setLiveStatus(state) {
         badge.className = 'flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100';
         dot.className = 'w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot';
     } else {
-        text.textContent = 'Desconectado'; text.className = 'text-xs font-bold text-red-700';
-        badge.className = 'flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100';
-        dot.className = 'w-2.5 h-2.5 bg-red-500 rounded-full';
+        text.textContent = 'Aguardando Conexão...'; text.className = 'text-xs font-bold text-blue-700';
+        badge.className = 'flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100';
+        dot.className = 'w-2.5 h-2.5 bg-blue-500 rounded-full';
     }
 }
 
@@ -430,6 +444,7 @@ async function confirmCancel() {
         closeCancelModal();
         document.getElementById('cancel-reason').value = '';
         toast("Comanda cancelada.", "#ef4444");
+        loadOrders(true);
     } else {
         toast("Erro ao cancelar.", "#ef4444");
     }
@@ -551,6 +566,7 @@ async function saveOrderChanges() {
     if (!error) { 
         toast("Alterações Salvas!", "#3b82f6"); 
         closeEditModal(); 
+        loadOrders(true);
     } else {
         toast("Erro ao salvar. Tente novamente.", "#ef4444");
     }
@@ -619,9 +635,12 @@ async function processFinalPayment() {
         document.getElementById('payment-modal').classList.add('hidden');
         toast("✅ Comanda Finalizada!", "#10B981");
         if (orderToPrint) printReceipt(currentPaymentId, orderToPrint.cliente, totalToPrint, paysToPrint);
+        loadOrders(true);
     } else {
         alert("Falha ao atualizar. Tente novamente.");
-        btn.innerHTML = 'FINALIZAR COMANDA'; btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="check-check" class="w-5 h-5"></i> FINALIZAR COMANDA'; 
+        btn.disabled = false;
+        lucide.createIcons();
     }
 }
 
@@ -690,7 +709,7 @@ function printReceipt(id, cliente, total, payments) {
 // ═══════════════════════════════════════════════════════════════════════════
 loadOrders();
 loadCatalog();
-setupRealtime(); // <-- O SEGREDO DO SUPABASE ESTÁ AQUI
+setupRealtime(); 
 </script>
 </body>
 </html>
