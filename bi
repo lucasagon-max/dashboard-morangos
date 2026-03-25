@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Morangos Tatuí · Dashboard Estratégico</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+
+    <!-- Supabase JS V2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Chart.js e Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .logo-img { max-height: 40px; width: auto; object-fit: contain; }
+
+        .live-dot { animation: pulseGreen 2s infinite; }
+        @keyframes pulseGreen { 
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
+        }
+
+        .heatmap-grid { display: grid; grid-template-columns: 50px repeat(7, 1fr); gap: 4px; }
+        .heatmap-cell { height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: all 0.2s; cursor: default; }
+        .heatmap-cell:hover { transform: scale(1.05); shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .heatmap-header { height: 24px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .heatmap-label { height: 36px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: #94a3b8; font-size: 11px; font-weight: 700; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+<!-- ══════════════════════════════════ LOGIN ══════════════════════════════════ -->
+<div id="login-screen" class="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 flex flex-col items-center border border-slate-100">
+        <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-20 mb-4 object-contain">
+        <h2 class="text-xl font-black text-slate-800 mb-1">Painel Gerencial</h2>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Acesso Restrito</p>
+        
+        <input type="text" id="login-user" placeholder="Usuário" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none mb-3 transition-all font-medium text-slate-700">
+        <input type="password" id="login-pass" placeholder="Senha" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none mb-5 transition-all font-medium text-slate-700">
+        
+        <button onclick="doLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3.5 rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+            Entrar <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        <div class="text-red-500 text-xs mt-4 h-4 font-bold" id="login-error"></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════ APP ══════════════════════════════════ -->
+<div id="app" style="display: none;" class="max-w-7xl mx-auto">
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="fixed inset-0 z-[500] bg-white/80 backdrop-blur-sm hidden items-center justify-center flex-col gap-4">
+        <i data-lucide="loader-2" class="w-10 h-10 text-red-600 animate-spin"></i>
+        <div class="text-slate-600 font-bold text-sm tracking-widest uppercase">Processando Dados...</div>
+    </div>
+
+    <!-- Top bar -->
+    <nav class="bg-white shadow-sm rounded-2xl px-6 py-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-200">
+        <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+            <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logotipo" class="logo-img hover:scale-105 transition-transform duration-300">
+            <div class="flex flex-col">
+                <h1 class="text-xl font-black text-slate-800 tracking-tight hidden sm:block">Morangos<span class="text-red-600">Tatuí</span></h1>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dashboard de BI</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 sm:gap-4">
+            <div class="hidden sm:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full live-dot"></div>
+                <span class="text-xs font-bold text-emerald-700">Ao vivo</span>
+            </div>
+            <div class="flex flex-col items-end hidden md:flex">
+                <span style="font-size:10px;color:#94a3b8;font-weight:bold" id="last-update">Atualizado agora</span>
+            </div>
+            <button onclick="doLogout()" class="bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-xl transition-colors text-xs font-bold shadow-sm flex items-center gap-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Sair</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ── Bloco 1: Filtros + KPIs ── -->
+    <div class="flex flex-col md:flex-row items-center gap-2 md:gap-4 mb-6 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm w-full">
+        <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+            <button class="filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-800 text-white shadow-md" data-period="today" onclick="selectPeriod(this,'today')">Hoje</button>
+            <button class="filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-transparent text-slate-500 hover:bg-slate-100" data-period="yesterday" onclick="selectPeriod(this,'yesterday')">Ontem</button>
+            <button class="filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-transparent text-slate-500 hover:bg-slate-100" data-period="7days" onclick="selectPeriod(this,'7days')">Últimos 7 dias</button>
+            <button class="filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-transparent text-slate-500 hover:bg-slate-100" data-period="month" onclick="selectPeriod(this,'month')">Este Mês</button>
+        </div>
+        
+        <div class="hidden md:block w-px h-6 bg-slate-200 mx-2"></div>
+        
+        <div class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0 justify-center md:justify-start">
+            <input type="date" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-sm text-slate-600 font-bold outline-none focus:border-red-500 transition-colors" id="date-start" onchange="selectCustom()" />
+            <span class="text-xs text-slate-400 font-bold uppercase">até</span>
+            <input type="date" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-sm text-slate-600 font-bold outline-none focus:border-red-500 transition-colors" id="date-end" onchange="selectCustom()" />
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-red-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Faturamento Bruto</p>
+                    <h3 class="text-3xl font-black text-slate-800 mt-1" id="kpi-fat">—</h3>
+                </div>
+                <div class="bg-red-50 p-2.5 rounded-xl"><i data-lucide="banknote" class="w-6 h-6 text-red-600"></i></div>
+            </div>
+            <p class="text-xs text-slate-500 font-medium"><span id="kpi-fat-sub">0</span> pedidos concluídos</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pedidos Concluídos</p>
+                    <h3 class="text-3xl font-black text-slate-800 mt-1" id="kpi-ped">—</h3>
+                </div>
+                <div class="bg-amber-50 p-2.5 rounded-xl"><i data-lucide="receipt" class="w-6 h-6 text-amber-500"></i></div>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">no período selecionado</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ticket Médio</p>
+                    <h3 class="text-3xl font-black text-slate-800 mt-1" id="kpi-tick">—</h3>
+                </div>
+                <div class="bg-blue-50 p-2.5 rounded-xl"><i data-lucide="bar-chart-3" class="w-6 h-6 text-blue-500"></i></div>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">gasto médio por pedido</p>
+        </div>
+    </div>
+
+    <!-- Mix de Pagamentos -->
+    <div class="mb-8">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-4">
+            <i data-lucide="pie-chart" class="text-red-500 w-5 h-5"></i> Mix de Pagamentos
+        </h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-slate-700">Divisão por Forma de Pagamento</h3>
+                    <p class="text-xs text-slate-400">Baseado nos pedidos Concluídos do período</p>
+                </div>
+                <div class="flex-grow flex items-center justify-center relative min-h-[240px]">
+                    <canvas id="chart-pagamento" style="max-height:240px"></canvas>
+                    <div id="pagamento-empty" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 hidden text-slate-400 font-medium text-sm">
+                        <i data-lucide="credit-card" class="w-8 h-8 mb-2 opacity-50"></i>
+                        Sem dados no período
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-slate-700">Receita por Método</h3>
+                    <p class="text-xs text-slate-400">Valores absolutos</p>
+                </div>
+                <div id="pagamento-list" class="flex flex-col gap-3 flex-grow justify-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Bloco 2: Inteligência de Produtos ── -->
+    <div class="mb-8">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-4 mt-10">
+            <i data-lucide="brain-circuit" class="text-red-500 w-5 h-5"></i> Inteligência de Produtos
+        </h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <!-- Top Vendidos (Qtd) -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i> Curva ABC — Top Volume</h3>
+                    <p class="text-xs text-slate-400">Unidades vendidas no período</p>
+                </div>
+                <ul class="space-y-4" id="top-vendidos-list"></ul>
+                <div id="top-empty" class="hidden text-center py-8 text-slate-400 font-medium text-sm">
+                    <i data-lucide="package" class="w-8 h-8 mx-auto mb-2 opacity-50"></i> Sem vendas no período.
+                </div>
+            </div>
+
+            <!-- Top Faturamento -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="circle-dollar-sign" class="w-4 h-4 text-emerald-500"></i> Curva ABC — Top Faturamento</h3>
+                    <p class="text-xs text-slate-400">Receita gerada por produto</p>
+                </div>
+                <ul class="space-y-4" id="top-fat-list"></ul>
+                <div id="top-fat-empty" class="hidden text-center py-8 text-slate-400 font-medium text-sm">
+                    <i data-lucide="circle-dollar-sign" class="w-8 h-8 mx-auto mb-2 opacity-50"></i> Sem receita no período.
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Adicionais de Ouro -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-4 flex justify-between items-start">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Adicionais de Ouro</h3>
+                        <p class="text-xs text-slate-400">Faturamento extra por complementos</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Adicionais</span>
+                        <span id="adicional-total" class="text-xl font-black text-amber-500">—</span>
+                    </div>
+                </div>
+                <div id="adicional-list" class="flex flex-wrap gap-2 mt-4"></div>
+                <div id="adicional-empty" class="hidden text-center py-8 text-slate-400 font-medium text-sm">
+                    <i data-lucide="sparkles" class="w-8 h-8 mx-auto mb-2 opacity-50"></i> Nenhum adicional vendido.
+                </div>
+            </div>
+
+            <!-- Patinho Feio -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-4 h-4 text-slate-400"></i> Produtos "Patinho Feio"</h3>
+                    <p class="text-xs text-slate-400">Os menos vendidos (Candidatos à revisão)</p>
+                </div>
+                <ul class="space-y-4" id="patinho-list"></ul>
+                <div id="patinho-empty" class="hidden text-center py-8 text-slate-400 font-medium text-sm">
+                    <i data-lucide="bar-chart-2" class="w-8 h-8 mx-auto mb-2 opacity-50"></i> Dados insuficientes.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Bloco 3: Visão Operacional ── -->
+    <div class="mb-10">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-4 mt-10">
+            <i data-lucide="activity" class="text-red-500 w-5 h-5"></i> Visão Operacional & Fluxo
+        </h2>
+
+        <!-- Movimento por hora -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4">
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-slate-700">Mapa de Movimento — Pedidos por Hora</h3>
+                <p class="text-xs text-slate-400">Picos de demanda ao longo do dia</p>
+            </div>
+            <div class="relative min-h-[220px]">
+                <canvas id="chart-hora" style="max-height:260px"></canvas>
+                <div id="hora-empty" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 hidden text-slate-400 font-medium text-sm">
+                    <i data-lucide="clock" class="w-8 h-8 mb-2 opacity-50"></i> Sem dados no período.
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap dia x hora -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4 overflow-hidden">
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-slate-700">Heatmap Operacional — Dia × Hora</h3>
+                <p class="text-xs text-slate-400">Intensidade de fluxo cruzando dias da semana e horários</p>
+            </div>
+            <div id="heatmap-container" class="overflow-x-auto pb-4"></div>
+        </div>
+
+        <!-- Canais de venda -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-slate-700">Canais de Venda (Volume)</h3>
+                    <p class="text-xs text-slate-400">Qtd de pedidos por tipo</p>
+                </div>
+                <canvas id="chart-canal-vol" style="max-height:220px"></canvas>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-slate-700">Canais de Venda (Receita)</h3>
+                    <p class="text-xs text-slate-400">Faturamento por tipo</p>
+                </div>
+                <canvas id="chart-canal-fat" style="max-height:220px"></canvas>
+            </div>
+        </div>
+
+        <!-- Canal summary cards -->
+        <div id="canal-summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+    </div>
+
+    <p class="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-8 pb-4">
+        Morangos Tatuí · Dashboard Inteligente
+    </p>
+
+</div>
+
+<!-- ══════════════════════════════════ SCRIPTS ══════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────────────────
+// CONFIG & SUPABASE
+// ──────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
+const USERS = { 'gerencia': 'morango2024', 'admin': 'admin123' };
+
+let supaClient = null;
+let currentPeriod = 'today';
+let customStart = null, customEnd = null;
+let charts = {};
+
+// ──────────────────────────────────────────────────────────────
+// LOGIN
+// ──────────────────────────────────────────────────────────────
+function doLogin() {
+    const u = document.getElementById('login-user').value.trim().toLowerCase();
+    const p = document.getElementById('login-pass').value;
+    if (USERS[u] && USERS[u] === p) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        initApp();
+    } else {
+        document.getElementById('login-error').textContent = 'Usuário ou senha incorretos.';
+    }
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+
+function doLogout() { location.reload(); }
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────
+function initApp() {
+    Chart.register(ChartDataLabels);
+    lucide.createIcons();
+    
+    supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    loadData();
+    setupRealtime();
+}
+
+function setupRealtime() {
+    supaClient.channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+          loadData(true); // Recarrega silenciosamente
+      })
+      .subscribe();
+}
+
+// ──────────────────────────────────────────────────────────────
+// PERIOD SELECTION
+// ──────────────────────────────────────────────────────────────
+function updateFilterUI(activeBtn) {
+    document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = "filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-transparent text-slate-500 hover:bg-slate-100";
+    });
+    if(activeBtn) {
+        activeBtn.className = "filter-btn px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-800 text-white shadow-md";
+    }
+}
+
+function selectPeriod(btn, period) {
+    updateFilterUI(btn);
+    currentPeriod = period;
+    customStart = null; customEnd = null;
+    loadData();
+}
+
+function selectCustom() {
+    const s = document.getElementById('date-start').value;
+    const e = document.getElementById('date-end').value;
+    if (!s || !e) return;
+    updateFilterUI(null);
+    currentPeriod = 'custom';
+    customStart = s; customEnd = e;
+    loadData();
+}
+
+function getPeriodRange() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const tz = "-03:00"; // Brasil Timezone offset
+
+    if (currentPeriod === 'custom' && customStart && customEnd) {
+        return { start: customStart + 'T00:00:00' + tz, end: customEnd + 'T23:59:59' + tz };
+    }
+    if (currentPeriod === 'today') {
+        return { start: fmt(now) + 'T00:00:00' + tz, end: fmt(now) + 'T23:59:59' + tz };
+    }
+    if (currentPeriod === 'yesterday') {
+        const y = new Date(now); y.setDate(y.getDate() - 1);
+        return { start: fmt(y) + 'T00:00:00' + tz, end: fmt(y) + 'T23:59:59' + tz };
+    }
+    if (currentPeriod === '7days') {
+        const s = new Date(now); s.setDate(s.getDate() - 6);
+        return { start: fmt(s) + 'T00:00:00' + tz, end: fmt(now) + 'T23:59:59' + tz };
+    }
+    if (currentPeriod === 'month') {
+        const s = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: fmt(s) + 'T00:00:00' + tz, end: fmt(now) + 'T23:59:59' + tz };
+    }
+    return { start: fmt(now) + 'T00:00:00' + tz, end: fmt(now) + 'T23:59:59' + tz };
+}
+
+// ──────────────────────────────────────────────────────────────
+// DATA LOADING
+// ──────────────────────────────────────────────────────────────
+async function loadData(silent = false) {
+    if (!silent) showLoading(true);
+    try {
+        const { start, end } = getPeriodRange();
+        const { data, error } = await supaClient
+            .from('pedidos')
+            .select('*')
+            .gte('created_at', start)
+            .lte('created_at', end)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        const concluidos = (data || []).filter(p => p.status === 'Concluído');
+        renderAll(concluidos, data || []);
+
+        const now = new Date();
+        document.getElementById('last-update').textContent = `Atualizado às ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    } catch(err) {
+        console.error('Erro ao carregar dados:', err);
+    }
+    if (!silent) showLoading(false);
+}
+
+function showLoading(v) {
+    const loader = document.getElementById('loading-overlay');
+    if (v) { loader.classList.remove('hidden'); loader.classList.add('flex'); }
+    else { loader.classList.add('hidden'); loader.classList.remove('flex'); }
+}
+
+// ──────────────────────────────────────────────────────────────
+// PARSERS
+// ──────────────────────────────────────────────────────────────
+function parseMoney(str) {
+    if (!str) return 0;
+    const s = String(str).replace(/[^\d,]/g,'').replace(',','.');
+    return parseFloat(s) || 0;
+}
+
+function fmtMoney(v) { return 'R$ ' + (v || 0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+function parseItens(itensStr) {
+    if (!itensStr) return [];
+    const parts = String(itensStr).split('|').map(s => s.trim()).filter(Boolean);
+    const result = [];
+    for (const part of parts) {
+        const qtyMatch = part.match(/^(\d+)x\s+(.+?)(?:\s*\[R\$\s*([\d,.]+)\])?$/);
+        if (!qtyMatch) continue;
+        const qty = parseInt(qtyMatch[1]) || 1;
+        let fullName = qtyMatch[2].trim();
+        const priceStr = qtyMatch[3] || '0';
+        const price = parseMoney(priceStr.replace(',','.'));
+        const addMatch = fullName.match(/\(\+([^)]+)\)/);
+        const adicional = addMatch ? addMatch[1].trim() : null;
+        const baseName = fullName.replace(/\(.*\)/, '').trim();
+        result.push({ qty, baseName, adicional, price, fullName });
+    }
+    return result;
+}
+
+function parsePagamento(pagStr) {
+    if (!pagStr || pagStr === 'A Pagar' || pagStr === 'A Pagar no Caixa') return {};
+    const methods = {};
+    const parts = String(pagStr).split('|').map(s => s.trim()).filter(Boolean);
+    for (const part of parts) {
+        const m = part.match(/^(.+?):\s*R\$\s*([\d,.]+)/);
+        if (m) {
+            const method = m[1].trim();
+            const val = parseMoney(m[2]);
+            if (val > 0) methods[method] = (methods[method] || 0) + val;
+        }
+    }
+    return methods;
+}
+
+function normMethod(name) {
+    const n = String(name).toLowerCase();
+    if (n.includes('pix')) return 'Pix';
+    if (n.includes('crédito') || n.includes('credito') || n.includes('cred')) return 'Cartão Crédito';
+    if (n.includes('débito') || n.includes('debito') || n.includes('deb')) return 'Cartão Débito';
+    if (n.includes('dinheiro') || n.includes('espécie') || n.includes('cash')) return 'Dinheiro';
+    return name;
+}
+
+function normCanal(tipo) {
+    if (!tipo) return 'Outros';
+    const t = String(tipo).toLowerCase();
+    if (t.includes('entrega') || t.includes('delivery')) return 'Delivery';
+    if (t.includes('retirada')) return 'Retirada';
+    if (t.includes('mesa') || t.includes('salão') || t.includes('salon')) return 'Salão / Mesa';
+    if (t.includes('balcão') || t.includes('balcao')) return 'Balcão';
+    return tipo;
+}
+
+function parseDate(pedido) {
+    if (pedido.created_at) return new Date(pedido.created_at);
+    if (pedido.data) {
+        const m = pedido.data.match(/(\d{2})\/(\d{2})\/(\d{4}),?\s+(\d{2}):(\d{2})/);
+        if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]), parseInt(m[4]), parseInt(m[5]));
+    }
+    return new Date();
+}
+
+// ──────────────────────────────────────────────────────────────
+// RENDER ALL
+// ──────────────────────────────────────────────────────────────
+function renderAll(concluidos, todos) {
+    renderKPIs(concluidos);
+    renderPagamentos(concluidos);
+    renderProdutos(concluidos);
+    renderOperacional(todos);
+}
+
+// ──────────────────────────────────────────────────────────────
+// KPIs
+// ──────────────────────────────────────────────────────────────
+function renderKPIs(concluidos) {
+    let total = 0;
+    concluidos.forEach(p => { total += parseMoney(p.total); });
+    const count = concluidos.length;
+    const ticket = count > 0 ? total / count : 0;
+
+    document.getElementById('kpi-fat').textContent = fmtMoney(total);
+    document.getElementById('kpi-fat-sub').textContent = count;
+    document.getElementById('kpi-ped').textContent = count;
+    document.getElementById('kpi-tick').textContent = fmtMoney(ticket);
+}
+
+// ──────────────────────────────────────────────────────────────
+// PAGAMENTOS
+// ──────────────────────────────────────────────────────────────
+function renderPagamentos(concluidos) {
+    const agg = {};
+    concluidos.forEach(p => {
+        const methods = parsePagamento(p.pagamento);
+        if (Object.keys(methods).length === 0) {
+            const v = parseMoney(p.total);
+            if (v > 0) agg['A Pagar / Outros'] = (agg['A Pagar / Outros'] || 0) + v;
+            return;
+        }
+        for (const [k, v] of Object.entries(methods)) {
+            const norm = normMethod(k);
+            agg[norm] = (agg[norm] || 0) + v;
+        }
+    });
+
+    const labels = Object.keys(agg);
+    const values = Object.values(agg);
+    const total = values.reduce((a,b)=>a+b,0);
+
+    const emptyState = document.getElementById('pagamento-empty');
+    if (labels.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        destroyChart('chart-pagamento');
+        document.getElementById('pagamento-list').innerHTML = '';
+        return;
+    }
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+
+    const COLORS = ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#64748b'];
+
+    destroyChart('chart-pagamento');
+    const ctx = document.getElementById('chart-pagamento').getContext('2d');
+    charts['chart-pagamento'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: COLORS.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 4,
+            }]
+        },
+        options: {
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Inter', size: 12, weight: 'bold' }, padding: 20 } },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtMoney(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)` } },
+                datalabels: { display: false }
+            },
+            animation: { duration: 700 }
+        }
+    });
+
+    const list = document.getElementById('pagamento-list');
+    list.innerHTML = labels.map((l,i) => `
+        <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50">
+            <div class="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style="background:${COLORS[i]}"></div>
+            <span class="flex-1 text-sm font-bold text-slate-700">${l}</span>
+            <span class="text-sm font-black text-slate-800">${fmtMoney(values[i])}</span>
+            <span class="text-[10px] font-bold text-slate-400 min-w-[40px] text-right bg-white px-1.5 py-0.5 rounded border border-slate-200">${((values[i]/total)*100).toFixed(1)}%</span>
+        </div>
+    `).join('');
+}
+
+// ──────────────────────────────────────────────────────────────
+// PRODUTOS
+// ──────────────────────────────────────────────────────────────
+function renderProdutos(concluidos) {
+    const prodQty = {}, prodFat = {}, adicionalFat = {}, adicionalQty = {};
+
+    concluidos.forEach(p => {
+        const itens = parseItens(p.itens);
+        itens.forEach(item => {
+            prodQty[item.baseName] = (prodQty[item.baseName] || 0) + item.qty;
+            prodFat[item.baseName] = (prodFat[item.baseName] || 0) + (item.price * item.qty);
+            if (item.adicional) {
+                // Split multiple addons if separated by comma
+                const adds = item.adicional.split(',').map(a=>a.trim());
+                adds.forEach(add => {
+                   adicionalFat[add] = (adicionalFat[add] || 0) + (item.price * item.qty / adds.length); // estimate if multiple
+                   adicionalQty[add] = (adicionalQty[add] || 0) + item.qty;
+                });
+            }
+        });
+    });
+
+    // Template Engine for Bars
+    const createRankItem = (num, name, val, pct, isMoney=false) => `
+        <li class="flex items-center gap-3 py-1">
+            <span class="w-6 text-center font-black text-sm ${num===1?'text-amber-500':num===2?'text-slate-400':num===3?'text-orange-400':'text-slate-300'}">${num}</span>
+            <div class="flex-1">
+                <div class="flex justify-between items-end mb-1">
+                    <span class="text-xs font-bold text-slate-700 truncate w-40">${name}</span>
+                    <span class="text-[10px] font-black ${isMoney?'text-emerald-600':'text-slate-500'}">${val}</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-1.5 rounded-full ${isMoney?'bg-emerald-500':'bg-red-500'}" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        </li>`;
+
+    // Top Qty
+    const byQty = Object.entries(prodQty).sort((a,b)=>b[1]-a[1]);
+    const maxQty = byQty[0]?.[1] || 1;
+    const topList = document.getElementById('top-vendidos-list');
+    const topEmpty = document.getElementById('top-empty');
+    
+    if (byQty.length === 0) {
+        topList.innerHTML = ''; topEmpty.classList.remove('hidden'); topEmpty.classList.add('block');
+    } else {
+        topEmpty.classList.add('hidden'); topEmpty.classList.remove('block');
+        topList.innerHTML = byQty.slice(0,10).map(([n, q], i) => createRankItem(i+1, n, `${q} un`, (q/maxQty)*100, false)).join('');
+    }
+
+    // Top Fat
+    const byFat = Object.entries(prodFat).sort((a,b)=>b[1]-a[1]);
+    const maxFat = byFat[0]?.[1] || 1;
+    const topFatList = document.getElementById('top-fat-list');
+    const topFatEmpty = document.getElementById('top-fat-empty');
+    
+    if (byFat.length === 0) {
+        topFatList.innerHTML = ''; topFatEmpty.classList.remove('hidden'); topFatEmpty.classList.add('block');
+    } else {
+        topFatEmpty.classList.add('hidden'); topFatEmpty.classList.remove('block');
+        topFatList.innerHTML = byFat.slice(0,10).map(([n, f], i) => createRankItem(i+1, n, fmtMoney(f), (f/maxFat)*100, true)).join('');
+    }
+
+    // Adicionais
+    const adList = document.getElementById('adicional-list');
+    const adEmpty = document.getElementById('adicional-empty');
+    const adTotal = Object.values(adicionalFat).reduce((a,b)=>a+b,0);
+    document.getElementById('adicional-total').textContent = fmtMoney(adTotal);
+
+    const byAdd = Object.entries(adicionalFat).sort((a,b)=>b[1]-a[1]);
+    if (byAdd.length === 0) {
+        adList.innerHTML = ''; adEmpty.classList.remove('hidden'); adEmpty.classList.add('block');
+    } else {
+        adEmpty.classList.add('hidden'); adEmpty.classList.remove('block');
+        adList.innerHTML = byAdd.map(([name, fat]) => `
+            <div class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm">
+                <i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i>
+                <span class="text-xs font-bold text-amber-900">${name}</span>
+                <span class="text-xs font-black text-amber-600 ml-1">${fmtMoney(fat)}</span>
+            </div>
+        `).join('');
+    }
+
+    // Patinho Feio
+    const paList = document.getElementById('patinho-list');
+    const paEmpty = document.getElementById('patinho-empty');
+    const bottom = byQty.slice().reverse().slice(0, 8);
+    if (bottom.length === 0) {
+        paList.innerHTML = ''; paEmpty.classList.remove('hidden'); paEmpty.classList.add('block');
+    } else {
+        paEmpty.classList.add('hidden'); paEmpty.classList.remove('block');
+        paList.innerHTML = bottom.map(([n, q]) => `
+            <li class="flex items-center gap-3 py-1 opacity-70 hover:opacity-100 transition-opacity">
+                <span class="w-6 text-center text-sm"><i data-lucide="alert-circle" class="w-4 h-4 text-slate-400 inline"></i></span>
+                <div class="flex-1">
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-xs font-bold text-slate-600 truncate w-40">${n}</span>
+                        <span class="text-[10px] font-bold text-slate-500">${q} un</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                        <div class="h-1 rounded-full bg-slate-400" style="width: ${(q/maxQty)*100}%"></div>
+                    </div>
+                </div>
+            </li>
+        `).join('');
+    }
+    lucide.createIcons();
+}
+
+// ──────────────────────────────────────────────────────────────
+// OPERACIONAL
+// ──────────────────────────────────────────────────────────────
+function renderOperacional(todos) {
+    const horaCount = Array(24).fill(0);
+    const diaHora = {}; 
+    const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const canaisFat = {}, canaisVol = {};
+
+    todos.forEach(p => {
+        const d = parseDate(p);
+        const hour = d.getHours();
+        const dow = DAYS[d.getDay()];
+        const hourKey = String(hour).padStart(2,'0');
+
+        horaCount[hour]++;
+        if (!diaHora[dow]) diaHora[dow] = {};
+        diaHora[dow][hourKey] = (diaHora[dow][hourKey] || 0) + 1;
+
+        const canal = normCanal(p.tipo);
+        if (p.status === 'Concluído') {
+            canaisFat[canal] = (canaisFat[canal] || 0) + parseMoney(p.total);
+        }
+        canaisVol[canal] = (canaisVol[canal] || 0) + 1;
+    });
+
+    // Chart hora
+    const horaEmpty = document.getElementById('hora-empty');
+    const totalH = horaCount.reduce((a,b)=>a+b,0);
+    if (totalH === 0) {
+        horaEmpty.classList.remove('hidden'); horaEmpty.classList.add('flex');
+        document.getElementById('chart-hora').style.display = 'none';
+    } else {
+        horaEmpty.classList.add('hidden'); horaEmpty.classList.remove('flex');
+        document.getElementById('chart-hora').style.display = '';
+        destroyChart('chart-hora');
+        const ctx = document.getElementById('chart-hora').getContext('2d');
+        charts['chart-hora'] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}h`),
+                datasets: [{
+                    label: 'Pedidos',
+                    data: horaCount,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ef4444',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { display: false } },
+                scales: {
+                    x: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } },
+                    y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' }, stepSize: 1 }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    renderHeatmap(diaHora, DAYS);
+
+    // Canais
+    const canalLabels = Object.keys(canaisVol);
+    const canalVolVals = canalLabels.map(k => canaisVol[k]);
+    const canalFatVals = canalLabels.map(k => canaisFat[k] || 0);
+    const CC = ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6'];
+
+    destroyChart('chart-canal-vol');
+    destroyChart('chart-canal-fat');
+
+    if (canalLabels.length > 0) {
+        const ctxV = document.getElementById('chart-canal-vol').getContext('2d');
+        charts['chart-canal-vol'] = new Chart(ctxV, {
+            type: 'bar',
+            data: {
+                labels: canalLabels,
+                datasets: [{
+                    data: canalVolVals,
+                    backgroundColor: CC.slice(0,canalLabels.length),
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold', size: 10 } } },
+                    y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', stepSize: 1 }, beginAtZero: true }
+                }
+            }
+        });
+
+        const ctxF = document.getElementById('chart-canal-fat').getContext('2d');
+        charts['chart-canal-fat'] = new Chart(ctxF, {
+            type: 'bar',
+            data: {
+                labels: canalLabels,
+                datasets: [{
+                    data: canalFatVals,
+                    backgroundColor: CC.slice(0,canalLabels.length),
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false }, datalabels: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` ${fmtMoney(ctx.parsed.y)}` } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold', size: 10 } } },
+                    y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', callback: v => 'R$ '+v }, beginAtZero: true }
+                }
+            }
+        });
+
+        const sumEl = document.getElementById('canal-summary');
+        const totalVol = canalVolVals.reduce((a,b)=>a+b,0) || 1;
+        sumEl.innerHTML = canalLabels.map((l,i) => `
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">${l}</div>
+                <div class="text-xl font-black mb-1" style="color:${CC[i]}">${fmtMoney(canalFatVals[i])}</div>
+                <div class="text-[10px] font-bold text-slate-500 bg-slate-50 rounded-full inline-block px-2 py-0.5 border border-slate-100">${canalVolVals[i]} pdds · ${((canalVolVals[i]/totalVol)*100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// HEATMAP
+// ──────────────────────────────────────────────────────────────
+function renderHeatmap(diaHora, DAYS) {
+    const container = document.getElementById('heatmap-container');
+    let maxVal = 0;
+    for (const d of DAYS) {
+        for (const h in (diaHora[d]||{})) {
+            if ((diaHora[d][h]||0) > maxVal) maxVal = diaHora[d][h];
+        }
+    }
+
+    if (maxVal === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-400 font-medium text-sm"><i data-lucide="calendar-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>Sem dados suficientes.</div>';
+        lucide.createIcons();
+        return;
+    }
+
+    const hours = ['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
+
+    const getColor = (v) => {
+        if (v === 0) return '#f8fafc'; // slate-50
+        const t = Math.max(0.2, v / maxVal);
+        return `rgba(220, 38, 38, ${t})`; // Tailwind red-600 com opacidade
+    };
+
+    let html = '<div class="heatmap-grid">';
+    html += '<div class="heatmap-header"></div>';
+    for (const d of DAYS) html += `<div class="heatmap-header">${d}</div>`;
+
+    for (const h of hours) {
+        html += `<div class="heatmap-label">${h}h</div>`;
+        for (const d of DAYS) {
+            const v = (diaHora[d] || {})[h] || 0;
+            const bg = getColor(v);
+            const tc = v > maxVal * 0.5 ? '#ffffff' : (v === 0 ? '#cbd5e1' : '#7f1d1d');
+            const shadow = v > 0 ? 'box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05)' : '';
+            html += `<div class="heatmap-cell" style="background:${bg}; color:${tc}; ${shadow}" title="${d} ${h}h: ${v} pedidos">${v > 0 ? v : '-'}</div>`;
+        }
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ──────────────────────────────────────────────────────────────
+// CHART UTILS
+// ──────────────────────────────────────────────────────────────
+function destroyChart(id) {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+</script>
+</body>
+</html>
