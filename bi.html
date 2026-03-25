@@ -293,9 +293,54 @@
         <div id="canal-summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
     </div>
 
+    <!-- ── Bloco 4: Histórico de Pedidos ── -->
+    <div class="mb-10">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 mb-4 mt-10">
+            <i data-lucide="list-ordered" class="text-red-500 w-5 h-5"></i> Histórico de Pedidos
+        </h2>
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            <th class="py-4 pl-6 pr-4">Data/Hora</th>
+                            <th class="py-4 pr-4">Pedido</th>
+                            <th class="py-4 pr-4">Cliente / Tipo</th>
+                            <th class="py-4 pr-4">Status</th>
+                            <th class="py-4 pr-4 text-right">Total</th>
+                            <th class="py-4 pr-6 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body" class="text-sm divide-y divide-slate-100">
+                        <!-- JS injects here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="orders-empty" class="hidden text-center py-12 text-slate-400 font-medium text-sm">
+                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+                Nenhum pedido encontrado no período.
+            </div>
+        </div>
+    </div>
+
     <p class="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-8 pb-4">
         Morangos Tatuí · Dashboard Inteligente
     </p>
+
+</main>
+
+<!-- Modal Detalhes do Pedido -->
+<div id="order-modal" class="fixed inset-0 z-[600] bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden transform transition-all">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i data-lucide="receipt" class="text-blue-500 w-5 h-5"></i> Detalhes do Pedido</h3>
+            <button onclick="closeOrderModal()" class="text-slate-400 hover:text-red-500 bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1" id="order-modal-content">
+            <!-- JS injects here -->
+        </div>
+    </div>
+</div>
 
 </div>
 
@@ -313,6 +358,7 @@ let currentPeriod = 'today';
 let customStart = null, customEnd = null;
 let charts = {};
 let catalogProducts = []; // Para extrair os preços verdadeiros dos produtos/adicionais
+let currentOrdersData = []; // Armazena os pedidos do período atual para exibição no modal
 
 // ──────────────────────────────────────────────────────────────
 // LOGIN E INICIALIZAÇÃO
@@ -443,6 +489,8 @@ async function loadData(silent = false) {
 
         if (error) throw error;
 
+        currentOrdersData = data || []; // Salva para uso no modal
+
         const concluidos = (data || []).filter(p => p.status === 'Concluído');
         renderAll(concluidos, data || []);
 
@@ -572,6 +620,7 @@ function renderAll(concluidos, todos) {
     renderPagamentos(concluidos);
     renderProdutos(concluidos);
     renderOperacional(todos);
+    renderListaPedidos(todos);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -975,6 +1024,111 @@ function renderHeatmap(diaHora, DAYS) {
     }
     html += '</div>';
     container.innerHTML = html;
+}
+
+// ──────────────────────────────────────────────────────────────
+// LISTA DE PEDIDOS (HISTÓRICO)
+// ──────────────────────────────────────────────────────────────
+function renderListaPedidos(todos) {
+    const tbody = document.getElementById('orders-table-body');
+    const empty = document.getElementById('orders-empty');
+    
+    if (!todos || todos.length === 0) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        empty.classList.add('block');
+        return;
+    }
+    empty.classList.add('hidden');
+    empty.classList.remove('block');
+
+    const sorted = [...todos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    tbody.innerHTML = sorted.map(o => {
+        const date = parseDate(o);
+        const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        const dateStr = `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}`;
+        
+        let statusBadge = '';
+        if(o.status === 'Concluído') statusBadge = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase border border-emerald-200">Concluído</span>';
+        else if(o.status === 'Cancelado') statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase border border-red-200">Cancelado</span>';
+        else statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase border border-amber-200">${o.status}</span>`;
+
+        return `
+        <tr class="hover:bg-slate-50 transition-colors group">
+            <td class="py-4 pl-6 pr-4 text-slate-500 font-medium whitespace-nowrap text-xs">${dateStr} <span class="text-slate-400 ml-1">${timeStr}</span></td>
+            <td class="py-4 pr-4 font-bold text-slate-700 text-sm">#${String(o.id).slice(-4)}</td>
+            <td class="py-4 pr-4">
+                <div class="font-bold text-slate-800 truncate max-w-[150px] sm:max-w-[200px]" title="${o.cliente}">${o.cliente}</div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">${o.tipo}</div>
+            </td>
+            <td class="py-4 pr-4">${statusBadge}</td>
+            <td class="py-4 pr-4 text-right font-black text-slate-800 whitespace-nowrap">${fmtMoney(parseMoney(o.total))}</td>
+            <td class="py-4 pr-6 text-center">
+                <button onclick="openOrderModal('${o.id}')" class="text-slate-400 hover:text-blue-600 transition-colors p-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow active:scale-95 group-hover:border-blue-200 group-hover:bg-blue-50" title="Ver Detalhes">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+    lucide.createIcons();
+}
+
+function openOrderModal(id) {
+    const order = currentOrdersData.find(o => String(o.id) === String(id));
+    if(!order) return;
+
+    const content = document.getElementById('order-modal-content');
+    const date = parseDate(order);
+    const dateStr = `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()} às ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+
+    content.innerHTML = `
+        <div class="mb-5">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Pedido #${String(order.id).slice(-4)}</span>
+                <span class="text-xs font-medium text-slate-500">${dateStr}</span>
+            </div>
+            <h4 class="text-xl font-black text-slate-800 leading-tight">${order.cliente}</h4>
+            <span class="inline-block mt-2 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded uppercase tracking-widest">${order.tipo}</span>
+        </div>
+        
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4 shadow-inner">
+            <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i> Itens Solicitados</h5>
+            <div class="text-sm text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">${(order.itens || '').replace(/\|/g, '\n')}</div>
+        </div>
+
+        ${order.obs ? `
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
+            <h5 class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Observações</h5>
+            <div class="text-sm text-amber-900 font-medium">${order.obs}</div>
+        </div>
+        ` : ''}
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                <span class="text-sm font-bold text-slate-800">${order.status}</span>
+            </div>
+            <div class="flex justify-between items-start mb-3 pb-3 border-b border-slate-100">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Pagamento</span>
+                <span class="text-sm font-bold text-slate-700 text-right">${(order.pagamento || 'A Pagar').replace(/\|/g, '<br>')}</span>
+            </div>
+            <div class="flex justify-between items-center mt-1">
+                <span class="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                <span class="text-2xl font-black text-emerald-600">${fmtMoney(parseMoney(order.total))}</span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('order-modal').classList.remove('hidden');
+    document.getElementById('order-modal').classList.add('flex');
+    lucide.createIcons();
+}
+
+function closeOrderModal() {
+    document.getElementById('order-modal').classList.add('hidden');
+    document.getElementById('order-modal').classList.remove('flex');
 }
 
 // ──────────────────────────────────────────────────────────────
