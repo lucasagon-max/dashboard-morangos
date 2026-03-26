@@ -1,731 +1,331 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardápio Digital - Morangos Tatuí</title>
-    
-    <meta property="og:title" content="Nosso Cardápio Digital 😋">
-    <meta property="og:description" content="Faça seu pedido online de forma rápida e prática!">
-    <meta property="og:image" content="https://i.postimg.cc/zDgfht66/logotransparente01.png"> 
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Morangos Tatuí · Delivery</title>
+<link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; scroll-behavior: smooth; }
-        body::-webkit-scrollbar { width: 8px; }
-        body::-webkit-scrollbar-track { background: #f1f1f1; }
-        body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #dc2626; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .custom-checkbox:checked { background-color: #dc2626; border-color: #dc2626; }
-        .order-option input:checked + div { background-color: #fee2e2; border-color: #dc2626; color: #991b1b; }
-        .size-option input:checked + div { background-color: #dc2626; border-color: #dc2626; color: white; }
+<!-- Supabase / Tailwind / Lucide / Google Fonts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-        .carousel-container { position: relative; overflow: hidden; width: 100%; border-radius: 1rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
-        .carousel-slide { min-width: 100%; position: relative; cursor: pointer; }
-        .carousel-overlay { background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%); }
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+        colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
+      }
+    }
+  }
+</script>
 
-        #category-scroll-container { cursor: grab; user-select: none; }
-        #category-scroll-container:active { cursor: grabbing; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @media (max-width: 640px) {
-            .sticky-search-wrapper { flex-direction: column; gap: 0.5rem; }
-            .sticky-search-input { width: 100%; }
-        }
-
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+<style>
+  body { background-color: #f8fafc; color: #0f172a; -webkit-tap-highlight-color: transparent; }
+  .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  /* Esconder setinhas de input number */
+  input[type=number]::-webkit-inner-spin-button, 
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  
+  .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #e2e8f0; }
+</style>
 </head>
-<body class="flex flex-col min-h-screen pb-20">
+<body class="min-h-screen flex flex-col font-sans pb-20"> <!-- pb-20 para a barra inferior não tampar conteúdo -->
 
-    <script>
-        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
-
-    <header class="bg-white pt-6 pb-4 border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
-            
-            <div class="flex-shrink-0">
-                <img src="https://lucasagon-max.github.io/dashboard-morangos/logo.png" alt="Logotipo" class="h-24 md:h-32 object-contain hover:scale-105 transition-transform" onerror="this.src='https://i.postimg.cc/zDgfht66/logotransparente01.png'">
-            </div>
-
-            <div class="flex-grow flex flex-col gap-2 items-center md:items-start">
-                <div class="space-y-1">
-                    <p class="text-gray-600 text-sm flex items-center gap-2 justify-center md:justify-start">
-                        <i data-lucide="map-pin" class="w-4 h-4 text-red-600"></i>
-                        Av. Coronel Firmo Vieira de Camargo, 420
-                    </p>
-                    <div class="text-xs text-gray-500 space-y-0.5">
-                        <p class="flex items-center gap-2 justify-center md:justify-start"><i data-lucide="clock" class="w-3 h-3"></i> Seg a Sex: 10h às 19h</p>
-                        <p class="flex items-center gap-2 justify-center md:justify-start"><i data-lucide="clock" class="w-3 h-3"></i> Sábado: 08h às 18h</p>
-                    </div>
-                </div>
-
-                <div id="shop-status" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-xs font-bold text-gray-500 mt-1">
-                    <span class="relative flex h-2.5 w-2.5">
-                      <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                      <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-gray-500"></span>
-                    </span>
-                    <span id="status-text">Verificando...</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-2 w-full md:w-auto">
-                <a href="https://wa.me/5515991947140" target="_blank" class="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
-                    <i data-lucide="message-circle" class="w-4 h-4"></i>
-                    Tirar Dúvidas
-                </a>
-            </div>
-        </div>
-    </header>
-
-    <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 py-3 transition-all">
-        <div class="w-full max-w-7xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row gap-3 items-center">
-                
-                <div class="flex w-full md:w-auto gap-2 items-center">
-                    <div class="relative flex-grow md:w-64 md:flex-grow-0 group">
-                        <input type="text" id="search-input" placeholder="Buscar no cardápio..." 
-                            class="w-full pl-9 pr-4 py-2 bg-gray-100 border-2 border-transparent focus:border-red-500 focus:bg-white rounded-xl text-sm outline-none transition-all placeholder-gray-400 font-medium">
-                        <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-red-500 transition-colors w-4 h-4"></i>
-                    </div>
-
-                    <button onclick="toggleCart()" class="lg:hidden flex-shrink-0 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm active:scale-95 transition-all">
-                        <div class="relative">
-                            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-                            <span id="header-cart-count" class="absolute -top-1.5 -right-1.5 bg-yellow-400 text-red-900 text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full hidden border border-white">0</span>
-                        </div>
-                        <span id="header-cart-total" class="whitespace-nowrap">R$ 0,00</span>
-                    </button>
-                </div>
-
-                <div class="hidden md:block w-px h-8 bg-gray-200 mx-2"></div>
-                
-                <div id="category-scroll-container" class="w-full overflow-x-auto pb-1 px-1 scrollbar-hide">
-                    <div id="category-filters" class="flex gap-2 whitespace-nowrap md:justify-start">
-                        <div class="animate-pulse bg-gray-200 h-9 w-20 rounded-full"></div>
-                        <div class="animate-pulse bg-gray-200 h-9 w-24 rounded-full"></div>
-                        <div class="animate-pulse bg-gray-200 h-9 w-16 rounded-full"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- ── TELA 1: LOGIN E CADASTRO ── -->
+<main id="screen-auth" class="flex-1 flex flex-col items-center justify-center p-6 fade-in">
+  <div class="bg-white border border-slate-200 rounded-3xl p-8 max-w-sm w-full shadow-sm">
+    <div class="text-center mb-8">
+      <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-20 mx-auto rounded-xl shadow-sm mb-4">
+      <h2 class="font-serif text-2xl font-black text-slate-900">Bem-vindo!</h2>
+      <p class="text-sm text-slate-500 mt-1">Faça login ou cadastre-se para pedir.</p>
     </div>
 
-    <main class="flex-grow p-4 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <!-- Passo 1: WhatsApp -->
+    <div id="auth-step-1">
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Seu WhatsApp</label>
+      <input type="tel" id="input-phone" placeholder="(15) 99999-9999" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-lg font-medium text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all mb-4">
+      <button onclick="checkPhone()" class="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-3.5 font-bold transition-all shadow-sm flex justify-center items-center gap-2">
+        Continuar <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Passo 2A: Login (PIN) -->
+    <div id="auth-step-login" class="hidden fade-in">
+      <div class="flex items-center gap-3 bg-brand-50 text-brand-700 p-3 rounded-xl mb-6">
+        <i data-lucide="user-check" class="w-5 h-5 shrink-0"></i>
+        <div class="text-sm font-medium" id="login-welcome-msg">Bem-vindo de volta!</div>
+      </div>
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Digite seu PIN (4 dígitos)</label>
+      <input type="password" id="input-pin-login" maxlength="4" placeholder="****" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-2xl tracking-widest text-center font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all mb-4">
+      <button onclick="doLogin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-3.5 font-bold transition-all shadow-sm">Entrar no Cardápio</button>
+      <button onclick="resetAuth()" class="w-full text-brand-600 text-sm font-bold mt-4 py-2">Voltar</button>
+    </div>
+
+    <!-- Passo 2B: Cadastro Completo -->
+    <div id="auth-step-register" class="hidden fade-in">
+      <div class="bg-amber-50 text-amber-700 p-3 rounded-xl mb-6 text-sm font-medium flex gap-3 items-start">
+        <i data-lucide="party-popper" class="w-5 h-5 shrink-0 mt-0.5"></i>
+        Parece que é sua primeira vez! Complete o cadastro para ganhar pontos.
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Seu Nome Completo</label>
+          <input type="text" id="reg-nome" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+        </div>
         
-        <div class="lg:col-span-2 w-full">
-            <section id="promo-section" class="carousel-container shadow-xl hidden">
-                <div id="carousel-track" class="carousel-track"></div>
-                <div id="carousel-dots" class="absolute bottom-4 left-0 right-0 flex justify-center gap-2"></div>
-            </section>
-
-            <div id="loader" class="flex flex-col items-center justify-center py-10 gap-4">
-                <div class="loader"></div>
-                <p class="text-xs text-gray-400 animate-pulse">Carregando cardápio...</p>
-            </div>
-            
-            <div id="product-grid" class="flex flex-col gap-3"></div>
-            
-            <div id="empty-state" class="hidden text-center py-12">
-                <div class="bg-white p-6 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-sm">
-                    <i data-lucide="search-x" class="w-8 h-8 text-gray-300"></i>
-                </div>
-                <p class="text-gray-500 font-medium">Nenhum produto encontrado.</p>
-            </div>
+        <div class="flex gap-2">
+          <div class="w-1/3">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">CEP</label>
+            <input type="text" id="reg-cep" maxlength="9" onblur="buscarCEP()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+          <div class="w-2/3">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Rua / Avenida</label>
+            <input type="text" id="reg-rua" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none bg-slate-50" readonly>
+          </div>
         </div>
 
-        <aside class="hidden lg:block lg:col-span-1 sticky top-24">
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
-                <div class="p-4 border-b bg-gray-50/50 flex items-center justify-between">
-                    <h2 class="font-bold text-lg flex items-center gap-2 text-gray-800">
-                        <i data-lucide="shopping-bag" class="text-red-600 fill-red-100"></i> Seu Pedido
-                    </h2>
-                    <span id="header-cart-count-desktop" class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">0 itens</span>
-                </div>
-
-                <div id="cart-items-desktop" class="flex-grow overflow-y-auto p-4 space-y-3 bg-white min-h-[150px]">
-                     <div class="flex flex-col items-center justify-center h-40 text-gray-400 opacity-50">
-                        <i data-lucide="shopping-basket" class="w-10 h-10 mb-2"></i>
-                        <p class="text-xs font-bold uppercase tracking-widest">Carrinho vazio</p>
-                    </div>
-                </div>
-
-                <div class="p-4 border-t bg-gray-50 space-y-3">
-                    <div class="flex justify-between items-end text-gray-900 border-b border-dashed border-gray-300 pb-3">
-                        <span class="text-sm font-medium text-gray-500">Total</span>
-                        <span id="cart-total-desktop" class="text-2xl font-black text-red-600">R$ 0,00</span>
-                    </div>
-
-                    <button onclick="openCheckoutModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-100 active:scale-95 transition-all">
-                        <span>Continuar</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-        </aside>
-    </main>
-
-    <div id="cart-modal" class="fixed inset-0 z-[60] hidden lg:hidden">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="toggleCart()"></div>
-        <div class="absolute top-0 right-0 bottom-0 w-full max-w-sm bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="cart-panel">
-            
-            <div class="p-4 border-b bg-white shadow-sm z-10 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-bold text-xl flex items-center gap-2 text-gray-800">
-                        <i data-lucide="shopping-bag" class="text-red-600 fill-red-100"></i> Seu Pedido
-                    </h2>
-                    <button onclick="toggleCart()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6 text-gray-500"></i></button>
-                </div>
-            </div>
-
-            <div id="cart-items" class="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50"></div>
-
-            <div class="p-4 border-t bg-white space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10">
-                <div class="flex justify-between items-end text-gray-900 border-b border-dashed pb-4">
-                    <span class="text-sm font-medium text-gray-500">Total</span>
-                    <span id="cart-total-modal" class="text-2xl font-black text-red-600">R$ 0,00</span>
-                </div>
-                
-                <button onclick="openCheckoutModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-red-100 active:scale-95 transition-all text-lg">
-                    <span>Continuar</span>
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </button>
-            </div>
+        <div class="flex gap-2">
+          <div class="w-1/3">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Número</label>
+            <input type="text" id="reg-numero" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+          <div class="w-2/3">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Bairro</label>
+            <input type="text" id="reg-bairro" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none bg-slate-50" readonly>
+          </div>
         </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Complemento (Opcional)</label>
+          <input type="text" id="reg-comp" placeholder="Apto, Bloco, Ponto de referência..." class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-brand-600 uppercase tracking-widest mb-1">Crie um PIN (4 dígitos numéricos)</label>
+          <input type="password" id="reg-pin" maxlength="4" placeholder="****" class="w-full border border-brand-200 rounded-lg px-3 py-2 text-lg text-center font-bold focus:border-brand-500 focus:outline-none">
+          <p class="text-[10px] text-slate-400 mt-1 text-center">Memorize! Você usará este PIN nos próximos pedidos.</p>
+        </div>
+      </div>
+
+      <button onclick="doRegister()" id="btn-registrar" class="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-3 font-bold transition-all shadow-sm mt-6">Criar Conta</button>
+      <button onclick="resetAuth()" class="w-full text-slate-500 text-sm font-bold mt-2 py-2">Cancelar</button>
+    </div>
+  </div>
+</main>
+
+<!-- ── APP: CARDÁPIO, CARRINHO E PERFIL (Inicialmente Oculto) ── -->
+<div id="app-container" class="hidden flex-col flex-1">
+  
+  <!-- HEADER DO APP -->
+  <header class="bg-white px-5 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+    <div>
+      <h1 class="font-serif text-xl font-black text-slate-900">Morangos Tatuí</h1>
+      <p class="text-xs text-brand-600 font-bold" id="user-greeting">Olá, Carregando...</p>
+    </div>
+    <div class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-emerald-100">
+      <i data-lucide="coins" class="w-4 h-4"></i>
+      <span class="text-xs font-bold">R$ <span id="user-cashback">0,00</span></span>
+    </div>
+  </header>
+
+  <!-- TELA: CARDÁPIO -->
+  <main id="view-menu" class="flex-1 p-5 fade-in pb-8">
+    <div class="relative mb-6">
+      <i data-lucide="search" class="absolute left-3 top-3.5 w-4 h-4 text-slate-400"></i>
+      <input type="text" placeholder="Buscar doces, bebidas..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-brand-500 shadow-sm">
+    </div>
+    
+    <!-- Categorias renderizadas dinamicamente -->
+    <div id="menu-items" class="space-y-8">
+      <div class="text-center py-10 text-slate-400 text-sm"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2 text-brand-500"></i> Carregando cardápio...</div>
+    </div>
+  </main>
+
+  <!-- TELA: CARRINHO (Simples mockup para agora) -->
+  <main id="view-cart" class="hidden flex-1 p-5 fade-in">
+    <h2 class="font-serif text-2xl font-black text-slate-900 mb-6">Seu Carrinho</h2>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm">
+      <i data-lucide="shopping-bag" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+      <p class="text-slate-500 text-sm font-medium">Seu carrinho está vazio.</p>
+      <button onclick="switchTab('menu')" class="mt-4 text-brand-600 font-bold text-sm">Voltar ao Cardápio</button>
+    </div>
+  </main>
+
+  <!-- TELA: PERFIL -->
+  <main id="view-profile" class="hidden flex-1 p-5 fade-in">
+    <h2 class="font-serif text-2xl font-black text-slate-900 mb-6">Meu Perfil</h2>
+    
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+      <div class="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+        <div class="w-12 h-12 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-serif text-xl font-black" id="profile-initial">M</div>
+        <div>
+          <div class="font-bold text-slate-900" id="profile-name">Nome do Cliente</div>
+          <div class="text-xs text-slate-500" id="profile-phone">(15) 99999-9999</div>
+        </div>
+      </div>
+      <div class="text-sm">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Endereço de Entrega Principal</div>
+        <div class="font-medium text-slate-700 flex items-start gap-2">
+          <i data-lucide="map-pin" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i>
+          <span id="profile-address">Rua Exemplo, 123 - Bairro</span>
+        </div>
+      </div>
     </div>
 
-    <div id="checkout-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCheckoutModal()"></div>
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-[fadeIn_0.2s_ease-out]">
-            
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
-                    <i data-lucide="check-circle" class="text-red-600 w-5 h-5"></i> Finalizar Pedido
-                </h3>
-                <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-600 bg-white p-1 rounded-full shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
+    <button onclick="doLogout()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl py-3.5 font-bold transition-all flex justify-center items-center gap-2">
+      <i data-lucide="log-out" class="w-4 h-4"></i> Sair da Conta
+    </button>
+  </main>
 
-            <div class="p-6 overflow-y-auto flex-grow space-y-5">
-                
-                <div>
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Como deseja receber?</h4>
-                    <div class="grid grid-cols-3 gap-2">
-                        <label class="order-option cursor-pointer relative">
-                            <input type="radio" name="checkout_order_type" value="delivery" class="sr-only" checked onchange="toggleCheckoutMode()">
-                            <div class="checkout-opt border-2 rounded-xl p-3 text-center transition-all h-full flex flex-col items-center justify-center gap-1 border-gray-200 hover:border-red-200">
-                                <i data-lucide="bike" class="w-5 h-5 mb-1"></i>
-                                <span class="text-[10px] font-bold uppercase">Entrega</span>
-                            </div>
-                        </label>
-                        <label class="order-option cursor-pointer relative">
-                            <input type="radio" name="checkout_order_type" value="pickup" class="sr-only" onchange="toggleCheckoutMode()">
-                            <div class="checkout-opt border-2 rounded-xl p-3 text-center transition-all h-full flex flex-col items-center justify-center gap-1 border-gray-200 hover:border-red-200">
-                                <i data-lucide="shopping-bag" class="w-5 h-5 mb-1"></i>
-                                <span class="text-[10px] font-bold uppercase">Retirada</span>
-                            </div>
-                        </label>
-                        <label class="order-option cursor-pointer relative">
-                            <input type="radio" name="checkout_order_type" value="table" class="sr-only" onchange="toggleCheckoutMode()">
-                            <div class="checkout-opt border-2 rounded-xl p-3 text-center transition-all h-full flex flex-col items-center justify-center gap-1 border-gray-200 hover:border-red-200">
-                                <i data-lucide="utensils" class="w-5 h-5 mb-1"></i>
-                                <span class="text-[10px] font-bold uppercase">Mesa</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
+  <nav class="glass-nav fixed bottom-0 left-0 right-0 px-6 py-3 flex justify-around items-center z-50">
+    <button onclick="switchTab('menu')" id="tab-menu" class="nav-btn active flex flex-col items-center gap-1 text-brand-600 transition-colors">
+      <i data-lucide="layout-grid" class="w-6 h-6"></i>
+      <span class="text-[10px] font-bold">Cardápio</span>
+    </button>
+    <button onclick="switchTab('cart')" id="tab-cart" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-900 transition-colors relative">
+      <div class="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">0</div>
+      <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+      <span class="text-[10px] font-bold">Carrinho</span>
+    </button>
+    <button onclick="switchTab('profile')" id="tab-profile" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-slate-900 transition-colors">
+      <i data-lucide="user" class="w-6 h-6"></i>
+      <span class="text-[10px] font-bold">Perfil</span>
+    </button>
+  </nav>
 
-                <div class="space-y-3">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Seus Dados</h4>
-                    <div class="space-y-2">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1 ml-1">Seu Nome</label>
-                            <input type="text" id="checkout-name" placeholder="Ex: João Silva" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm focus:border-red-500 outline-none bg-gray-50 font-medium transition-colors">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1 ml-1">WhatsApp / Celular</label>
-                            <input type="tel" id="checkout-phone" placeholder="Ex: (15) 99999-9999" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm focus:border-red-500 outline-none bg-gray-50 font-medium transition-colors">
-                        </div>
-                    </div>
-                </div>
+</div>
 
-                <div id="checkout-address-group">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Endereço de Entrega</h4>
-                    <input type="text" id="checkout-address" placeholder="Rua, Número, Bairro e Complemento" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm focus:border-red-500 outline-none bg-gray-50 font-medium transition-colors">
-                </div>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÕES DO SUPABASE (COLOQUE SUAS CHAVES AQUI)
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'SUA_URL_DO_SUPABASE_AQUI'; 
+const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_AQUI';
 
-                <div id="checkout-table-group" class="hidden">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Qual sua mesa?</h4>
-                    <select id="checkout-table" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm focus:border-red-500 outline-none bg-white font-bold text-gray-700">
-                        <option value="" disabled selected>Selecionar Número</option>
-                        <option value="1">Mesa 01</option><option value="2">Mesa 02</option><option value="3">Mesa 03</option>
-                        <option value="4">Mesa 04</option><option value="5">Mesa 05</option><option value="6">Mesa 06</option>
-                    </select>
-                </div>
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            </div>
+// Variável Global para guardar os dados do cliente logado
+let clienteLogado = null;
+let currentPhone = '';
 
-            <div class="p-4 border-t bg-white safe-area-bottom">
-                <button id="btn-final-send" onclick="finalizeOrder()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-red-200 active:scale-95 transition-all text-lg group">
-                    <i data-lucide="send" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-                    <span>Confirmar Pedido</span>
-                </button>
-            </div>
-        </div>
-    </div>
+// Inicializar ícones
+lucide.createIcons();
 
-    <div id="options-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeOptionsModal()"></div>
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-[fadeIn_0.2s_ease-out]">
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h3 id="modal-product-name" class="font-bold text-lg text-gray-800 line-clamp-1">Nome</h3>
-                <button onclick="closeOptionsModal()" class="text-gray-400 hover:text-gray-600 bg-white p-1 rounded-full shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="p-4 overflow-y-auto flex-grow">
-                <p id="modal-product-desc" class="text-sm text-gray-500 mb-5 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">Descrição...</p>
-                <div class="bg-white border-2 border-red-100 p-4 rounded-xl mb-6 flex justify-between items-center shadow-sm">
-                    <span class="text-xs font-bold text-red-800 uppercase tracking-widest">Preço Base</span>
-                    <span id="modal-product-price" class="text-2xl font-black text-red-600">R$ 0,00</span>
-                </div>
-                <div id="modal-sizes-section" class="mb-6 hidden">
-                    <h4 class="font-bold text-xs text-gray-400 mb-3 uppercase tracking-widest flex items-center gap-2"><i data-lucide="scaling" class="w-3 h-3"></i> Tamanho</h4>
-                    <div id="modal-sizes-list" class="grid grid-cols-2 gap-2"></div>
-                </div>
-                <div id="modal-addons-section">
-                    <h4 class="font-bold text-xs text-gray-400 mb-3 uppercase tracking-widest flex items-center gap-2"><i data-lucide="plus-circle" class="w-3 h-3"></i> Adicionais</h4>
-                    <div id="modal-addons-list" class="space-y-2"></div>
-                </div>
-            </div>
-            <div class="p-4 border-t bg-white safe-area-bottom">
-                <button onclick="confirmAddToCart()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl flex items-center justify-center gap-3 shadow-xl shadow-red-100 active:scale-95 transition-all group">
-                    <span>Adicionar</span>
-                    <span id="modal-total-btn" class="bg-red-800 text-red-100 px-2 py-0.5 rounded text-xs group-hover:bg-white group-hover:text-red-600 transition-colors">R$ 0,00</span>
-                </button>
-            </div>
-        </div>
-    </div>
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. LÓGICA DE AUTENTICAÇÃO (LOGIN / CADASTRO)
+// ─────────────────────────────────────────────────────────────────────────────
 
-    <script>
-        const CATEGORY_ORDER = ["Salgados", "Sucos Frescos", "Sucos Especiais", "Smoothies", "Milk Shakes", "Bebidas Geladas", "Cafés", "Cafés Especiais", "Chás Gelados", "Sobremesas", "Doces"];
-        const HIDDEN_CATEGORIES = ["Morangos Frescos", "Frutas Congeladas", "Artesanatos"];
+// Mascara de telefone simples
+document.getElementById('input-phone').addEventListener('input', function(e) {
+  let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+  e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+});
 
-        lucide.createIcons();
+// Reseta a tela de login
+function resetAuth() {
+  document.getElementById('auth-step-1').classList.remove('hidden');
+  document.getElementById('auth-step-login').classList.add('hidden');
+  document.getElementById('auth-step-register').classList.add('hidden');
+  document.getElementById('input-pin-login').value = '';
+}
 
-        let allProducts = [];
-        let promoProducts = [];
-        let addonsList = []; 
-        let cart = [];
-        let currentCategory = 'Todos';
-        let searchQuery = '';
-        let currentSelection = null;
-        let currentSlide = 0;
+// Verifica se o telefone já existe
+async function checkPhone() {
+  const phone = document.getElementById('input-phone').value.replace(/\D/g, '');
+  if(phone.length < 10) { alert('Digite um celular válido com DDD.'); return; }
+  
+  currentPhone = phone; // Guarda o número limpo
+  
+  // Tentar achar o cliente no banco
+  const { data, error } = await supabase.from('clientes').select('*').eq('telefone', phone).single();
+  
+  document.getElementById('auth-step-1').classList.add('hidden');
 
-        function checkRestaurantStatus() {
-            const now = new Date();
-            const day = now.getDay(); 
-            const hour = now.getHours();
-            const minutes = now.getMinutes();
-            const totalMinutes = hour * 60 + minutes;
+  if(data) {
+    // Cliente existe -> Vai para o Login (PIN)
+    clienteLogado = data; // Guarda na memória (temporário, só loga mesmo se acertar o PIN)
+    document.getElementById('login-welcome-msg').innerText = `Bem-vindo de volta, ${data.nome.split(' ')[0]}!`;
+    document.getElementById('auth-step-login').classList.remove('hidden');
+    setTimeout(() => document.getElementById('input-pin-login').focus(), 100);
+  } else {
+    // Cliente NOVO -> Vai para o Cadastro
+    document.getElementById('auth-step-register').classList.remove('hidden');
+  }
+}
 
-            let isOpen = false;
-            let statusText = "Fechado";
-            let colorClass = "bg-red-500";
-            let bgClass = "bg-red-50 text-red-700 border-red-100";
-            let pingColor = "bg-red-400";
+// Valida o PIN (Login)
+function doLogin() {
+  const pin = document.getElementById('input-pin-login').value;
+  if(pin === clienteLogado.pin_senha) {
+    // Sucesso!
+    entrarNoApp();
+  } else {
+    alert('PIN incorreto. Tente novamente.');
+    document.getElementById('input-pin-login').value = '';
+  }
+}
 
-            if (day >= 1 && day <= 5) {
-                if (totalMinutes >= 600 && totalMinutes < 1200) { 
-                    isOpen = true;
-                    if (totalMinutes >= 1170) { statusText = "Fecha em breve"; colorClass = "bg-yellow-500"; pingColor = "bg-yellow-400"; bgClass = "bg-yellow-50 text-yellow-700"; } 
-                    else { statusText = "Aberto Agora"; colorClass = "bg-green-500"; pingColor = "bg-green-400"; bgClass = "bg-green-50 text-green-700"; }
-                } else if (totalMinutes >= 570 && totalMinutes < 600) { statusText = "Abre em breve"; colorClass = "bg-blue-500"; pingColor = "bg-blue-400"; bgClass = "bg-blue-50 text-blue-700"; }
-            } else if (day === 6) {
-                if (totalMinutes >= 480 && totalMinutes < 1080) { 
-                    isOpen = true;
-                     if (totalMinutes >= 1050) { statusText = "Fecha em breve"; colorClass = "bg-yellow-500"; pingColor = "bg-yellow-400"; bgClass = "bg-yellow-50 text-yellow-700"; } 
-                     else { statusText = "Aberto Agora"; colorClass = "bg-green-500"; pingColor = "bg-green-400"; bgClass = "bg-green-50 text-green-700"; }
-                } else if (totalMinutes >= 450 && totalMinutes < 480) { statusText = "Abre em breve"; colorClass = "bg-blue-500"; pingColor = "bg-blue-400"; bgClass = "bg-blue-50 text-blue-700"; }
-            }
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. BUSCA DE CEP (VIA CEP API)
+// ─────────────────────────────────────────────────────────────────────────────
+async function buscarCEP() {
+  let cep = document.getElementById('reg-cep').value.replace(/\D/g, '');
+  if(cep.length === 8) {
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if(!data.erro) {
+        document.getElementById('reg-rua').value = data.logradouro;
+        document.getElementById('reg-bairro').value = data.bairro;
+        document.getElementById('reg-numero').focus(); // Joga o cursor pro número
+      }
+    } catch(e) { console.log('Erro ao buscar CEP'); }
+  }
+}
 
-            const badge = document.getElementById('shop-status');
-            const dot = document.getElementById('status-dot');
-            const ping = document.getElementById('status-ping');
-            const text = document.getElementById('status-text');
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. REGISTRA NOVO CLIENTE NO SUPABASE
+// ─────────────────────────────────────────────────────────────────────────────
+async function doRegister() {
+  const btn = document.getElementById('btn-registrar');
+  const nome = document.getElementById('reg-nome').value.trim();
+  const cep = document.getElementById('reg-cep').value;
+  const rua = document.getElementById('reg-rua').value;
+  const numero = document.getElementById('reg-numero').value;
+  const comp = document.getElementById('reg-comp').value;
+  const bairro = document.getElementById('reg-bairro').value;
+  const pin = document.getElementById('reg-pin').value;
 
-            text.innerText = statusText;
-            dot.className = `relative inline-flex rounded-full h-2.5 w-2.5 ${colorClass}`;
-            ping.className = `animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pingColor}`;
-            badge.className = `inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mt-1 border transition-colors ${bgClass}`;
-        }
-        checkRestaurantStatus(); setInterval(checkRestaurantStatus, 60000);
+  if(!nome || !rua || !numero || pin.length < 4) {
+    alert('Por favor, preencha o Nome, Endereço completo e crie um PIN de 4 dígitos.');
+    return;
+  }
 
-        const initDragScroll = () => {
-            const slider = document.getElementById('category-scroll-container');
-            if(!slider) return;
-            let isDown = false; let startX; let scrollLeft;
-            slider.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
-            slider.addEventListener('mouseleave', () => { isDown = false; });
-            slider.addEventListener('mouseup', () => { isDown = false; });
-            slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
-        };
+  btn.innerHTML = 'Salvando...'; btn.disabled = true;
 
-        const initCarousel = () => {
-            const track = document.getElementById('carousel-track'); const dots = document.getElementById('carousel-dots'); const section = document.getElementById('promo-section');
-            if (promoProducts.length === 0) { section.classList.add('hidden'); return; }
-            section.classList.remove('hidden');
-            track.innerHTML = promoProducts.map(p => {
-                let displayPrice = p.Preco || '0';
-                if(String(displayPrice).includes('|')) { const firstOpt = String(displayPrice).split('|')[0].split(':'); displayPrice = firstOpt[1] || firstOpt[0]; }
-                return `
-                <div class="carousel-slide" onclick="openProductModal(${p.originalIndex})">
-                    <img src="${(p.Imagem && p.Imagem.startsWith('http')) ? p.Imagem : 'https://placehold.co/1200x500/dc2626/ffffff?text='+p.Nome}" class="w-full h-48 sm:h-56 md:h-64 object-cover">
-                    <div class="carousel-overlay absolute inset-0 flex flex-col justify-end p-5 text-left">
-                        <span class="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded mb-2 uppercase w-max tracking-widest shadow-sm">Destaque</span>
-                        <h3 class="text-white font-black text-xl leading-tight mb-1 drop-shadow-md">${p.Nome}</h3>
-                        <p class="text-white/90 text-sm font-bold bg-black/30 w-max px-2 rounded backdrop-blur-sm">${formatMoney(displayPrice)}</p>
-                    </div>
-                </div>`
-            }).join('');
-            dots.innerHTML = promoProducts.map((_, i) => `<button onclick="goToSlide(${i})" class="w-1.5 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-white w-4 shadow-sm' : 'bg-white/50'}"></button>`).join('');
-            if(promoProducts.length > 1) setInterval(() => { currentSlide = (currentSlide + 1) % promoProducts.length; updateCarousel(); }, 6000);
-        };
-        const updateCarousel = () => {
-            const track = document.getElementById('carousel-track'); const dots = document.getElementById('carousel-dots').children;
-            track.style.transform = `translateX(-${currentSlide * 100}%)`;
-            Array.from(dots).forEach((dot, i) => { dot.classList.toggle('bg-white', i === currentSlide); dot.classList.toggle('w-4', i === currentSlide); dot.classList.toggle('bg-white/50', i !== currentSlide); });
-        };
-        window.goToSlide = (i) => { currentSlide = i; updateCarousel(); };
+  const novoCliente = {
+    telefone: currentPhone,
+    nome: nome,
+    cep: cep,
+    rua: rua,
+    numero: numero,
+    complemento: comp,
+    bairro: bairro,
+    pin_senha: pin
+  };
 
-        const formatMoney = (val) => { if (!val) return 'R$ 0,00'; const num = parseFloat(val.toString().replace(',', '.')); return isNaN(num) ? 'R$ 0,00' : num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
-        const parsePrice = (val) => { if (!val) return 0; return parseFloat(val.toString().replace(',', '.').trim()); };
+  const { data, error } = await supabase.from('clientes').insert([novoCliente]).select().single();
 
-        // --- LÓGICA DO MODAL DE CHECKOUT ---
-        const openCheckoutModal = () => {
-            if(cart.length === 0) return Toastify({ text: "Carrinho vazio!", style: { background: "#EF4444" } }).showToast();
-            document.getElementById('checkout-modal').classList.remove('hidden');
-            toggleCheckoutMode(); // Reset visual
-        };
-        const closeCheckoutModal = () => { document.getElementById('checkout-modal').classList.add('hidden'); };
+  btn.innerHTML = 'Criar Conta'; btn.disabled = false;
 
-        const toggleCheckoutMode = () => {
-            const modeEl = document.querySelector('input[name="checkout_order_type"]:checked');
-            if(!modeEl) return;
-            const mode = modeEl.value;
-
-            document.getElementById('checkout-address-group').classList.toggle('hidden', mode !== 'delivery');
-            document.getElementById('checkout-table-group').classList.toggle('hidden', mode !== 'table');
-
-            document.querySelectorAll('input[name="checkout_order_type"]').forEach(input => {
-                const div = input.nextElementSibling;
-                if(input.checked) {
-                    div.classList.remove('border-gray-200');
-                    div.classList.add('border-red-500', 'bg-red-50', 'text-red-700');
-                } else {
-                    div.classList.add('border-gray-200');
-                    div.classList.remove('border-red-500', 'bg-red-50', 'text-red-700');
-                }
-            });
-        };
-
-        const openProductModal = (globalIndex) => {
-            const product = [...allProducts, ...promoProducts].find(p => p.originalIndex === globalIndex);
-            if (!product) return;
-            currentSelection = { ...product, selectedAddons: [], sizeName: null, basePrice: 0 };
-
-            document.getElementById('modal-product-name').innerText = product.Nome;
-            document.getElementById('modal-product-desc').innerText = product.Descricao || 'Sem descrição.';
-            
-            const rawPrice = String(product.Preco || '');
-            const sizesContainer = document.getElementById('modal-sizes-section');
-            const sizesList = document.getElementById('modal-sizes-list');
-            
-            if (rawPrice.includes('|')) {
-                const sizes = rawPrice.split('|').map(s => { const parts = s.split(':'); return { label: parts[0].trim(), price: parsePrice(parts[1] || parts[0]) }; });
-                sizesContainer.classList.remove('hidden');
-                sizesList.innerHTML = sizes.map((size, idx) => `
-                    <label class="size-option cursor-pointer relative w-full">
-                        <input type="radio" name="size_select" value="${idx}" class="sr-only" ${idx === 0 ? 'checked' : ''} onchange="selectSize(${idx})">
-                        <div class="border-2 rounded-xl p-3 text-center transition-all border-gray-100 hover:border-red-200">
-                            <span class="block text-sm font-bold">${size.label}</span>
-                            <span class="block text-xs text-gray-500">${formatMoney(size.price)}</span>
-                        </div>
-                    </label>`).join('');
-                currentSelection.availableSizes = sizes;
-                selectSize(0);
-            } else {
-                sizesContainer.classList.add('hidden'); sizesList.innerHTML = '';
-                currentSelection.basePrice = parsePrice(rawPrice); currentSelection.availableSizes = null;
-                document.getElementById('modal-product-price').innerText = formatMoney(currentSelection.basePrice);
-            }
-            
-            const catItem = (product.CategoriaOriginal || product.Categoria || '').toLowerCase().trim();
-            const compatibleAddons = addonsList.filter(a => a.targetCategories.includes('all') || a.targetCategories.some(target => catItem.includes(target)));
-            const addonsSection = document.getElementById('modal-addons-section');
-            if (compatibleAddons.length > 0) {
-                addonsSection.classList.remove('hidden');
-                document.getElementById('modal-addons-list').innerHTML = compatibleAddons.map(addon => `
-                    <label class="flex items-center justify-between p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-all bg-white shadow-sm">
-                        <div class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-red-600 rounded border-gray-300 focus:ring-red-500 custom-checkbox" onchange="toggleAddon('${addon.Nome.replace(/'/g, "\\'")}', ${addon.Preco}, this.checked)"><span class="text-sm font-bold text-gray-700">${addon.Nome}</span></div><span class="text-xs font-black text-red-400">+ ${formatMoney(addon.Preco)}</span>
-                    </label>`).join('');
-            } else { addonsSection.classList.add('hidden'); }
-            updateModalTotal(); document.getElementById('options-modal').classList.remove('hidden'); lucide.createIcons();
-        };
-
-        window.selectSize = (index) => {
-            if(!currentSelection || !currentSelection.availableSizes) return;
-            const selected = currentSelection.availableSizes[index];
-            currentSelection.basePrice = selected.price; currentSelection.sizeName = selected.label;
-            document.getElementById('modal-product-price').innerText = formatMoney(selected.price);
-            updateModalTotal();
-        }
-        const closeOptionsModal = () => { document.getElementById('options-modal').classList.add('hidden'); currentSelection = null; };
-        const toggleAddon = (n, p, c) => { if (c) currentSelection.selectedAddons.push({ Nome: n, Preco: p }); else currentSelection.selectedAddons = currentSelection.selectedAddons.filter(a => a.Nome !== n); updateModalTotal(); };
-        const updateModalTotal = () => { if(!currentSelection) return; const total = currentSelection.basePrice + currentSelection.selectedAddons.reduce((acc, curr) => acc + parseFloat(curr.Preco), 0); document.getElementById('modal-total-btn').innerText = formatMoney(total); };
-
-        const confirmAddToCart = () => {
-            if (!currentSelection) return;
-            const sizeLabel = currentSelection.sizeName ? ` (${currentSelection.sizeName})` : '';
-            const fullName = `${currentSelection.Nome}${sizeLabel}`;
-            const uniqueId = `${fullName}-${currentSelection.selectedAddons.map(a => a.Nome).sort().join(',')}`;
-            const unitPrice = currentSelection.basePrice + currentSelection.selectedAddons.reduce((acc, curr) => acc + parseFloat(curr.Preco), 0);
-            
-            const existing = cart.find(i => i.uniqueId === uniqueId);
-            if (existing) existing.quantity++; 
-            else cart.push({ uniqueId, Nome: fullName, finalUnitPrice: unitPrice, quantity: 1, addons: [...currentSelection.selectedAddons] });
-            
-            Toastify({ text: "Item adicionado!", duration: 1500, gravity: "bottom", style: { background: "#10B981", borderRadius: "10px" } }).showToast();
-            closeOptionsModal(); updateCartUI();
-        };
-
-        const updateQuantity = (id, d) => { const i = cart.findIndex(x => x.uniqueId === id); if (i === -1) return; cart[i].quantity += d; if (cart[i].quantity <= 0) cart.splice(i, 1); updateCartUI(); };
-
-        const updateCartUI = () => {
-            const totalItems = cart.reduce((acc, i) => acc + i.quantity, 0); const totalPrice = cart.reduce((acc, i) => acc + (i.finalUnitPrice * i.quantity), 0);
-            
-            document.getElementById('header-cart-total').innerText = formatMoney(totalPrice); 
-            document.getElementById('header-cart-count').innerText = totalItems; 
-            document.getElementById('header-cart-count').classList.toggle('hidden', totalItems === 0);
-            document.getElementById('cart-total-modal').innerText = formatMoney(totalPrice);
-            
-            document.getElementById('header-cart-count-desktop').innerText = `${totalItems} itens`;
-            document.getElementById('cart-total-desktop').innerText = formatMoney(totalPrice);
-
-            const generateHTML = (item) => `
-            <div class="flex justify-between items-start bg-white p-3 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group">
-                <div class="flex-1 pr-2 z-10">
-                    <div class="font-bold text-sm text-gray-800 leading-tight">${item.Nome}</div>
-                    ${item.addons.length ? `<div class="text-[10px] text-gray-500 mt-1">+ ${item.addons.map(a => a.Nome).join(', ')}</div>` : ''}
-                    <div class="text-xs font-bold text-red-600 mt-1">${formatMoney(item.finalUnitPrice * item.quantity)}</div>
-                </div>
-                <div class="z-10 flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden h-7">
-                    <button onclick="updateQuantity('${item.uniqueId.replace(/'/g, "\\'")}', -1)" class="w-7 h-full flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors font-bold text-sm">-</button>
-                    <span class="w-6 text-center text-xs font-bold text-gray-700">${item.quantity}</span>
-                    <button onclick="updateQuantity('${item.uniqueId.replace(/'/g, "\\'")}', 1)" class="w-7 h-full flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors font-bold text-sm">+</button>
-                </div>
-            </div>`;
-
-            const listHTML = cart.length === 0 
-                ? `<div class="flex flex-col items-center justify-center h-40 text-gray-400 opacity-50"><i data-lucide="shopping-basket" class="w-10 h-10 mb-2"></i><p class="text-xs font-bold uppercase tracking-widest">Carrinho Vazio</p></div>` 
-                : cart.map(generateHTML).join('');
-
-            document.getElementById('cart-items').innerHTML = listHTML;
-            document.getElementById('cart-items-desktop').innerHTML = listHTML;
-
-            lucide.createIcons(); 
-        };
-
-        const toggleCart = () => { const m = document.getElementById('cart-modal'); const p = document.getElementById('cart-panel'); if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => p.classList.remove('translate-x-full'), 10); } else { p.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); } };
-
-        // 🚀 ENVIO DE PEDIDO PARA O SUPABASE
-        const finalizeOrder = async () => {
-            if (cart.length === 0) return Toastify({ text: "Carrinho vazio!", style: { background: "#EF4444" } }).showToast();
-            
-            const btn = document.getElementById('btn-final-send'); 
-            const name = document.getElementById('checkout-name').value.trim(); 
-            const phone = document.getElementById('checkout-phone').value.trim();
-            const orderType = document.querySelector('input[name="checkout_order_type"]:checked').value; 
-            const address = document.getElementById('checkout-address').value.trim(); 
-            const tableNum = document.getElementById('checkout-table').value;
-            
-            if (!name) return Toastify({ text: "Por favor, informe seu nome.", style: { background: "#EF4444" } }).showToast(); 
-            if (!phone) return Toastify({ text: "Informe seu celular.", style: { background: "#EF4444" } }).showToast();
-            if (orderType === 'delivery' && !address) return Toastify({ text: "Endereço necessário.", style: { background: "#EF4444" } }).showToast();
-            if (orderType === 'table' && !tableNum) return Toastify({ text: "Qual a sua mesa?", style: { background: "#EF4444" } }).showToast();
-            
-            const originalHTML = btn.innerHTML; 
-            btn.innerHTML = `<i class="animate-spin w-5 h-5" data-lucide="loader-2"></i> Enviando...`; 
-            btn.disabled = true; 
-            lucide.createIcons();
-            
-            const itemsFormatted = cart.map(i => {
-                const totalItemValue = i.finalUnitPrice * i.quantity;
-                const addonsText = i.addons.length ? ` (+${i.addons.map(a => a.Nome).join(', ')})` : '';
-                return `${i.quantity}x ${i.Nome}${addonsText} [${formatMoney(totalItemValue)}]`;
-            }).join(' | ');
-
-            // Formatação do ID e Data igual ao padrão anterior
-            const orderId = new Date().getTime().toString().slice(-6);
-            const dataAtual = new Date().toLocaleString("pt-BR");
-
-            const payload = {
-                id: orderId,
-                data: dataAtual,
-                cliente: `${name} | Tel: ${phone}`,
-                tipo: orderType === 'delivery' ? 'Entrega' : (orderType === 'table' ? `Mesa ${tableNum}` : 'Retirada'),
-                itens: itemsFormatted,
-                total: formatMoney(cart.reduce((acc, i) => acc + (i.finalUnitPrice * i.quantity), 0)),
-                status: 'Novo', // Isso faz o pedido aparecer animado/tocando som no Gestor!
-                pagamento: 'A Pagar',
-                obs: orderType === 'delivery' ? `Endereço: ${address}` : 'Consumo Local'
-            };
-            
-            try { 
-                // Envia para a tabela 'pedidos' do Supabase
-                const { error } = await supabaseClient.from('pedidos').insert([payload]);
-                if (error) throw error;
-
-                cart = []; 
-                updateCartUI(); 
-                document.getElementById('checkout-name').value = ''; 
-                document.getElementById('checkout-phone').value = '';
-                document.getElementById('checkout-address').value = '';
-                document.getElementById('checkout-table').value = '';
-                
-                closeCheckoutModal();
-                toggleCart();
-                render(); 
-                window.scrollTo(0,0); 
-                Toastify({ text: "Pedido Enviado! 🚀", duration: 4000, style: { background: "#16a34a" } }).showToast(); 
-            } catch (err) { 
-                alert("Erro ao enviar pedido. Tente novamente."); 
-                console.error(err);
-            } finally { 
-                btn.innerHTML = originalHTML; btn.disabled = false; lucide.createIcons(); 
-            }
-        };
-
-        // FUNÇÃO DE RENDERIZAÇÃO ATUALIZADA
-        const render = () => {
-            const grid = document.getElementById('product-grid'); grid.innerHTML = '';
-            const filtered = allProducts.filter(p => (currentCategory === 'Todos' || p.Categoria === currentCategory) && (!searchQuery || p.Nome.toLowerCase().includes(searchQuery.toLowerCase())));
-            document.getElementById('empty-state').classList.toggle('hidden', filtered.length > 0);
-            
-            filtered.forEach(p => {
-                const hasImage = p.Imagem && p.Imagem.startsWith('http');
-                let displayPrice = p.Preco || '0';
-                
-                if(String(displayPrice).includes('|')) { 
-                    const firstOpt = String(displayPrice).split('|')[0].split(':'); 
-                    displayPrice = firstOpt[1] || firstOpt[0]; 
-                }
-
-                const imageHTML = hasImage ? `
-                    <div class="h-24 w-24 flex-shrink-0 rounded-lg overflow-hidden relative bg-gray-100">
-                        <img src="${p.Imagem}" class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500">
-                    </div>
-                ` : '';
-
-                grid.innerHTML += `
-                <div onclick="openProductModal(${p.originalIndex})" class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex gap-4 cursor-pointer hover:bg-gray-50 active:scale-[0.99] transition-all group overflow-hidden">
-                    ${imageHTML}
-                    <div class="flex flex-col flex-grow justify-between py-0.5">
-                        <div>
-                            <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">${p.Nome}</h3>
-                            <p class="text-xs text-gray-400 font-medium line-clamp-2 leading-relaxed">${p.Descricao || 'Clique para ver detalhes e opções.'}</p>
-                        </div>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="text-sm font-black text-red-600">${formatMoney(displayPrice)}</span>
-                            <button class="bg-red-50 text-red-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                </div>`;
-            });
-            lucide.createIcons();
-        };
-
-        const renderFilters = () => {
-            const cats = ['Todos', ...new Set(allProducts.map(p => p.Categoria ? p.Categoria.trim() : 'Geral'))].sort((a,b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b));
-            document.getElementById('category-filters').innerHTML = cats.map(c => `<button onclick="setCategory('${c}')" class="px-4 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${currentCategory === c ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${c}</button>`).join('');
-        };
-        window.setCategory = (c) => { currentCategory = c; renderFilters(); render(); };
-        document.getElementById('search-input').addEventListener('input', (e) => { searchQuery = e.target.value; render(); });
-
-        // 🚀 PUXAR CARDÁPIO DO SUPABASE
-        async function loadMenu() {
-            try {
-                const { data: rawData, error } = await supabaseClient
-                    .from('produtos')
-                    .select('*');
-
-                if (error) throw error;
-
-                if (rawData && rawData.length > 0) {
-                    addonsList = []; allProducts = []; promoProducts = [];
-                    
-                    rawData.forEach((item, index) => {
-                        // Mapeando dados do Supabase (que vem minúsculo) para o padrão do frontend
-                        const nome = item.nome || '';
-                        if (!nome.trim()) return;
-
-                        const catRaw = (item.categoria || 'Geral').trim(); 
-                        const catLower = catRaw.toLowerCase(); 
-                        
-                        const obj = { 
-                            Nome: item.nome,
-                            Categoria: item.categoria || 'Geral',
-                            Preco: item.preco || '0',
-                            Descricao: item.descricao || '',
-                            Imagem: item.imagem || '',
-                            originalIndex: index 
-                        };
-
-                        const statusRaw = String(item.disponivel || 'sim').toLowerCase().trim();
-                        if (['não', 'nao', 'off', 'false', '0', 'n'].includes(statusRaw)) return;
-                        if (HIDDEN_CATEGORIES.includes(catRaw)) return;
-
-                        if (catLower.startsWith('adicionais')) { 
-                            let t = ['all']; 
-                            if (catRaw.includes(':')) t = catRaw.split(':')[1].split(',').map(x => x.trim().toLowerCase()); 
-                            addonsList.push({ ...obj, targetCategories: t }); 
-                        }
-                        else if (catRaw === 'Promoções') { 
-                            obj.CategoriaOriginal = 'all'; 
-                            promoProducts.push(obj); 
-                        }
-                        else {
-                            allProducts.push(obj);
-                        }
-                    });
-                    
-                    document.getElementById('loader').classList.add('hidden');
-                    initCarousel(); 
-                    initDragScroll(); 
-                    renderFilters(); 
-                    render();
-                } else {
-                    document.getElementById('loader').innerHTML = '<p class="text-gray-500 font-bold px-4">O cardápio está vazio.</p>';
-                }
-            } catch (err) { 
-                console.error(err);
-                document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold px-4">Erro ao conectar com o servidor.</p>'; 
-            }
-        }
-        
-        loadMenu();
-    </script>
-</body>
-</html>
+  if(
