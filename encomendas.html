@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Encomendas - Morangos Tatuí</title>
+    <title>Painel Estratégico - Morangos Tatuí</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -44,8 +44,8 @@
 
         <div class="flex overflow-x-auto gap-2 border-t border-slate-100 pt-2">
             <button onclick="switchTab('encomendas')" id="btn-tab-encomendas" class="tab-btn active px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Agenda</button>
-            <button onclick="switchTab('producao')" id="btn-tab-producao" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="chef-hat" class="w-4 h-4"></i> Produção</button>
-            <button onclick="switchTab('carteira')" id="btn-tab-carteira" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="wallet" class="w-4 h-4"></i> A Receber</button>
+            <button onclick="switchTab('producao')" id="btn-tab-producao" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="chef-hat" class="w-4 h-4"></i> Produção & Valores</button>
+            <button onclick="switchTab('carteira')" id="btn-tab-carteira" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="wallet" class="w-4 h-4"></i> A Receber (Fiados + Encomendas)</button>
         </div>
     </header>
 
@@ -62,14 +62,29 @@
     </main>
 
     <main id="tab-producao" class="hidden">
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-4xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Encomendado</p>
+                <h3 class="text-2xl font-black text-slate-800" id="prod-total-val">R$ 0,00</h3>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinais (Já Pagos)</p>
+                <h3 class="text-2xl font-black text-emerald-700" id="prod-sinal-val">R$ 0,00</h3>
+            </div>
+            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Saldo a Receber</p>
+                <h3 class="text-2xl font-black text-rose-700" id="prod-saldo-val">R$ 0,00</h3>
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <div>
-                    <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2"><i data-lucide="list-todo" class="text-rose-500"></i> Lista de Preparo</h2>
-                    <p class="text-sm text-slate-500 mt-1">Soma de todos os itens das encomendas Pendentes/Agendadas.</p>
+                    <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2"><i data-lucide="list-todo" class="text-rose-500"></i> Resumo de Produção</h2>
+                    <p class="text-sm text-slate-500 mt-1">Soma de quantidades e valores das encomendas pendentes.</p>
                 </div>
             </div>
-            <div id="lista-producao" class="space-y-2"></div>
+            <div id="lista-producao" class="space-y-3"></div>
             <div id="empty-producao" class="hidden text-center py-10 text-slate-400 font-medium">Nenhum item pendente de produção.</div>
         </div>
     </main>
@@ -85,7 +100,7 @@
             </div>
             
             <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
-                <h3 class="font-bold text-slate-800 text-lg mb-4 border-b border-slate-100 pb-3">Contas Pendentes</h3>
+                <h3 class="font-bold text-slate-800 text-lg mb-4 border-b border-slate-100 pb-3">Saldos Pendentes (Fiados + Encomendas)</h3>
                 <div id="lista-devedores" class="space-y-3"></div>
                 <div id="empty-devedores" class="hidden text-center py-12 text-slate-400">
                     <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 opacity-30 text-emerald-500"></i>
@@ -95,7 +110,6 @@
         </div>
     </main>
 
-    <!-- MODAL NOVA/EDITAR ENCOMENDA -->
     <div id="modal-encomenda" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
@@ -105,14 +119,11 @@
             <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-white">
                 <input type="hidden" id="enc-id">
                 
-                <!-- Dados do Cliente e Data -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-slate-100 pb-6">
                     <div class="relative">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Selecionar Cliente</label>
                         <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Digite o nome ou telefone..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500 transition-colors">
-                        
                         <div id="client-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-48 overflow-y-auto z-[120] mt-1"></div>
-                        
                         <div id="new-client-form" class="hidden mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl">
                             <p class="text-[10px] font-bold text-rose-600 uppercase mb-2">Cadastrar Novo Cliente</p>
                             <input type="text" id="nc-nome" placeholder="Nome Completo" class="w-full mb-2 p-2 rounded-lg text-sm border border-rose-200 outline-none">
@@ -127,7 +138,6 @@
                     </div>
                 </div>
 
-                <!-- Montagem dos Itens -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 relative h-full flex flex-col">
                         <label class="block text-[10px] font-bold text-blue-800 mb-2 flex items-center gap-1 uppercase tracking-widest"><i data-lucide="shopping-basket" class="w-3 h-3"></i> Catálogo de Produtos</label>
@@ -142,31 +152,22 @@
                             </div>
                             <div id="variation-options" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto"></div>
                         </div>
-                        <p class="text-[10px] text-blue-600 mt-2 font-medium">Clique nos itens pesquisados para adicioná-los à lista ao lado.</p>
                     </div>
 
-                    <!-- LISTA VISUAL BLOQUEADA -->
                     <div class="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-4">
                         <div class="flex justify-between items-center mb-3">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Itens da Encomenda</label>
                             <button onclick="toggleAvulsoForm()" class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs font-bold hover:bg-rose-200 transition-colors">+ Item Avulso</button>
                         </div>
-
-                        <!-- Form para Item Avulso (Oculto) -->
                         <div id="form-avulso" class="hidden flex gap-2 mb-3 bg-white p-2 rounded-lg border border-slate-200">
-                            <input type="text" id="avulso-nome" placeholder="Ex: Vela Faísca" class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-md px-2 outline-none">
+                            <input type="text" id="avulso-nome" placeholder="Ex: Vela" class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-md px-2 outline-none">
                             <input type="text" id="avulso-preco" placeholder="R$ 0,00" class="w-20 text-sm bg-slate-50 border border-slate-200 rounded-md px-2 outline-none" onblur="formatInputMoney(this)">
                             <button onclick="addAvulsoItem()" class="bg-rose-600 text-white rounded-md px-3 text-sm font-bold">Add</button>
                         </div>
-
-                        <!-- Lista Renderizada -->
-                        <div id="enc-items-visual-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
-                            <!-- Os itens entram aqui como bloquinhos via JavaScript -->
-                        </div>
+                        <div id="enc-items-visual-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
                     </div>
                 </div>
 
-                <!-- Financeiro e Status -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total (Calculado Auto)</label>
@@ -203,15 +204,11 @@
 let allData = [];
 let catalogProducts = [];
 let allClients = [];
-let currentEncItems = []; // Guarda a lista de produtos na hora de criar/editar
+let currentEncItems = []; 
 
-// Chaves para Cobrança do MP e Pix
 const MP_ACCESS_TOKEN = 'APP_USR-7398589288908992-032715-7dd4cc5f51a2968edb29e1a6a55947d2-2908485918';
 const CHAVE_PIX_ALEATORIA = '7fdc442f-35de-46f2-9190-530344229f25';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UTILITÁRIOS GERAIS
-// ═══════════════════════════════════════════════════════════════════════════
 function toast(text, bg = "#e11d48") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 function formatMoney(val) { return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function formatPhone(v) {
@@ -227,7 +224,7 @@ function parseMoney(val) {
     else if (clean.includes(',')) clean = clean.replace(',', '.');
     return parseFloat(clean) || 0;
 }
-function parsePrices(preco) { // O utilitário que faltava para os produtos com Variação
+function parsePrices(preco) { 
     const strPreco = String(preco || '0');
     if (strPreco.includes('|')) {
         return strPreco.split('|').map(part => {
@@ -245,9 +242,6 @@ function formatDateBr(isoString) {
 }
 function normalizeStr(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// NAVEGAÇÃO E CARREGAMENTO
-// ═══════════════════════════════════════════════════════════════════════════
 function switchTab(tabId) {
     ['encomendas', 'producao', 'carteira'].forEach(id => {
         document.getElementById(`tab-${id}`).style.display = 'none';
@@ -278,9 +272,9 @@ async function loadCatalogAndClients() {
     } catch(e) { console.error("Erro dicionários:", e); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ABA 1: AGENDA DE ENCOMENDAS
-// ═══════════════════════════════════════════════════════════════════════════
+// ==========================================
+// ABA 1: AGENDA
+// ==========================================
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
     const empty = document.getElementById('empty-encomendas');
@@ -337,7 +331,6 @@ function renderEncomendas() {
 
                 <div class="flex gap-2 mt-4">
                     <button onclick="editEncomenda('${o.id}')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">Editar</button>
-                    
                     <button onclick="enviarParaCaixa('${o.id}')" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1 shadow-sm" title="Disponibiliza no PDV para finalização">
                         <i data-lucide="monitor-check" class="w-3.5 h-3.5"></i> Enviar p/ Caixa
                     </button>
@@ -352,12 +345,12 @@ async function enviarParaCaixa(id) {
     if(!confirm("Ao clicar em OK, esta encomenda aparecerá brilhando na tela do Caixa (PDV) para pagamento e fechamento final. Deseja continuar?")) return;
     const { error } = await supabaseClient.from('pedidos').update({ status: 'Pendente' }).eq('id', id);
     if (!error) { toast("Enviado para o Caixa!", "#10b981"); loadData(); } 
-    else { toast("Erro ao enviar para o caixa.", "#ef4444"); }
+    else { toast("Erro ao enviar.", "#ef4444"); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ABA 2 E 3: PRODUÇÃO E CARTEIRA
-// ═══════════════════════════════════════════════════════════════════════════
+// ==========================================
+// ABA 2: PRODUÇÃO E VALORES (UNIFICADO)
+// ==========================================
 function renderProducao() {
     const list = document.getElementById('lista-producao');
     const empty = document.getElementById('empty-producao');
@@ -369,48 +362,83 @@ function renderProducao() {
         return isNotCanceled && isNotFinished && isEncomenda;
     });
 
-    if (pendentes.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    let totalGeralEncomendado = 0;
+    let totalGeralSinal = 0;
+    
+    if (pendentes.length === 0) { 
+        list.innerHTML = ''; empty.classList.remove('hidden'); 
+        document.getElementById('prod-total-val').innerText = 'R$ 0,00';
+        document.getElementById('prod-sinal-val').innerText = 'R$ 0,00';
+        document.getElementById('prod-saldo-val').innerText = 'R$ 0,00';
+        return; 
+    }
     empty.classList.add('hidden');
 
     let producaoAgrupada = {};
+    
     pendentes.forEach(pedido => {
+        totalGeralEncomendado += parseMoney(pedido.total);
+        totalGeralSinal += parseMoney(pedido.sinal_pago);
+
         if (!pedido.itens) return;
         const itensArr = pedido.itens.split('|');
         itensArr.forEach(str => {
-            const match = str.trim().match(/^(\d+)x\s+(.+?)\s+\[/);
+            // Nova RegEx para extrair Qtd, Nome e Valor formatado no bloco
+            const match = str.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]/);
             if (match) {
                 const qtd = parseInt(match[1]);
                 const nomeProduto = match[2].trim();
-                if (producaoAgrupada[nomeProduto]) producaoAgrupada[nomeProduto] += qtd;
-                else producaoAgrupada[nomeProduto] = qtd;
+                const valorLinha = parseMoney(match[3]);
+                
+                if (producaoAgrupada[nomeProduto]) {
+                    producaoAgrupada[nomeProduto].qtd += qtd;
+                    producaoAgrupada[nomeProduto].valor += valorLinha;
+                } else {
+                    producaoAgrupada[nomeProduto] = { qtd: qtd, valor: valorLinha };
+                }
             }
         });
     });
 
-    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome] }));
+    // Atualiza Dash Financeiro
+    const totalGeralSaldo = totalGeralEncomendado - totalGeralSinal;
+    document.getElementById('prod-total-val').innerText = formatMoney(totalGeralEncomendado);
+    document.getElementById('prod-sinal-val').innerText = formatMoney(totalGeralSinal);
+    document.getElementById('prod-saldo-val').innerText = formatMoney(totalGeralSaldo);
+
+    // Renderiza Lista
+    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd, valor: producaoAgrupada[nome].valor }));
     arrProducao.sort((a, b) => b.qtd - a.qtd);
 
     if(arrProducao.length === 0) { list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado.</p>'; return; }
 
     list.innerHTML = arrProducao.map(item => `
         <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
-            <div class="flex items-center gap-3">
-                <div class="bg-white border border-slate-200 w-10 h-10 rounded-lg flex items-center justify-center font-black text-rose-600 text-lg shadow-sm">${item.qtd}x</div>
-                <span class="font-bold text-slate-700">${item.nome}</span>
+            <div class="flex items-center gap-4">
+                <div class="bg-white border border-slate-200 w-12 h-12 rounded-lg flex items-center justify-center font-black text-rose-600 text-xl shadow-sm">${item.qtd}x</div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base">${item.nome}</h4>
+                    <span class="text-xs font-bold text-emerald-600">Representa: ${formatMoney(item.valor)}</span>
+                </div>
             </div>
-            <input type="checkbox" class="w-5 h-5 text-rose-500 rounded border-slate-300 focus:ring-rose-500 cursor-pointer">
+            <input type="checkbox" class="w-6 h-6 text-rose-500 rounded border-slate-300 focus:ring-rose-500 cursor-pointer shadow-sm">
         </div>
     `).join('');
 }
 
+// ==========================================
+// ABA 3: CARTEIRA GERAL (Tudo que tem saldo devedor)
+// ==========================================
 function renderCarteira() {
     const list = document.getElementById('lista-devedores');
     const empty = document.getElementById('empty-devedores');
     
     const aReceber = allData.filter(o => {
-        const isFinished = o.status.toLowerCase().includes('conclu') || o.status.toLowerCase().includes('entregue');
-        const isNotPaid = (o.pagamento && o.pagamento.toLowerCase().includes('pagar')) || (o.status_pagamento && o.status_pagamento.toLowerCase() === 'pendente');
-        return isFinished && isNotPaid;
+        const isCanceled = o.status.toLowerCase().includes('cancelad');
+        const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
+        
+        // Entra na carteira se tiver Saldo Devedor e NÃO estiver cancelado
+        return !isCanceled && saldo > 0.01;
     });
 
     let totalRua = 0;
@@ -425,27 +453,46 @@ function renderCarteira() {
     list.innerHTML = aReceber.map(o => {
         const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
         totalRua += saldo;
+        
+        const isFinished = o.status.toLowerCase().includes('conclu') || o.status.toLowerCase().includes('entregue');
+        const badgeTag = isFinished 
+            ? `<span class="text-[9px] font-bold px-2 py-0.5 bg-rose-100 text-rose-700 rounded uppercase">Fiado / Entregue</span>`
+            : `<span class="text-[9px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded uppercase">Encomenda / A Entregar</span>`;
+
         return `
         <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pedido #${String(o.id).slice(-4)} • ${o.data}</div>
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pedido #${String(o.id).slice(-4)}</div>
+                    ${badgeTag}
+                </div>
                 <h4 class="font-black text-slate-800 text-base">${o.cliente}</h4>
-                <div class="text-xs text-rose-600 font-bold bg-rose-50 inline-block px-2 py-1 rounded mt-1 border border-rose-100">Dívida: ${formatMoney(saldo)}</div>
+                <div class="text-xs text-rose-600 font-bold bg-white inline-block px-2 py-1 rounded mt-1 border border-slate-200">Falta: ${formatMoney(saldo)}</div>
             </div>
             <div class="flex gap-2">
-                <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo})" class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Enviar Cobrança</button>
-                <button onclick="baixarConta('${o.id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-colors" title="Marcar como Pago">Dar Baixa</button>
+                <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo})" class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Cobrar</button>
+                <button onclick="baixarConta('${o.id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-colors" title="Marcar como Pago Total">Dar Baixa</button>
             </div>
         </div>`;
     }).join('');
     
     document.getElementById('total-receber-val').innerText = formatMoney(totalRua);
     document.getElementById('total-receber-count').innerText = `${aReceber.length} contas pendentes`;
+    lucide.createIcons();
 }
 
 async function baixarConta(id) {
-    if(!confirm('Confirmar o recebimento e dar baixa nesta conta?')) return;
-    const { error } = await supabaseClient.from('pedidos').update({ status_pagamento: 'Pago', pagamento: 'Pago Total' }).eq('id', id);
+    if(!confirm('O cliente quitou o saldo restante? O sistema vai atualizar o Sinal Pago para 100% e o status para Pago.')) return;
+    
+    const order = allData.find(o => o.id == id);
+    if (!order) return;
+
+    const { error } = await supabaseClient.from('pedidos').update({ 
+        sinal_pago: order.total, // O sinal agora iguala o total
+        status_pagamento: 'Pago', 
+        pagamento: 'Acerto de Conta (Baixa)' 
+    }).eq('id', id);
+
     if(!error) { toast("Baixa confirmada!", "#10b981"); loadData(); }
 }
 
@@ -468,7 +515,7 @@ async function cobrarWhatsApp(id, clienteStr, valorDevido) {
 
     const nome = clienteStr.split('(')[0].trim();
     let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
-    text += `Estou passando apenas para lembrar do saldo em aberto de *${formatMoney(valorDevido)}* referente ao pedido entregue.\n\n`;
+    text += `Estou passando apenas para avisar do saldo em aberto de *${formatMoney(valorDevido)}* referente ao seu pedido.\n\n`;
     
     if (linkPagamento.startsWith('http')) text += `Você pode fazer o pagamento rapidinho e com segurança (Cartão ou Pix) pelo link abaixo:\n👉 ${linkPagamento}\n\n`;
     else text += `Você pode fazer o pagamento via Pix:\n${linkPagamento}\n\n`;
@@ -481,11 +528,10 @@ async function cobrarWhatsApp(id, clienteStr, valorDevido) {
     window.open(waLink, '_blank');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INTEGRAÇÕES: CLIENTE E CATÁLOGO NO MODAL (ATUALIZADO PARA LISTA ESTRUTURADA)
-// ═══════════════════════════════════════════════════════════════════════════
+// ==========================================
+// MODAL INTEGRAÇÕES: CLIENTE E CATÁLOGO
+// ==========================================
 
-// Busca Cliente...
 function searchClients(q) {
     const results = document.getElementById('client-results');
     const newForm = document.getElementById('new-client-form');
@@ -506,7 +552,6 @@ function searchClients(q) {
             <i data-lucide="user-plus" class="w-4 h-4"></i> + Cadastrar "${q}"
         </div>
     `;
-
     results.innerHTML = html;
     results.classList.remove('hidden');
     lucide.createIcons();
@@ -538,7 +583,6 @@ async function saveNewClient() {
     } catch(e) { toast("Erro ao cadastrar", "#ef4444"); }
 }
 
-// Busca Produtos...
 function searchProducts(q) {
     const results = document.getElementById('product-results');
     document.getElementById('variation-selector').classList.add('hidden');
@@ -591,9 +635,9 @@ function showVariationOptions(nome, precoStr, categoria) {
 
 function closeVariationSelector() { document.getElementById('variation-selector').classList.add('hidden'); }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// GESTÃO DA LISTA VISUAL (BLOQUEADA E ESTRUTURADA)
-// ═══════════════════════════════════════════════════════════════════════════
+// ==========================================
+// GESTÃO DA LISTA VISUAL
+// ==========================================
 function renderEncItems() {
     const container = document.getElementById('enc-items-visual-list');
     if (currentEncItems.length === 0) {
@@ -603,7 +647,7 @@ function renderEncItems() {
     }
 
     container.innerHTML = currentEncItems.map(item => `
-        <div class="flex justify-between items-center bg-white border border-slate-200 p-2 rounded-xl shadow-sm">
+        <div class="flex justify-between items-center bg-white border border-slate-200 p-2 rounded-xl shadow-sm mb-2">
             <div class="flex items-center gap-3">
                 <div class="flex items-center bg-slate-50 rounded-lg border border-slate-200">
                     <button onclick="changeItemQty('${item.id}', -1)" class="w-7 h-7 flex items-center justify-center text-slate-500 font-bold hover:text-rose-500">-</button>
@@ -644,7 +688,6 @@ function recalcModalTotal() {
     document.getElementById('enc-total').value = total.toFixed(2).replace('.', ',');
 }
 
-// Inserir Item do Catálogo
 function addItemToEnc(nome, precoVal, variacao = null) {
     const nameEx = variacao ? `${nome} (${variacao})` : nome;
     const price = parseFloat(precoVal);
@@ -663,7 +706,6 @@ function addItemToEnc(nome, precoVal, variacao = null) {
     toast(`+ ${nameEx}`, "#10b981");
 }
 
-// Inserir Adicional (Adiciona ao último item da lista)
 function addExtraToEnc(nome, precoVal) {
     if (currentEncItems.length === 0) return toast("Adicione um item do cardápio primeiro!", "#f59e0b");
     
@@ -681,7 +723,6 @@ function addExtraToEnc(nome, precoVal) {
     toast(`+ ${nome}`, "#3b82f6");
 }
 
-// Inserir Item Avulso (Fora do Cardápio)
 function toggleAvulsoForm() {
     document.getElementById('form-avulso').classList.toggle('hidden');
     document.getElementById('avulso-nome').focus();
@@ -703,9 +744,9 @@ function addAvulsoItem() {
     renderEncItems();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SALVAR E EDITAR
-// ═══════════════════════════════════════════════════════════════════════════
+// ==========================================
+// SALVAR E EDITAR ENCOMENDA
+// ==========================================
 function openNovaEncomendaModal() {
     document.getElementById('enc-id').value = '';
     document.getElementById('enc-cliente').value = '';
@@ -732,7 +773,6 @@ function editEncomenda(id) {
     document.getElementById('enc-cliente').value = order.cliente;
     document.getElementById('enc-data').value = order.data_entrega ? order.data_entrega.slice(0, 16) : '';
     
-    // Faz a engenharia reversa do texto guardado para preencher a lista visual
     currentEncItems = [];
     if (order.itens) {
         const parts = order.itens.split('|');
@@ -766,9 +806,7 @@ async function saveEncomenda() {
     if (!cliente || !data_entrega) return toast("Cliente e Data são obrigatórios!", "#f59e0b");
     if (currentEncItems.length === 0) return toast("Adicione itens à encomenda!", "#f59e0b");
 
-    // Converte a lista visual de volta para o texto oficial do sistema
     const itensFmt = currentEncItems.map(i => `${i.qty}x ${i.name} [${formatMoney(i.total)}]`).join(' | ');
-    
     const total = formatMoney(parseMoney(document.getElementById('enc-total').value));
     const sinal = formatMoney(parseMoney(document.getElementById('enc-sinal').value));
     const status = document.getElementById('enc-status').value;
@@ -794,7 +832,7 @@ async function saveEncomenda() {
     }
 
     if (!error) {
-        toast("Encomenda salva com sucesso!", "#10b981");
+        toast("Salvo com sucesso!", "#10b981");
         closeModalEnc();
         loadData();
     } else { toast("Erro ao salvar.", "#ef4444"); }
@@ -803,9 +841,6 @@ async function saveEncomenda() {
     lucide.createIcons();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INICIAR
-// ═══════════════════════════════════════════════════════════════════════════
 loadCatalogAndClients().then(() => loadData());
 lucide.createIcons();
 </script>
