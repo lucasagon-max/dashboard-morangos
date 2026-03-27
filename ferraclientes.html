@@ -62,7 +62,7 @@
                 return;
             }
 
-            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> Lendo e Formatando dados...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> A ler e formatar dados...';
             lucide.createIcons();
             btn.disabled = true;
             res.classList.add('hidden');
@@ -70,20 +70,28 @@
             Papa.parse(fileInput.files[0], {
                 header: true,
                 skipEmptyLines: true,
+                // Torna os cabeçalhos à prova de falhas (minúsculas, sem acentos e sem espaços extra)
+                transformHeader: function(h) {
+                    return h.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                },
                 complete: async function(results) {
                     const linhas = results.data;
                     let clientesFormatados = [];
 
                     for (let linha of linhas) {
-                        // Salta linhas vazias que não tenham Nome ou Telefone
-                        if (!linha['Nome'] || !linha['Telefone']) continue;
+                        // Tenta encontrar o nome e o telefone mesmo se os títulos das colunas variarem
+                        let nomeBruto = linha['nome'] || linha['cliente'] || linha['nome completo'] || '';
+                        let telBruto = linha['telefone'] || linha['celular'] || linha['contato'] || linha['whatsapp'] || '';
+
+                        // Se a linha estiver vazia, salta
+                        if (!nomeBruto || !telBruto) continue;
 
                         // 1. Limpa o telefone
-                        let telLimpo = String(linha['Telefone']).replace(/\D/g, '');
-                        if (telLimpo.length < 10) continue; // Ignora telefones quebrados
+                        let telLimpo = String(telBruto).replace(/\D/g, '');
+                        if (telLimpo.length < 10) continue; // Ignora telefones demasiado curtos (inválidos)
 
                         // 2. Magia do Endereço (Separa Rua, Número e Complemento)
-                        let enderecoCru = linha['Endereço'] || '';
+                        let enderecoCru = linha['endereco'] || linha['morada'] || linha['rua'] || '';
                         let partesEnd = enderecoCru.split(',');
                         let rua = partesEnd[0].trim();
                         let numero = '';
@@ -103,12 +111,12 @@
 
                         // Monta o "pacote" exatamente como o Supabase exige
                         clientesFormatados.push({
-                            nome: String(linha['Nome']).trim(),
+                            nome: String(nomeBruto).trim(),
                             telefone: telLimpo,
                             rua: rua,
                             numero: numero,
                             complemento: comp,
-                            bairro: String(linha['Bairro'] || '').trim(),
+                            bairro: String(linha['bairro'] || '').trim(),
                             cep: '', // Fica vazio para o cliente preencher depois se quiser
                             pin_senha: '0000', // Senha padrão
                             saldo_cashback: 0
@@ -116,11 +124,15 @@
                     }
 
                     try {
+                        if (clientesFormatados.length === 0) {
+                            throw new Error("Nenhum cliente foi encontrado. Verifique se a sua planilha possui colunas com títulos como 'Nome' e 'Telefone'.");
+                        }
+
                         btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> Injetando no Supabase...';
                         lucide.createIcons();
                         
-                        // O comando upsert faz com que, se o cliente já existir (mesmo telefone), ele apenas atualize os dados em vez de dar erro.
-                        const { error } = await supabase.from('clientes').upsert(clientesFormatados, { onConflict: 'telefone' });
+                        // Utilizamos insert para forçar a entrada de todos os dados encontrados
+                        const { error } = await supabase.from('clientes').insert(clientesFormatados);
                         
                         if (error) throw error;
 
@@ -129,9 +141,9 @@
                         res.classList.remove('hidden');
 
                     } catch (err) {
-                        console.error("Erro do Supabase:", err);
+                        console.error("Erro da operação:", err);
                         res.className = 'mt-4 text-center text-sm font-bold p-4 rounded-xl bg-red-50 text-red-600 border border-red-200';
-                        res.innerHTML = `🚨 Ocorreu um erro ao gravar no banco:<br>${err.message}`;
+                        res.innerHTML = `🚨 Ocorreu um erro:<br>${err.message}`;
                         res.classList.remove('hidden');
                     } finally {
                         btn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5 inline"></i> Importação Finalizada';
