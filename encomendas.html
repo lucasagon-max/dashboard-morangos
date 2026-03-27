@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Estratégico - Morangos Tatuí</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        .tab-btn.active { color: #e11d48; border-bottom: 2px solid #e11d48; background-color: #fff1f2; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <!-- CONFIGURAÇÃO SUPABASE -->
+    <script>
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Chaves para Cobrança
+        const MP_ACCESS_TOKEN = 'APP_USR-7398589288908992-032715-7dd4cc5f51a2968edb29e1a6a55947d2-2908485918';
+        const CHAVE_PIX_ALEATORIA = '7fdc442f-35de-46f2-9190-530344229f25';
+    </script>
+
+    <!-- HEADER & TABS -->
+    <header class="bg-white shadow-sm rounded-2xl p-4 mb-6 border border-slate-200">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-rose-100 p-2.5 rounded-xl text-rose-600"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-none">Painel Estratégico</h1>
+                    <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Morangos Tatuí</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openNovaEncomendaModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md text-sm"><i data-lucide="plus" class="w-4 h-4"></i> Nova Encomenda</button>
+                <button onclick="loadData()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+
+        <!-- NAVEGAÇÃO DAS ABAS -->
+        <div class="flex overflow-x-auto gap-2 border-t border-slate-100 pt-2">
+            <button onclick="switchTab('encomendas')" id="btn-tab-encomendas" class="tab-btn active px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Agenda de Encomendas</button>
+            <button onclick="switchTab('producao')" id="btn-tab-producao" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="chef-hat" class="w-4 h-4"></i> Resumo de Produção</button>
+            <button onclick="switchTab('carteira')" id="btn-tab-carteira" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="wallet" class="w-4 h-4"></i> Carteira (A Receber)</button>
+        </div>
+    </header>
+
+    <!-- ABA 1: AGENDA DE ENCOMENDAS -->
+    <main id="tab-encomendas" class="block">
+        <div class="flex justify-between items-end mb-4 px-1">
+            <h2 class="font-bold text-slate-700 text-lg">Próximas Entregas</h2>
+            <div class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm" id="enc-count">0 agendadas</div>
+        </div>
+        <div id="grid-encomendas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        <div id="empty-encomendas" class="hidden text-center py-20 text-slate-400">
+            <i data-lucide="calendar-check" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+            <p class="font-bold text-lg">Nenhuma encomenda agendada.</p>
+        </div>
+    </main>
+
+    <!-- ABA 2: RESUMO DE PRODUÇÃO -->
+    <main id="tab-producao" class="hidden">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2"><i data-lucide="list-todo" class="text-rose-500"></i> Lista de Preparo</h2>
+                    <p class="text-sm text-slate-500 mt-1">Soma de todos os itens das encomendas Pendentes/Agendadas.</p>
+                </div>
+            </div>
+            <div id="lista-producao" class="space-y-2">
+                <!-- Itens injetados via JS -->
+            </div>
+            <div id="empty-producao" class="hidden text-center py-10 text-slate-400 font-medium">Nenhum item pendente de produção.</div>
+        </div>
+    </main>
+
+    <!-- ABA 3: CARTEIRA (A RECEBER) -->
+    <main id="tab-carteira" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Resumo Financeiro -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-6 shadow-sm">
+                    <p class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> Total na Rua (A Receber)</p>
+                    <h3 class="text-4xl font-black text-rose-700" id="total-receber-val">R$ 0,00</h3>
+                    <p class="text-sm text-rose-500 mt-2 font-medium" id="total-receber-count">0 contas pendentes</p>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h4 class="font-bold text-slate-800 mb-2">Como cobrar?</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-4">Clique no botão verde ao lado do cliente para enviar uma mensagem educada de cobrança com o seu link do Mercado Pago.</p>
+                </div>
+            </div>
+            
+            <!-- Lista de Devedores -->
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                <h3 class="font-bold text-slate-800 text-lg mb-4 border-b border-slate-100 pb-3">Contas Pendentes</h3>
+                <div id="lista-devedores" class="space-y-3"></div>
+                <div id="empty-devedores" class="hidden text-center py-12 text-slate-400">
+                    <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 opacity-30 text-emerald-500"></i>
+                    <p class="font-bold">Ufa! Nenhuma conta pendente.</p>
+                    <p class="text-xs">Todos os pedidos entregues estão pagos.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODAL: NOVA/EDITAR ENCOMENDA -->
+    <!-- ========================================== -->
+    <div id="modal-encomenda" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2" id="modal-enc-title"><i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda</h3>
+                <button onclick="closeModalEnc()" class="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-5">
+                <input type="hidden" id="enc-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Cliente & Contato</label>
+                        <input type="text" id="enc-cliente" placeholder="Nome (Telefone)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Data/Hora da Entrega</label>
+                        <input type="datetime-local" id="enc-data" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm font-bold text-rose-900 outline-none focus:border-rose-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex justify-between">
+                        <span>Itens da Encomenda</span>
+                        <span class="text-blue-500 lowercase font-medium">Ex: 1x Bolo Morango [R$ 50,00]</span>
+                    </label>
+                    <textarea id="enc-itens" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-500 font-mono text-slate-700"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Valor Total (R$)</label>
+                        <input type="text" id="enc-total" value="0,00" onblur="formatInputMoney(this)" class="w-full border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
+                        <input type="text" id="enc-sinal" value="0,00" onblur="formatInputMoney(this)" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status de Produção</label>
+                        <select id="enc-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:border-rose-500">
+                            <option value="Agendado">📅 Agendado</option>
+                            <option value="Aguardando Sinal">⏳ Aguardando Sinal</option>
+                            <option value="Em Produção">👩‍🍳 Em Produção</option>
+                            <option value="Pronto">✅ Pronto p/ Retirada</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Observações Internas</label>
+                    <input type="text" id="enc-obs" placeholder="Ex: Entregar na festa as 18h..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:border-rose-500">
+                </div>
+            </div>
+            <div class="bg-slate-50 p-5 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button onclick="closeModalEnc()" class="px-5 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                <button id="btn-save-enc" onclick="saveEncomenda()" class="bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-black hover:bg-rose-700 shadow-lg flex items-center gap-2 transition-all"><i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+let allData = [];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITÁRIOS GERAIS
+// ═══════════════════════════════════════════════════════════════════════════
+function toast(text, bg = "#e11d48") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
+function formatMoney(val) { return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function parseMoney(val) {
+    if (!val) return 0;
+    let clean = String(val).replace('R$', '').trim();
+    if (clean.includes('.') && clean.includes(',')) clean = clean.replace('.', '').replace(',', '.');
+    else if (clean.includes(',')) clean = clean.replace(',', '.');
+    return parseFloat(clean) || 0;
+}
+function formatInputMoney(el) { el.value = parseMoney(el.value).toFixed(2).replace('.', ','); }
+function formatDateBr(isoString) {
+    if (!isoString) return 'Data não definida';
+    const d = new Date(isoString);
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tabId) {
+    ['encomendas', 'producao', 'carteira'].forEach(id => {
+        document.getElementById(`tab-${id}`).style.display = 'none';
+        document.getElementById(`btn-tab-${id}`).classList.remove('active', 'text-rose-600', 'bg-rose-50', 'border-b-2', 'border-rose-500');
+    });
+    document.getElementById(`tab-${tabId}`).style.display = 'block';
+    document.getElementById(`btn-tab-${tabId}`).classList.add('active', 'text-rose-600', 'bg-rose-50', 'border-b-2', 'border-rose-500');
+    if (tabId === 'producao') renderProducao();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BUSCA DE DADOS (SUPABASE)
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadData() {
+    try {
+        const { data, error } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        allData = data;
+        renderEncomendas();
+        if(document.getElementById('tab-producao').style.display === 'block') renderProducao();
+        renderCarteira();
+    } catch (err) {
+        console.error("Erro ao carregar dados", err);
+        toast("Erro ao carregar dados", "#ef4444");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA 1: AGENDA DE ENCOMENDAS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderEncomendas() {
+    const grid = document.getElementById('grid-encomendas');
+    const empty = document.getElementById('empty-encomendas');
+    
+    // Filtra encomendas: Ou o tipo é "Encomenda" OU tem uma data de entrega definida
+    const encomendas = allData.filter(o => {
+        const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
+        const isNotFinished = !o.status.toLowerCase().includes('concluí');
+        const isEncomenda = (o.tipo && o.tipo.toLowerCase().includes('encomenda')) || (o.data_entrega && o.data_entrega !== '');
+        return isNotCanceled && isNotFinished && isEncomenda;
+    });
+
+    // Ordena da mais próxima para a mais distante
+    encomendas.sort((a, b) => new Date(a.data_entrega || '2099') - new Date(b.data_entrega || '2099'));
+
+    document.getElementById('enc-count').innerText = `${encomendas.length} agendadas`;
+
+    if (encomendas.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    
+    grid.innerHTML = encomendas.map(o => {
+        const total = parseMoney(o.total);
+        const sinal = parseMoney(o.sinal_pago);
+        const saldo = total - sinal;
+        
+        // Cor do Status
+        let statusColor = "bg-slate-100 text-slate-700";
+        if (o.status === "Pronto") statusColor = "bg-emerald-100 text-emerald-700";
+        if (o.status === "Em Produção") statusColor = "bg-blue-100 text-blue-700";
+        if (o.status === "Aguardando Sinal") statusColor = "bg-red-100 text-red-700";
+
+        return `
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
+            <div class="pl-2 flex flex-col h-full">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border border-rose-100">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formatDateBr(o.data_entrega)}
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor}">${o.status}</span>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-1 truncate">${o.cliente}</h4>
+                <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 line-clamp-3 leading-relaxed">
+                    ${(o.itens || '').replace(/\|/g, '\n')}
+                </div>
+                
+                <div class="mt-auto pt-4 border-t border-slate-100 space-y-2">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+                        <span>Total: ${formatMoney(total)}</span>
+                        <span class="text-emerald-600">Sinal: ${formatMoney(sinal)}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <span class="text-[10px] font-black uppercase text-slate-400">Saldo na Entrega</span>
+                        <span class="text-lg font-black text-rose-600">${formatMoney(saldo)}</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button onclick="editEncomenda('${o.id}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">Editar</button>
+                    <button onclick="enviarLembreteWhatsApp('${o.telefone}', '${o.cliente}', '${formatDateBr(o.data_entrega)}')" class="flex-1 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Lembrete</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA 2: RESUMO DE PRODUÇÃO (AGRUPADOR INTELIGENTE)
+// ═══════════════════════════════════════════════════════════════════════════
+function renderProducao() {
+    const list = document.getElementById('lista-producao');
+    const empty = document.getElementById('empty-producao');
+    
+    // Pega todas as encomendas não concluídas e não canceladas
+    const pendentes = allData.filter(o => {
+        const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
+        const isNotFinished = !o.status.toLowerCase().includes('concluí');
+        const isEncomenda = (o.tipo && o.tipo.toLowerCase().includes('encomenda')) || (o.data_entrega && o.data_entrega !== '');
+        return isNotCanceled && isNotFinished && isEncomenda;
+    });
+
+    if (pendentes.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+
+    // Dicionário para somar as quantidades
+    let producaoAgrupada = {};
+
+    pendentes.forEach(pedido => {
+        if (!pedido.itens) return;
+        // Divide a string "1x Bolo | 2x Suco" em array
+        const itensArr = pedido.itens.split('|');
+        
+        itensArr.forEach(str => {
+            // Regex para extrair a quantidade (número seguido de 'x') e o nome do produto
+            // O nome vai do 'x ' até o '[' do preço
+            const match = str.trim().match(/^(\d+)x\s+(.+?)\s+\[/);
+            if (match) {
+                const qtd = parseInt(match[1]);
+                const nomeProduto = match[2].trim();
+                
+                if (producaoAgrupada[nomeProduto]) producaoAgrupada[nomeProduto] += qtd;
+                else producaoAgrupada[nomeProduto] = qtd;
+            }
+        });
+    });
+
+    // Transforma em array e ordena por quantidade (quem tem mais fazer primeiro)
+    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome] }));
+    arrProducao.sort((a, b) => b.qtd - a.qtd);
+
+    if(arrProducao.length === 0) { list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado nas comandas.</p>'; return; }
+
+    list.innerHTML = arrProducao.map(item => `
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
+            <div class="flex items-center gap-3">
+                <div class="bg-white border border-slate-200 w-10 h-10 rounded-lg flex items-center justify-center font-black text-rose-600 text-lg shadow-sm">${item.qtd}x</div>
+                <span class="font-bold text-slate-700">${item.nome}</span>
+            </div>
+            <input type="checkbox" class="w-5 h-5 text-rose-500 rounded border-slate-300 focus:ring-rose-500 cursor-pointer">
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA 3: CARTEIRA DE CLIENTES (A RECEBER)
+// ═══════════════════════════════════════════════════════════════════════════
+function renderCarteira() {
+    const list = document.getElementById('lista-devedores');
+    const empty = document.getElementById('empty-devedores');
+    
+    // Busca pedidos concluídos/entregues que tenham 'A Pagar' ou 'Combinar' no status de pagamento (da tabela antiga)
+    // Ou onde status_pagamento seja 'Pendente'
+    const aReceber = allData.filter(o => {
+        const isFinished = o.status.toLowerCase().includes('conclu') || o.status.toLowerCase().includes('entregue');
+        const isNotPaid = (o.pagamento && o.pagamento.toLowerCase().includes('pagar')) || (o.status_pagamento && o.status_pagamento.toLowerCase() === 'pendente');
+        return isFinished && isNotPaid;
+    });
+
+    let totalRua = 0;
+    
+    if (aReceber.length === 0) { 
+        list.innerHTML = ''; empty.classList.remove('hidden'); 
+        document.getElementById('total-receber-val').innerText = 'R$ 0,00';
+        document.getElementById('total-receber-count').innerText = '0 contas pendentes';
+        return; 
+    }
+    empty.classList.add('hidden');
+
+    list.innerHTML = aReceber.map(o => {
+        const total = parseMoney(o.total);
+        const sinal = parseMoney(o.sinal_pago);
+        const saldo = total - sinal; // O que falta receber
+        totalRua += saldo;
+
+        return `
+        <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pedido #${String(o.id).slice(-4)} • ${o.data}</div>
+                <h4 class="font-black text-slate-800 text-base">${o.cliente}</h4>
+                <div class="text-xs text-rose-600 font-bold bg-rose-50 inline-block px-2 py-1 rounded mt-1 border border-rose-100">Dívida: ${formatMoney(saldo)}</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo})" class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Enviar Cobrança</button>
+                <button onclick="baixarConta('${o.id}')" class="bg-white border border-slate-200 text-slate-600 px-3 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-100 transition-colors" title="Marcar como Pago"><i data-lucide="check" class="w-4 h-4"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+    
+    document.getElementById('total-receber-val').innerText = formatMoney(totalRua);
+    document.getElementById('total-receber-count').innerText = `${aReceber.length} contas pendentes`;
+    lucide.createIcons();
+}
+
+async function cobrarWhatsApp(id, clienteStr, valorDevido) {
+    const btn = event.currentTarget;
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="lucide-loader-2 w-4 h-4 animate-spin"></i> Gerando...';
+
+    // Gera Link Mercado Pago
+    let linkPagamento = '';
+    try {
+        const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: [{ title: `Acerto Pedido #${String(id).slice(-4)} - Morangos Tatuí`, quantity: 1, currency_id: 'BRL', unit_price: Number(valorDevido.toFixed(2)) }],
+                payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
+            })
+        });
+        const data = await response.json();
+        if (data.init_point) linkPagamento = data.init_point;
+    } catch (e) {
+        linkPagamento = `Chave Pix Copia e Cola: ${CHAVE_PIX_ALEATORIA}`;
+    }
+
+    const nome = clienteStr.split('(')[0].trim();
+    let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
+    text += `Estou passando apenas para lembrar do saldo em aberto de *${formatMoney(valorDevido)}* referente ao pedido entregue.\n\n`;
+    
+    if (linkPagamento.startsWith('http')) {
+        text += `Você pode fazer o pagamento rapidinho e com segurança (Cartão ou Pix) pelo link abaixo:\n👉 ${linkPagamento}\n\n`;
+    } else {
+        text += `Você pode fazer o pagamento via Pix:\n${linkPagamento}\n\n`;
+    }
+    text += `Qualquer dúvida, estamos à disposição. Muito obrigado! 🥰`;
+
+    let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
+    let waLink = "https://wa.me/";
+    if (phoneMatch) waLink += "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] + "?text=" + encodeURIComponent(text);
+    else waLink += "?text=" + encodeURIComponent(text);
+
+    btn.innerHTML = origHtml;
+    window.open(waLink, '_blank');
+}
+
+async function baixarConta(id) {
+    if(!confirm('Confirmar o recebimento e dar baixa nesta conta?')) return;
+    
+    // Atualiza o pagamento para Pago na tabela
+    const { error } = await supabaseClient.from('pedidos')
+        .update({ status_pagamento: 'Pago', pagamento: 'Pago via Cobrança WhatsApp' })
+        .eq('id', id);
+
+    if(!error) { toast("Conta baixada com sucesso!", "#10b981"); loadData(); }
+    else { toast("Erro ao dar baixa.", "#ef4444"); }
+}
+
+function enviarLembreteWhatsApp(telefone, clienteStr, dataStr) {
+    const nome = clienteStr.split('(')[0].trim();
+    let text = `Olá, *${nome}*! Aqui é da Morangos Tatuí 🍓.\n\n`;
+    text += `Passando para confirmar que a sua encomenda está anotada e agendada para: *${dataStr}*.\n`;
+    text += `Estamos preparando tudo com muito carinho! 🥰`;
+    
+    let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
+    let waLink = "https://wa.me/";
+    if (phoneMatch) waLink += "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] + "?text=" + encodeURIComponent(text);
+    else waLink += "?text=" + encodeURIComponent(text);
+    window.open(waLink, '_blank');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL DE ENCOMENDAS (CRIAR E EDITAR)
+// ═══════════════════════════════════════════════════════════════════════════
+function openNovaEncomendaModal() {
+    document.getElementById('enc-id').value = '';
+    document.getElementById('enc-cliente').value = '';
+    document.getElementById('enc-data').value = '';
+    document.getElementById('enc-itens').value = '';
+    document.getElementById('enc-total').value = '0,00';
+    document.getElementById('enc-sinal').value = '0,00';
+    document.getElementById('enc-status').value = 'Agendado';
+    document.getElementById('enc-obs').value = '';
+    
+    document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda';
+    document.getElementById('modal-encomenda').classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function editEncomenda(id) {
+    const order = allData.find(o => o.id == id);
+    if (!order) return;
+    
+    document.getElementById('enc-id').value = order.id;
+    document.getElementById('enc-cliente').value = order.cliente;
+    document.getElementById('enc-data').value = order.data_entrega ? order.data_entrega.slice(0, 16) : ''; // Formato datetime-local
+    document.getElementById('enc-itens').value = (order.itens || '').replace(/\|/g, '\n');
+    document.getElementById('enc-total').value = parseMoney(order.total).toFixed(2).replace('.', ',');
+    document.getElementById('enc-sinal').value = parseMoney(order.sinal_pago).toFixed(2).replace('.', ',');
+    document.getElementById('enc-status').value = order.status;
+    document.getElementById('enc-obs').value = order.obs || '';
+    
+    document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="edit" class="text-blue-500"></i> Editar Encomenda';
+    document.getElementById('modal-encomenda').classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function closeModalEnc() { document.getElementById('modal-encomenda').classList.add('hidden'); }
+
+async function saveEncomenda() {
+    const id = document.getElementById('enc-id').value;
+    const cliente = document.getElementById('enc-cliente').value.trim();
+    const data_entrega = document.getElementById('enc-data').value;
+    const itensRaw = document.getElementById('enc-itens').value;
+    const itensFmt = itensRaw.replace(/\n/g, ' | ');
+    const total = formatMoney(parseMoney(document.getElementById('enc-total').value));
+    const sinal = formatMoney(parseMoney(document.getElementById('enc-sinal').value));
+    const status = document.getElementById('enc-status').value;
+    const obs = document.getElementById('enc-obs').value.trim();
+
+    if (!cliente || !data_entrega) return toast("Cliente e Data são obrigatórios!", "#f59e0b");
+
+    const btn = document.getElementById('btn-save-enc');
+    btn.disabled = true; btn.innerHTML = '<i class="lucide-loader-2 w-4 h-4 animate-spin"></i> Salvando...';
+
+    const payload = {
+        cliente,
+        data_entrega,
+        itens: itensFmt,
+        total,
+        sinal_pago: sinal,
+        status,
+        obs,
+        tipo: 'Encomenda',
+        pagamento: 'A Pagar',
+        status_pagamento: 'Pendente'
+    };
+
+    let error;
+    if (id) {
+        // Atualiza existente
+        const res = await supabaseClient.from('pedidos').update(payload).eq('id', id);
+        error = res.error;
+    } else {
+        // Cria nova encomenda. Adiciona campos base
+        payload.id = new Date().getTime().toString().slice(-6);
+        payload.data = new Date().toLocaleString("pt-BR");
+        const res = await supabaseClient.from('pedidos').insert([payload]);
+        error = res.error;
+    }
+
+    if (!error) {
+        toast("Encomenda salva com sucesso!", "#10b981");
+        closeModalEnc();
+        loadData();
+    } else {
+        toast("Erro ao salvar.", "#ef4444");
+    }
+    
+    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda';
+    lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INICIAR
+// ═══════════════════════════════════════════════════════════════════════════
+loadData();
+lucide.createIcons();
+</script>
+</body>
+</html>
