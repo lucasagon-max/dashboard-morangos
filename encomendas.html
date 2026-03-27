@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Painel Estratégico - Morangos Tatuí</title>
+    <title>Encomendas - Morangos Tatuí</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +33,7 @@
             <div class="flex items-center gap-3">
                 <img src="https://ferramentas.morangostatui.com.br/logo.png" class="h-12 w-12 rounded-xl shadow-sm object-cover border border-slate-100" alt="Morangos Tatuí" onerror="this.style.display='none'">
                 <div>
-                    <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-none">Painel Estratégico</h1>
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-none">Encomendas</h1>
                     <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Morangos Tatuí</p>
                 </div>
             </div>
@@ -91,7 +91,7 @@
     </main>
 
     <div id="modal-encomenda" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                 <h3 class="font-black text-lg text-slate-800 flex items-center gap-2" id="modal-enc-title"><i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda</h3>
                 <button onclick="closeModalEnc()" class="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -103,12 +103,34 @@
                     <div class="relative">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Selecionar Cliente</label>
                         <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Digite o nome ou telefone..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500 transition-colors">
+                        
                         <div id="client-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-48 overflow-y-auto z-[120] mt-1"></div>
-                        <div id="new-client-form" class="hidden mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl">
-                            <p class="text-[10px] font-bold text-rose-600 uppercase mb-2">Cadastrar Novo Cliente</p>
-                            <input type="text" id="nc-nome" placeholder="Nome Completo" class="w-full mb-2 p-2 rounded-lg text-sm border border-rose-200 outline-none">
-                            <input type="tel" id="nc-tel" placeholder="WhatsApp (15) 9..." class="w-full mb-2 p-2 rounded-lg text-sm border border-rose-200 outline-none" oninput="this.value = formatPhone(this.value)">
-                            <button onclick="saveNewClient()" class="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">Salvar Cliente</button>
+                        
+                        <!-- Formulário de Cliente Completo -->
+                        <div id="new-client-form" class="hidden mt-3 p-4 bg-rose-50 border border-rose-100 rounded-xl space-y-3">
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Cadastrar Novo Cliente</p>
+                                <button onclick="hideNewClientForm()" class="text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 shadow-sm"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <input type="text" id="nc-nome" placeholder="Nome Completo *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                                <input type="tel" id="nc-tel" placeholder="WhatsApp (15) 9... *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" oninput="this.value = formatPhone(this.value)">
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-3">
+                                <input type="text" id="nc-cep" placeholder="CEP" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" onblur="buscarCEP(this.value)" maxlength="9" oninput="formatCEPInput(this)">
+                                <input type="text" id="nc-rua" placeholder="Rua / Avenida" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <input type="text" id="nc-numero" placeholder="Número" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                                <input type="text" id="nc-bairro" placeholder="Bairro" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                            </div>
+                            
+                            <input type="text" id="nc-comp" placeholder="Complemento (Ex: Apto 12)" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                            
+                            <button onclick="saveNewClient()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 rounded-lg transition-colors mt-2 flex justify-center items-center gap-1 shadow-sm"><i data-lucide="user-check" class="w-4 h-4"></i> Salvar Cliente Completo</button>
                         </div>
                     </div>
 
@@ -246,13 +268,13 @@ async function loadCatalogAndClients() {
     try {
         const resCat = await supabaseClient.from('produtos').select('*').eq('disponivel', 'Sim');
         if (resCat.data) catalogProducts = resCat.data;
-        const resCli = await supabaseClient.from('clientes').select('nome, telefone');
+        const resCli = await supabaseClient.from('clientes').select('*'); // Agora puxa tudo para termos cep, rua, etc
         if (resCli.data) allClients = resCli.data;
     } catch(e) { console.error("Erro dicionários:", e); }
 }
 
 // ==========================================
-// ABA 1: AGENDA (AGORA COM RESUMO FINANCEIRO)
+// ABA 1: AGENDA
 // ==========================================
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
@@ -468,6 +490,37 @@ function renderProducao() {
 // ==========================================
 // MODAL INTEGRAÇÕES: CLIENTE E CATÁLOGO
 // ==========================================
+
+function formatCEPInput(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 8);
+    if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
+    el.value = v;
+}
+
+async function buscarCEP(cepStr) {
+    let cep = cepStr.replace(/\D/g, '');
+    if (cep.length === 8) {
+        try {
+            document.getElementById('nc-rua').value = 'Buscando...';
+            document.getElementById('nc-bairro').value = 'Buscando...';
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if (!data.erro) {
+                document.getElementById('nc-rua').value = data.logradouro;
+                document.getElementById('nc-bairro').value = data.bairro;
+                document.getElementById('nc-numero').focus();
+            } else {
+                toast('CEP não encontrado.', '#f59e0b');
+                document.getElementById('nc-rua').value = '';
+                document.getElementById('nc-bairro').value = '';
+            }
+        } catch(e) {
+            document.getElementById('nc-rua').value = '';
+            document.getElementById('nc-bairro').value = '';
+        }
+    }
+}
+
 function searchClients(q) {
     const results = document.getElementById('client-results');
     const newForm = document.getElementById('new-client-form');
@@ -505,17 +558,48 @@ function showNewClientForm(nomeDigitado) {
     document.getElementById('nc-tel').focus();
 }
 
+function hideNewClientForm() {
+    document.getElementById('new-client-form').classList.add('hidden');
+}
+
 async function saveNewClient() {
     const nome = document.getElementById('nc-nome').value.trim();
     const tel = document.getElementById('nc-tel').value.replace(/\D/g, '');
+    const cep = document.getElementById('nc-cep').value.replace(/\D/g, '');
+    const rua = document.getElementById('nc-rua').value.trim();
+    const numero = document.getElementById('nc-numero').value.trim();
+    const bairro = document.getElementById('nc-bairro').value.trim();
+    const complemento = document.getElementById('nc-comp').value.trim();
+
     if(!nome || tel.length < 10) return toast("Preencha Nome e Telefone válidos", "#f59e0b");
     
     try {
-        await supabaseClient.from('clientes').insert([{ nome, telefone: tel, pin_senha: '0000', saldo_cashback: 0 }]);
-        allClients.push({nome, telefone: tel});
+        const payload = { 
+            nome, 
+            telefone: tel, 
+            cep, 
+            rua, 
+            numero, 
+            bairro, 
+            complemento, 
+            pin_senha: '0000', 
+            saldo_cashback: 0 
+        };
+        
+        await supabaseClient.from('clientes').insert([payload]);
+        allClients.push(payload);
         selectClient(nome, tel);
+        
         document.getElementById('new-client-form').classList.add('hidden');
-        toast("Cliente Cadastrado!", "#10B981");
+        toast("Cliente Cadastrado com Sucesso!", "#10B981");
+        
+        document.getElementById('nc-nome').value = '';
+        document.getElementById('nc-tel').value = '';
+        document.getElementById('nc-cep').value = '';
+        document.getElementById('nc-rua').value = '';
+        document.getElementById('nc-numero').value = '';
+        document.getElementById('nc-bairro').value = '';
+        document.getElementById('nc-comp').value = '';
     } catch(e) { toast("Erro ao cadastrar", "#ef4444"); }
 }
 
