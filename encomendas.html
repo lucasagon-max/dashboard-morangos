@@ -349,7 +349,7 @@ async function enviarParaCaixa(id) {
 }
 
 // ==========================================
-// ABA 2: PRODUÇÃO E VALORES (UNIFICADO)
+// ABA 2: PRODUÇÃO E VALORES
 // ==========================================
 function renderProducao() {
     const list = document.getElementById('lista-producao');
@@ -383,7 +383,6 @@ function renderProducao() {
         if (!pedido.itens) return;
         const itensArr = pedido.itens.split('|');
         itensArr.forEach(str => {
-            // Nova RegEx para extrair Qtd, Nome e Valor formatado no bloco
             const match = str.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]/);
             if (match) {
                 const qtd = parseInt(match[1]);
@@ -400,13 +399,11 @@ function renderProducao() {
         });
     });
 
-    // Atualiza Dash Financeiro
     const totalGeralSaldo = totalGeralEncomendado - totalGeralSinal;
     document.getElementById('prod-total-val').innerText = formatMoney(totalGeralEncomendado);
     document.getElementById('prod-sinal-val').innerText = formatMoney(totalGeralSinal);
     document.getElementById('prod-saldo-val').innerText = formatMoney(totalGeralSaldo);
 
-    // Renderiza Lista
     const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd, valor: producaoAgrupada[nome].valor }));
     arrProducao.sort((a, b) => b.qtd - a.qtd);
 
@@ -427,18 +424,34 @@ function renderProducao() {
 }
 
 // ==========================================
-// ABA 3: CARTEIRA GERAL (Tudo que tem saldo devedor)
+// ABA 3: CARTEIRA GERAL (FILTRO BLINDADO)
 // ==========================================
 function renderCarteira() {
     const list = document.getElementById('lista-devedores');
     const empty = document.getElementById('empty-devedores');
     
     const aReceber = allData.filter(o => {
-        const isCanceled = o.status.toLowerCase().includes('cancelad');
-        const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
+        // 1. Ignora cancelados imediatamente
+        if (o.status.toLowerCase().includes('cancelad')) return false;
+
+        // 2. Ignora se foi marcado manualmente como "Pago" no botão Dar Baixa
+        if (o.status_pagamento && o.status_pagamento.toLowerCase() === 'pago') return false;
+
+        // 3. Verifica pagamentos normais feitos pelo PDV
+        // No PDV, quando a comanda é paga, o status muda para "Concluído"
+        // E o campo 'pagamento' recebe os detalhes sem as palavras devedoras
+        const isConcluido = o.status.toLowerCase().includes('conclu');
+        const pagamentoStr = (o.pagamento || '').toLowerCase();
         
-        // Entra na carteira se tiver Saldo Devedor e NÃO estiver cancelado
-        return !isCanceled && saldo > 0.01;
+        // É "Fiado" se estiver Concluído MAS a nota de pagamento disser que deve
+        const isFiado = isConcluido && (pagamentoStr.includes('pagar') || pagamentoStr.includes('pendente') || pagamentoStr.includes('combinar'));
+
+        // Se está concluído e NÃO é fiado, o cliente pagou na hora no balcão. Sai da lista!
+        if (isConcluido && !isFiado) return false;
+
+        // 4. Calcula o Saldo final
+        const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
+        return saldo > 0.01;
     });
 
     let totalRua = 0;
@@ -488,9 +501,9 @@ async function baixarConta(id) {
     if (!order) return;
 
     const { error } = await supabaseClient.from('pedidos').update({ 
-        sinal_pago: order.total, // O sinal agora iguala o total
+        sinal_pago: order.total, 
         status_pagamento: 'Pago', 
-        pagamento: 'Acerto de Conta (Baixa)' 
+        pagamento: 'Acerto de Conta (Baixa via Carteira)' 
     }).eq('id', id);
 
     if(!error) { toast("Baixa confirmada!", "#10b981"); loadData(); }
@@ -531,7 +544,6 @@ async function cobrarWhatsApp(id, clienteStr, valorDevido) {
 // ==========================================
 // MODAL INTEGRAÇÕES: CLIENTE E CATÁLOGO
 // ==========================================
-
 function searchClients(q) {
     const results = document.getElementById('client-results');
     const newForm = document.getElementById('new-client-form');
