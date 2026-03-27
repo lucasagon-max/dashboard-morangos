@@ -396,7 +396,7 @@ function setLiveStatus(state) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Renderização do board
+// Renderização do board (COM FILTRO PARA ENCOMENDAS)
 // ═══════════════════════════════════════════════════════════════════════════
 function getBarClass(tipo) {
     const t = normalizeStr(tipo || '');
@@ -411,11 +411,29 @@ function renderBoard(orders) {
     const empty = document.getElementById('empty-state');
     const search = normalizeStr(document.getElementById('search-comanda').value);
 
+    // O Segredo da Limpeza: O Filtro Inteligente
     const visible = orders.filter(o => {
         const s = normalizeStr(o.status);
         const sClear = s.replace(/[^a-z]/g, '');
+        
+        // 1. Oculta concluídos, cancelados e arquivados
         if (sClear.includes('conclui') || sClear.includes('cancelad') || sClear.includes('arquivad')) return false;
+        
+        // 2. Oculta as Encomendas que ainda não estão "Pendentes" de pagamento/entrega final
+        const tipoStr = normalizeStr(o.tipo || '');
+        const hasDataAgendada = o.data_entrega && o.data_entrega.trim() !== '';
+        const isEncomenda = tipoStr.includes('encomenda') || hasDataAgendada;
+        
+        if (isEncomenda) {
+            // Se for encomenda, só aparece na tela do Caixa se o status for estritamente "Pendente"
+            if (!sClear.includes('pendente')) {
+                return false; 
+            }
+        }
+
+        // 3. Aplica o campo de busca de texto
         if (search && !normalizeStr(o.cliente).includes(search) && !o.id.includes(search)) return false;
+        
         return true;
     });
 
@@ -637,20 +655,26 @@ function openPaymentModal(id) {
     if (!order) return;
     currentPaymentId  = id;
     
-    // Reseta cálculos
+    // Reseta cálculos e puxa SINAL caso seja uma encomenda vinda pro caixa
     orderSubtotalBase = parseMoney(order.total);
+    const sinalPago = parseMoney(order.sinal_pago);
+    
     document.getElementById('payment-subtotal').innerText = formatMoney(orderSubtotalBase);
     
     document.getElementById('input-taxa').value = '0,00';
-    document.getElementById('input-desc').value = '0,00';
+    document.getElementById('input-desc').value = sinalPago > 0 ? sinalPago.toFixed(2).replace('.', ',') : '0,00';
     descType = 'R$';
     document.getElementById('btn-desc-type').innerText = 'R$';
 
     splitPayments = [];
-    calcFinalTotal(); // Calcula o initial e atualiza UI
+    calcFinalTotal();
     
     document.getElementById('payment-modal').classList.remove('hidden');
     lucide.createIcons();
+    
+    if (sinalPago > 0) {
+        toast("Aviso: O sinal já pago foi abatido como desconto.", "#f59e0b");
+    }
 }
 
 function closePaymentModal() { document.getElementById('payment-modal').classList.add('hidden'); }
@@ -765,7 +789,6 @@ async function sendWhatsAppCharge() {
             }
         } catch (error) {
             console.error("Link bloqueado ou erro no MP:", error);
-            // Plano B de Segurança: Envia a Chave Pix Aleatória.
             linkPagamento = `Chave Pix Copia e Cola:\n\`${CHAVE_PIX_ALEATORIA}\`\nNome: Morangos Tatuí`;
         }
 
@@ -778,7 +801,7 @@ async function sendWhatsAppCharge() {
         text += `Subtotal: ${formatMoney(orderSubtotalBase)}\n`;
         
         if (taxa > 0) text += `Taxa de Entrega: ${formatMoney(taxa)}\n`;
-        if (descontoReal > 0) text += `Desconto: - ${formatMoney(descontoReal)}\n`;
+        if (descontoReal > 0) text += `Desconto/Sinal abatido: - ${formatMoney(descontoReal)}\n`;
         
         text += `\n*TOTAL A PAGAR: ${formatMoney(currentOrderTotal)}*\n\n`;
         
@@ -822,14 +845,13 @@ async function processFinalPayment() {
     btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline"></i>'; btn.disabled = true;
     lucide.createIcons();
     
-    // Constrói o histórico financeiro da conta para salvar
     let taxa = parseMoney(document.getElementById('input-taxa').value);
     let descRaw = parseMoney(document.getElementById('input-desc').value);
     let descontoReal = descType === '%' ? orderSubtotalBase * (descRaw / 100) : descRaw;
 
     let resFin = `(Sub: ${formatMoney(orderSubtotalBase)}`;
     if (taxa > 0) resFin += ` | Taxa: ${formatMoney(taxa)}`;
-    if (descontoReal > 0) resFin += ` | Desc: -${formatMoney(descontoReal)}`;
+    if (descontoReal > 0) resFin += ` | Desc/Sinal: -${formatMoney(descontoReal)}`;
     resFin += `)`;
 
     const detail       = splitPayments.map(p => `${p.method}: ${formatMoney(p.amount)}`).join(' | ');
@@ -839,12 +861,13 @@ async function processFinalPayment() {
     const paysToPrint  = [...splitPayments];
     const totalToPrint = currentOrderTotal;
     
-    // Atualiza o banco alterando o 'total' para o valor já calculado e o 'pagamento' com os detalhes
+    // Além de mudar o status e salvar o pagamento, zera o status_pagamento se existisse
     const { error } = await supabaseClient.from('pedidos')
         .update({ 
             status: 'Concluído', 
             total: formatMoney(currentOrderTotal),
-            pagamento: finalDetail 
+            pagamento: finalDetail,
+            status_pagamento: 'Pago' // Garante que saia da Carteira
         })
         .eq('id', currentPaymentId);
 
