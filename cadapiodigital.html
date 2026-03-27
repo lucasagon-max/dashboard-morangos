@@ -233,6 +233,7 @@
   <main id="view-profile" class="hidden flex-1 p-6 fade-in bg-slate-50 pb-28">
     <h2 class="font-sans text-2xl font-black text-slate-900 mb-6">Meu Perfil</h2>
     
+    <!-- Card 1: Dados do Cliente -->
     <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm mb-4">
       <div class="flex items-center gap-4 border-b border-slate-100 pb-5 mb-5">
         <div class="w-14 h-14 rounded-full bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center font-sans text-2xl font-black shrink-0" id="profile-initial">M</div>
@@ -259,6 +260,23 @@
       </div>
     </div>
 
+    <!-- Card 2: Histórico de Pedidos (Novo) -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm mb-4">
+      <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+        <i data-lucide="clock" class="w-5 h-5 text-brand-600"></i>
+        <h3 class="font-sans text-lg font-bold text-slate-900">Últimos Pedidos</h3>
+      </div>
+      
+      <!-- A lista de pedidos vai ser gerada aqui dentro pelo JavaScript -->
+      <div id="profile-orders-list" class="space-y-3">
+        <div class="text-center py-6 text-slate-400 text-sm flex flex-col items-center">
+          <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-brand-500"></i>
+          Buscando histórico...
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Botão de Sair -->
     <button onclick="doLogout()" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-brand-600 rounded-2xl py-4 font-bold transition-all flex justify-center items-center gap-2 shadow-sm">
       <i data-lucide="log-out" class="w-4 h-4"></i> Sair da Conta
     </button>
@@ -634,9 +652,57 @@ async function saveAddress() {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. TRANSIÇÕES DE ESTADO DO APP
-// ─────────────────────────────────────────────────────────────────────────────
+// ----------------------------------------------------------------
+// CARREGAR HISTÓRICO DE PEDIDOS
+// ----------------------------------------------------------------
+async function carregarHistoricoPedidos() {
+  const list = document.getElementById('profile-orders-list');
+  if (!clienteLogado) return;
+  
+  try {
+    // Busca no Supabase os últimos 5 pedidos do cliente logado
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .ilike('cliente', `%${clienteLogado.telefone}%`)
+      .order('id', { ascending: false })
+      .limit(5);
+      
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="text-center text-slate-400 text-sm py-6 font-medium">Você ainda não tem pedidos.</div>';
+      return;
+    }
+    
+    let html = '';
+    data.forEach(pedido => {
+      // Cria o design do card de cada pedido para combinar com o novo layout
+      html += `
+        <div class="border border-slate-100 rounded-2xl p-4 bg-slate-50 flex flex-col gap-2 shadow-sm transition-all hover:border-brand-100">
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-black text-slate-800">Pedido #${pedido.id}</span>
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-brand-100 text-brand-700 uppercase tracking-widest">
+              Recebido
+            </span>
+          </div>
+          <div class="text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium">${pedido.itens}</div>
+          <div class="text-sm font-black text-brand-600 mt-1">${pedido.total}</div>
+        </div>
+      `;
+    });
+    
+    list.innerHTML = html;
+    
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="text-center text-rose-500 text-sm py-6 font-bold">Erro ao carregar histórico.</div>';
+  }
+}
+
+// ----------------------------------------------------------------
+// ENTRAR NO APP (ATUALIZADA)
+// ----------------------------------------------------------------
 function entrarNoApp(user) {
   clienteLogado = user;
   localStorage.setItem('mt_user', JSON.stringify(user));
@@ -660,9 +726,14 @@ function entrarNoApp(user) {
   if(user.complemento) end += ` (${user.complemento})`;
   end += ` - ${user.bairro}`;
   document.getElementById('profile-address').innerText = end;
-
+  
   loadProducts();
   updateCartUI();
+  
+  // A MÁGICA ACONTECE AQUI: Carrega o histórico assim que o perfil é montado!
+  carregarHistoricoPedidos(); 
+}
+  carregarHistoricoPedidos();
 }
 
 function doLogout() {
@@ -1108,3 +1179,52 @@ async function sendOrderToSupabase() {
 </script>
 </body>
 </html>
+// ----------------------------------------------------------------
+// CARREGAR HISTÓRICO DE PEDIDOS
+// ----------------------------------------------------------------
+async function carregarHistoricoPedidos() {
+  const list = document.getElementById('profile-orders-list');
+  if (!currentUser) return;
+  
+  try {
+    // Busca na tabela pedidos onde o nome/telefone do cliente bate com o logado
+    // Traz apenas os últimos 5 para a tela carregar rápido
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .ilike('cliente', `%${currentUser.telefone}%`)
+      .order('id', { ascending: false })
+      .limit(5);
+      
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Você ainda não tem pedidos.</div>';
+      lucide.createIcons();
+      return;
+    }
+    
+    let html = '';
+    data.forEach(pedido => {
+      // Cria um card para cada pedido
+      html += `
+        <div class="border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-col gap-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-slate-700">Pedido #${pedido.id}</span>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 uppercase tracking-wider">
+              Recebido
+            </span>
+          </div>
+          <div class="text-[10px] text-slate-500 line-clamp-1">${pedido.itens}</div>
+          <div class="text-xs font-black text-slate-900">${pedido.total}</div>
+        </div>
+      `;
+    });
+    
+    list.innerHTML = html;
+    
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="text-center text-rose-500 text-xs py-4">Erro ao carregar histórico.</div>';
+  }
+}
