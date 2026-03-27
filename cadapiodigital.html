@@ -661,7 +661,7 @@ async function carregarHistoricoPedidos() {
   
   try {
     // Busca no Supabase os últimos 5 pedidos do cliente logado
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('pedidos')
       .select('*')
       .ilike('cliente', `%${clienteLogado.telefone}%`)
@@ -701,7 +701,7 @@ async function carregarHistoricoPedidos() {
 }
 
 // ----------------------------------------------------------------
-// ENTRAR NO APP (ATUALIZADA)
+// ENTRAR NO APP E SAIR
 // ----------------------------------------------------------------
 function entrarNoApp(user) {
   clienteLogado = user;
@@ -730,10 +730,7 @@ function entrarNoApp(user) {
   loadProducts();
   updateCartUI();
   
-  // A MÁGICA ACONTECE AQUI: Carrega o histórico assim que o perfil é montado!
   carregarHistoricoPedidos(); 
-}
-  carregarHistoricoPedidos();
 }
 
 function doLogout() {
@@ -912,7 +909,7 @@ window.openProductModal = function(id) {
         `).join('');
         currentItem.basePrice = prices[0].val;
         currentItem.selectedVariation = prices[0].label || null;
-        currentItem.variationsRaw = prices; // Guarda para alterar estilos visuais
+        currentItem.variationsRaw = prices; 
     } else {
         varContainer.classList.add('hidden');
         currentItem.basePrice = prices[0].val;
@@ -1166,6 +1163,7 @@ async function sendOrderToSupabase() {
       saveCart(); 
       document.getElementById('cart-obs').value = '';
       switchTab('menu');
+      carregarHistoricoPedidos(); // Atualiza o histórico!
       
   } catch (err) {
       console.error("Erro ao enviar pedido:", err);
@@ -1179,52 +1177,3 @@ async function sendOrderToSupabase() {
 </script>
 </body>
 </html>
-// ----------------------------------------------------------------
-// CARREGAR HISTÓRICO DE PEDIDOS
-// ----------------------------------------------------------------
-async function carregarHistoricoPedidos() {
-  const list = document.getElementById('profile-orders-list');
-  if (!currentUser) return;
-  
-  try {
-    // Busca na tabela pedidos onde o nome/telefone do cliente bate com o logado
-    // Traz apenas os últimos 5 para a tela carregar rápido
-    const { data, error } = await supabase
-      .from('pedidos')
-      .select('*')
-      .ilike('cliente', `%${currentUser.telefone}%`)
-      .order('id', { ascending: false })
-      .limit(5);
-      
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      list.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Você ainda não tem pedidos.</div>';
-      lucide.createIcons();
-      return;
-    }
-    
-    let html = '';
-    data.forEach(pedido => {
-      // Cria um card para cada pedido
-      html += `
-        <div class="border border-slate-100 rounded-xl p-3 bg-slate-50 flex flex-col gap-1.5">
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-slate-700">Pedido #${pedido.id}</span>
-            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 uppercase tracking-wider">
-              Recebido
-            </span>
-          </div>
-          <div class="text-[10px] text-slate-500 line-clamp-1">${pedido.itens}</div>
-          <div class="text-xs font-black text-slate-900">${pedido.total}</div>
-        </div>
-      `;
-    });
-    
-    list.innerHTML = html;
-    
-  } catch (e) {
-    console.error(e);
-    list.innerHTML = '<div class="text-center text-rose-500 text-xs py-4">Erro ao carregar histórico.</div>';
-  }
-}
