@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Painel Estratégico - Morangos Tatuí</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -30,7 +31,7 @@
     <header class="bg-white shadow-sm rounded-2xl p-4 mb-6 border border-slate-200">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <div class="flex items-center gap-3">
-                <div class="bg-rose-100 p-2.5 rounded-xl text-rose-600"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
+                <img src="https://ferramentas.morangostatui.com.br/logo.png" class="h-12 w-12 rounded-xl shadow-sm object-cover border border-slate-100" alt="Morangos Tatuí" onerror="this.style.display='none'">
                 <div>
                     <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-none">Painel Estratégico</h1>
                     <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Morangos Tatuí</p>
@@ -43,13 +44,28 @@
         </div>
 
         <div class="flex overflow-x-auto gap-2 border-t border-slate-100 pt-2">
-            <button onclick="switchTab('encomendas')" id="btn-tab-encomendas" class="tab-btn active px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Agenda</button>
-            <button onclick="switchTab('producao')" id="btn-tab-producao" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="chef-hat" class="w-4 h-4"></i> Produção & Valores</button>
-            <button onclick="switchTab('carteira')" id="btn-tab-carteira" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="wallet" class="w-4 h-4"></i> A Receber (Fiados + Encomendas)</button>
+            <button onclick="switchTab('encomendas')" id="btn-tab-encomendas" class="tab-btn active px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Agenda & Valores</button>
+            <button onclick="switchTab('producao')" id="btn-tab-producao" class="tab-btn px-6 py-3 font-bold text-sm rounded-t-xl transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50"><i data-lucide="chef-hat" class="w-4 h-4"></i> Resumo p/ Produção</button>
         </div>
     </header>
 
     <main id="tab-encomendas" class="block">
+        <!-- Resumo Financeiro da Agenda -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Agendado</p>
+                <h3 class="text-2xl font-black text-slate-800" id="agenda-total-val">R$ 0,00</h3>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinais (Já Pagos)</p>
+                <h3 class="text-2xl font-black text-emerald-700" id="agenda-sinal-val">R$ 0,00</h3>
+            </div>
+            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-5 shadow-sm">
+                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Saldo a Receber</p>
+                <h3 class="text-2xl font-black text-rose-700" id="agenda-saldo-val">R$ 0,00</h3>
+            </div>
+        </div>
+
         <div class="flex justify-between items-end mb-4 px-1">
             <h2 class="font-bold text-slate-700 text-lg">Próximas Entregas</h2>
             <div class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm" id="enc-count">0 agendadas</div>
@@ -62,51 +78,15 @@
     </main>
 
     <main id="tab-producao" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Encomendado</p>
-                <h3 class="text-2xl font-black text-slate-800" id="prod-total-val">R$ 0,00</h3>
-            </div>
-            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm">
-                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinais (Já Pagos)</p>
-                <h3 class="text-2xl font-black text-emerald-700" id="prod-sinal-val">R$ 0,00</h3>
-            </div>
-            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-5 shadow-sm">
-                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Saldo a Receber</p>
-                <h3 class="text-2xl font-black text-rose-700" id="prod-saldo-val">R$ 0,00</h3>
-            </div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <div>
                     <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2"><i data-lucide="list-todo" class="text-rose-500"></i> Resumo de Produção</h2>
-                    <p class="text-sm text-slate-500 mt-1">Soma de quantidades e valores das encomendas pendentes.</p>
+                    <p class="text-sm text-slate-500 mt-1">Soma unificada das quantidades agendadas para facilitar o preparo na cozinha.</p>
                 </div>
             </div>
             <div id="lista-producao" class="space-y-3"></div>
             <div id="empty-producao" class="hidden text-center py-10 text-slate-400 font-medium">Nenhum item pendente de produção.</div>
-        </div>
-    </main>
-
-    <main id="tab-carteira" class="hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 space-y-4">
-                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-6 shadow-sm">
-                    <p class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> Total na Rua (A Receber)</p>
-                    <h3 class="text-4xl font-black text-rose-700" id="total-receber-val">R$ 0,00</h3>
-                    <p class="text-sm text-rose-500 mt-2 font-medium" id="total-receber-count">0 contas pendentes</p>
-                </div>
-            </div>
-            
-            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
-                <h3 class="font-bold text-slate-800 text-lg mb-4 border-b border-slate-100 pb-3">Saldos Pendentes (Fiados + Encomendas)</h3>
-                <div id="lista-devedores" class="space-y-3"></div>
-                <div id="empty-devedores" class="hidden text-center py-12 text-slate-400">
-                    <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 opacity-30 text-emerald-500"></i>
-                    <p class="font-bold">Ufa! Nenhuma conta pendente.</p>
-                </div>
-            </div>
         </div>
     </main>
 
@@ -243,7 +223,7 @@ function formatDateBr(isoString) {
 function normalizeStr(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : ""; }
 
 function switchTab(tabId) {
-    ['encomendas', 'producao', 'carteira'].forEach(id => {
+    ['encomendas', 'producao'].forEach(id => {
         document.getElementById(`tab-${id}`).style.display = 'none';
         document.getElementById(`btn-tab-${id}`).classList.remove('active', 'text-rose-600', 'bg-rose-50', 'border-b-2', 'border-rose-500');
     });
@@ -259,7 +239,6 @@ async function loadData() {
         allData = data;
         renderEncomendas();
         if(document.getElementById('tab-producao').style.display === 'block') renderProducao();
-        renderCarteira();
     } catch (err) { toast("Erro ao carregar dados", "#ef4444"); }
 }
 
@@ -273,7 +252,7 @@ async function loadCatalogAndClients() {
 }
 
 // ==========================================
-// ABA 1: AGENDA
+// ABA 1: AGENDA (AGORA COM RESUMO FINANCEIRO)
 // ==========================================
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
@@ -285,6 +264,19 @@ function renderEncomendas() {
         const isEncomenda = (o.tipo && o.tipo.toLowerCase().includes('encomenda')) || (o.data_entrega && o.data_entrega !== '');
         return isNotCanceled && isNotFinished && isEncomenda;
     });
+
+    let totalGeralEncomendado = 0;
+    let totalGeralSinal = 0;
+
+    encomendas.forEach(pedido => {
+        totalGeralEncomendado += parseMoney(pedido.total);
+        totalGeralSinal += parseMoney(pedido.sinal_pago);
+    });
+
+    const totalGeralSaldo = totalGeralEncomendado - totalGeralSinal;
+    document.getElementById('agenda-total-val').innerText = formatMoney(totalGeralEncomendado);
+    document.getElementById('agenda-sinal-val').innerText = formatMoney(totalGeralSinal);
+    document.getElementById('agenda-saldo-val').innerText = formatMoney(totalGeralSaldo);
 
     encomendas.sort((a, b) => new Date(a.data_entrega || '2099') - new Date(b.data_entrega || '2099'));
     document.getElementById('enc-count').innerText = `${encomendas.length} agendadas`;
@@ -310,7 +302,10 @@ function renderEncomendas() {
                     <div class="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border border-rose-100">
                         <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formatDateBr(o.data_entrega)}
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor}">${o.status}</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="printEncomenda('${o.id}')" class="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors" title="Imprimir Comanda"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor} ml-1">${o.status}</span>
+                    </div>
                 </div>
                 
                 <h4 class="font-bold text-slate-800 text-lg mb-1 truncate">${o.cliente}</h4>
@@ -330,9 +325,12 @@ function renderEncomendas() {
                 </div>
 
                 <div class="flex gap-2 mt-4">
+                    <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo}, '${formatDateBr(o.data_entrega)}')" class="p-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl transition-colors shadow-sm" title="Enviar Lembrete / Cobrança via WhatsApp">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    </button>
                     <button onclick="editEncomenda('${o.id}')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">Editar</button>
                     <button onclick="enviarParaCaixa('${o.id}')" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1 shadow-sm" title="Disponibiliza no PDV para finalização">
-                        <i data-lucide="monitor-check" class="w-3.5 h-3.5"></i> Enviar p/ Caixa
+                        <i data-lucide="monitor-check" class="w-3.5 h-3.5"></i> p/ Caixa
                     </button>
                 </div>
             </div>
@@ -348,8 +346,77 @@ async function enviarParaCaixa(id) {
     else { toast("Erro ao enviar.", "#ef4444"); }
 }
 
+async function cobrarWhatsApp(id, clienteStr, valorDevido, dataEntrega) {
+    let linkPagamento = '';
+    try {
+        const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: [{ title: `Acerto Encomenda #${String(id).slice(-4)} - Morangos Tatuí`, quantity: 1, currency_id: 'BRL', unit_price: Number(valorDevido.toFixed(2)) }],
+                payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
+            })
+        });
+        const data = await response.json();
+        if (data.init_point) linkPagamento = data.init_point;
+    } catch (e) {
+        linkPagamento = `Chave Pix Copia e Cola: ${CHAVE_PIX_ALEATORIA}`;
+    }
+
+    const nome = clienteStr.split('(')[0].trim();
+    let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
+    text += `Passando para confirmar que a sua encomenda está anotada e agendada para entrega/retirada em: *${dataEntrega}*.\n\n`;
+    
+    if(valorDevido > 0.01) {
+        text += `O saldo restante na entrega é de *${formatMoney(valorDevido)}*.\n`;
+        if (linkPagamento.startsWith('http')) text += `Caso prefira adiantar o pagamento com segurança (Cartão ou Pix), acesse:\n👉 ${linkPagamento}\n\n`;
+        else text += `Caso prefira adiantar via Pix:\n${linkPagamento}\n\n`;
+    }
+    
+    text += `Estamos preparando tudo com muito carinho! Qualquer dúvida, estamos à disposição. 🥰`;
+
+    let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
+    let waLink = "https://wa.me/";
+    if (phoneMatch) waLink += "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] + "?text=" + encodeURIComponent(text);
+    else waLink += "?text=" + encodeURIComponent(text);
+    window.open(waLink, '_blank');
+}
+
+function printEncomenda(id) {
+    const o = allData.find(x => x.id == id);
+    if (!o) return;
+    const obs = o.obs || '';
+    const win = window.open('', '', 'width=450,height=600');
+    win.document.write(`<html><head><title>Imprimir Encomenda #${id}</title><style>
+        @page{margin:0}body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;color:#000}
+        .header{text-align:center;margin-bottom:10px}.header h2{margin:0;font-size:1.2em}.header p{margin:2px 0;font-size:1em}
+        .divider{border-top:2px dashed #000;margin:10px 0}
+        .client-name{font-size:28px;font-weight:900;margin:10px 0;line-height:1.1;display:block;text-transform:uppercase}
+        .items{font-size:20px;font-weight:bold;white-space:pre-wrap;line-height:1.2;font-family:'Consolas',monospace}
+        .meta{font-size:16px;margin-bottom:5px; font-weight: bold;}
+        .total-section{text-align:right;margin-top:15px}
+        .total-value{font-size:20px;font-weight:900}
+    </style></head><body>
+        <div class="header"><h2>MORANGOS TATUÍ</h2><p>ENCOMENDA #${String(id).slice(-4)}</p></div>
+        <div class="divider"></div>
+        <div class="meta">ENTREGA:<br>${formatDateBr(o.data_entrega)}</div>
+        <div class="client-name">${o.cliente}</div>
+        <div class="divider"></div>
+        <div class="items">${(o.itens||'').replace(/\|/g, '\n')}</div>
+        ${obs ? `<div class="divider"></div><div style="font-size:18px;font-weight:bold;margin:10px 0">OBS: ${obs}</div>` : ''}
+        <div class="divider"></div>
+        <div class="total-section">
+            <span style="font-size:14px">TOTAL: ${formatMoney(parseMoney(o.total))}</span><br>
+            <span style="font-size:14px">SINAL: ${formatMoney(parseMoney(o.sinal_pago))}</span><br>
+            <div class="total-value" style="margin-top:5px">FALTA: ${formatMoney(parseMoney(o.total) - parseMoney(o.sinal_pago))}</div>
+        </div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 300);
+}
+
 // ==========================================
-// ABA 2: PRODUÇÃO E VALORES
+// ABA 2: PRODUÇÃO
 // ==========================================
 function renderProducao() {
     const list = document.getElementById('lista-producao');
@@ -362,24 +429,12 @@ function renderProducao() {
         return isNotCanceled && isNotFinished && isEncomenda;
     });
 
-    let totalGeralEncomendado = 0;
-    let totalGeralSinal = 0;
-    
-    if (pendentes.length === 0) { 
-        list.innerHTML = ''; empty.classList.remove('hidden'); 
-        document.getElementById('prod-total-val').innerText = 'R$ 0,00';
-        document.getElementById('prod-sinal-val').innerText = 'R$ 0,00';
-        document.getElementById('prod-saldo-val').innerText = 'R$ 0,00';
-        return; 
-    }
+    if (pendentes.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
 
     let producaoAgrupada = {};
     
     pendentes.forEach(pedido => {
-        totalGeralEncomendado += parseMoney(pedido.total);
-        totalGeralSinal += parseMoney(pedido.sinal_pago);
-
         if (!pedido.itens) return;
         const itensArr = pedido.itens.split('|');
         itensArr.forEach(str => {
@@ -387,24 +442,13 @@ function renderProducao() {
             if (match) {
                 const qtd = parseInt(match[1]);
                 const nomeProduto = match[2].trim();
-                const valorLinha = parseMoney(match[3]);
-                
-                if (producaoAgrupada[nomeProduto]) {
-                    producaoAgrupada[nomeProduto].qtd += qtd;
-                    producaoAgrupada[nomeProduto].valor += valorLinha;
-                } else {
-                    producaoAgrupada[nomeProduto] = { qtd: qtd, valor: valorLinha };
-                }
+                if (producaoAgrupada[nomeProduto]) producaoAgrupada[nomeProduto].qtd += qtd;
+                else producaoAgrupada[nomeProduto] = { qtd: qtd };
             }
         });
     });
 
-    const totalGeralSaldo = totalGeralEncomendado - totalGeralSinal;
-    document.getElementById('prod-total-val').innerText = formatMoney(totalGeralEncomendado);
-    document.getElementById('prod-sinal-val').innerText = formatMoney(totalGeralSinal);
-    document.getElementById('prod-saldo-val').innerText = formatMoney(totalGeralSaldo);
-
-    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd, valor: producaoAgrupada[nome].valor }));
+    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd }));
     arrProducao.sort((a, b) => b.qtd - a.qtd);
 
     if(arrProducao.length === 0) { list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado.</p>'; return; }
@@ -413,133 +457,13 @@ function renderProducao() {
         <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
             <div class="flex items-center gap-4">
                 <div class="bg-white border border-slate-200 w-12 h-12 rounded-lg flex items-center justify-center font-black text-rose-600 text-xl shadow-sm">${item.qtd}x</div>
-                <div>
-                    <h4 class="font-bold text-slate-800 text-sm md:text-base">${item.nome}</h4>
-                    <span class="text-xs font-bold text-emerald-600">Representa: ${formatMoney(item.valor)}</span>
-                </div>
+                <h4 class="font-bold text-slate-800 text-sm md:text-base">${item.nome}</h4>
             </div>
             <input type="checkbox" class="w-6 h-6 text-rose-500 rounded border-slate-300 focus:ring-rose-500 cursor-pointer shadow-sm">
         </div>
     `).join('');
 }
 
-// ==========================================
-// ABA 3: CARTEIRA GERAL (FILTRO BLINDADO)
-// ==========================================
-function renderCarteira() {
-    const list = document.getElementById('lista-devedores');
-    const empty = document.getElementById('empty-devedores');
-    
-    const aReceber = allData.filter(o => {
-        // 1. Ignora cancelados imediatamente
-        if (o.status.toLowerCase().includes('cancelad')) return false;
-
-        // 2. Ignora se foi marcado manualmente como "Pago" no botão Dar Baixa
-        if (o.status_pagamento && o.status_pagamento.toLowerCase() === 'pago') return false;
-
-        // 3. Verifica pagamentos normais feitos pelo PDV
-        // No PDV, quando a comanda é paga, o status muda para "Concluído"
-        // E o campo 'pagamento' recebe os detalhes sem as palavras devedoras
-        const isConcluido = o.status.toLowerCase().includes('conclu');
-        const pagamentoStr = (o.pagamento || '').toLowerCase();
-        
-        // É "Fiado" se estiver Concluído MAS a nota de pagamento disser que deve
-        const isFiado = isConcluido && (pagamentoStr.includes('pagar') || pagamentoStr.includes('pendente') || pagamentoStr.includes('combinar'));
-
-        // Se está concluído e NÃO é fiado, o cliente pagou na hora no balcão. Sai da lista!
-        if (isConcluido && !isFiado) return false;
-
-        // 4. Calcula o Saldo final
-        const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
-        return saldo > 0.01;
-    });
-
-    let totalRua = 0;
-    if (aReceber.length === 0) { 
-        list.innerHTML = ''; empty.classList.remove('hidden'); 
-        document.getElementById('total-receber-val').innerText = 'R$ 0,00';
-        document.getElementById('total-receber-count').innerText = '0 contas pendentes';
-        return; 
-    }
-    empty.classList.add('hidden');
-
-    list.innerHTML = aReceber.map(o => {
-        const saldo = parseMoney(o.total) - parseMoney(o.sinal_pago);
-        totalRua += saldo;
-        
-        const isFinished = o.status.toLowerCase().includes('conclu') || o.status.toLowerCase().includes('entregue');
-        const badgeTag = isFinished 
-            ? `<span class="text-[9px] font-bold px-2 py-0.5 bg-rose-100 text-rose-700 rounded uppercase">Fiado / Entregue</span>`
-            : `<span class="text-[9px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded uppercase">Encomenda / A Entregar</span>`;
-
-        return `
-        <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pedido #${String(o.id).slice(-4)}</div>
-                    ${badgeTag}
-                </div>
-                <h4 class="font-black text-slate-800 text-base">${o.cliente}</h4>
-                <div class="text-xs text-rose-600 font-bold bg-white inline-block px-2 py-1 rounded mt-1 border border-slate-200">Falta: ${formatMoney(saldo)}</div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo})" class="bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Cobrar</button>
-                <button onclick="baixarConta('${o.id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-colors" title="Marcar como Pago Total">Dar Baixa</button>
-            </div>
-        </div>`;
-    }).join('');
-    
-    document.getElementById('total-receber-val').innerText = formatMoney(totalRua);
-    document.getElementById('total-receber-count').innerText = `${aReceber.length} contas pendentes`;
-    lucide.createIcons();
-}
-
-async function baixarConta(id) {
-    if(!confirm('O cliente quitou o saldo restante? O sistema vai atualizar o Sinal Pago para 100% e o status para Pago.')) return;
-    
-    const order = allData.find(o => o.id == id);
-    if (!order) return;
-
-    const { error } = await supabaseClient.from('pedidos').update({ 
-        sinal_pago: order.total, 
-        status_pagamento: 'Pago', 
-        pagamento: 'Acerto de Conta (Baixa via Carteira)' 
-    }).eq('id', id);
-
-    if(!error) { toast("Baixa confirmada!", "#10b981"); loadData(); }
-}
-
-async function cobrarWhatsApp(id, clienteStr, valorDevido) {
-    let linkPagamento = '';
-    try {
-        const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                items: [{ title: `Acerto Pedido #${String(id).slice(-4)} - Morangos Tatuí`, quantity: 1, currency_id: 'BRL', unit_price: Number(valorDevido.toFixed(2)) }],
-                payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
-            })
-        });
-        const data = await response.json();
-        if (data.init_point) linkPagamento = data.init_point;
-    } catch (e) {
-        linkPagamento = `Chave Pix Copia e Cola: ${CHAVE_PIX_ALEATORIA}`;
-    }
-
-    const nome = clienteStr.split('(')[0].trim();
-    let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
-    text += `Estou passando apenas para avisar do saldo em aberto de *${formatMoney(valorDevido)}* referente ao seu pedido.\n\n`;
-    
-    if (linkPagamento.startsWith('http')) text += `Você pode fazer o pagamento rapidinho e com segurança (Cartão ou Pix) pelo link abaixo:\n👉 ${linkPagamento}\n\n`;
-    else text += `Você pode fazer o pagamento via Pix:\n${linkPagamento}\n\n`;
-    text += `Qualquer dúvida, estamos à disposição. Muito obrigado! 🥰`;
-
-    let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
-    let waLink = "https://wa.me/";
-    if (phoneMatch) waLink += "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] + "?text=" + encodeURIComponent(text);
-    else waLink += "?text=" + encodeURIComponent(text);
-    window.open(waLink, '_blank');
-}
 
 // ==========================================
 // MODAL INTEGRAÇÕES: CLIENTE E CATÁLOGO
