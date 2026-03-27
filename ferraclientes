@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Importador de Clientes - Morangos Tatuí</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PapaParse é a biblioteca que lê arquivos CSV perfeitamente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6 font-sans">
+
+    <div class="bg-white max-w-xl w-full rounded-3xl shadow-xl border border-slate-200 p-8">
+        <div class="flex items-center gap-4 mb-6 border-b border-slate-100 pb-6">
+            <div class="bg-rose-100 p-3 rounded-2xl text-rose-600"><i data-lucide="database-zap" class="w-8 h-8"></i></div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Importador de Clientes</h1>
+                <p class="text-sm font-medium text-slate-500">Morangos Tatuí 🍓</p>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                <h3 class="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Como funciona?</h3>
+                <p class="text-xs text-blue-600 leading-relaxed">
+                    Selecione o ficheiro <b>.csv</b> que descarregou do Google Sheets. O sistema vai ler a coluna de Endereço, separar a Rua do Número automaticamente, limpar a formatação dos telefones e criar a senha "0000" para todos os clientes antigos acederem ao novo Cardápio Digital.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Selecione o Ficheiro CSV</label>
+                <input type="file" id="csv-file" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-slate-50">
+            </div>
+
+            <button id="btn-import" onclick="processarArquivo()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-xl shadow-lg flex justify-center items-center gap-2 transition-all">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i> Iniciar Importação para o Banco
+            </button>
+            
+            <div id="resultado" class="hidden text-center text-sm font-bold p-4 rounded-xl"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Conexão com o seu banco de dados
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function processarArquivo() {
+            const fileInput = document.getElementById('csv-file');
+            const btn = document.getElementById('btn-import');
+            const res = document.getElementById('resultado');
+
+            if (!fileInput.files.length) {
+                alert("Por favor, selecione a sua planilha .csv primeiro!");
+                return;
+            }
+
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> Lendo e Formatando dados...';
+            lucide.createIcons();
+            btn.disabled = true;
+            res.classList.add('hidden');
+
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                skipEmptyLines: true,
+                complete: async function(results) {
+                    const linhas = results.data;
+                    let clientesFormatados = [];
+
+                    for (let linha of linhas) {
+                        // Salta linhas vazias que não tenham Nome ou Telefone
+                        if (!linha['Nome'] || !linha['Telefone']) continue;
+
+                        // 1. Limpa o telefone
+                        let telLimpo = String(linha['Telefone']).replace(/\D/g, '');
+                        if (telLimpo.length < 10) continue; // Ignora telefones quebrados
+
+                        // 2. Magia do Endereço (Separa Rua, Número e Complemento)
+                        let enderecoCru = linha['Endereço'] || '';
+                        let partesEnd = enderecoCru.split(',');
+                        let rua = partesEnd[0].trim();
+                        let numero = '';
+                        let comp = '';
+
+                        if (partesEnd.length > 1) {
+                            let resto = partesEnd.slice(1).join(',').trim();
+                            // Divide número do complemento se houver barra (/)
+                            let divIndex = resto.indexOf('/');
+                            if (divIndex !== -1) {
+                                numero = resto.substring(0, divIndex).trim();
+                                comp = resto.substring(divIndex + 1).trim();
+                            } else {
+                                numero = resto.trim();
+                            }
+                        }
+
+                        // Monta o "pacote" exatamente como o Supabase exige
+                        clientesFormatados.push({
+                            nome: String(linha['Nome']).trim(),
+                            telefone: telLimpo,
+                            rua: rua,
+                            numero: numero,
+                            complemento: comp,
+                            bairro: String(linha['Bairro'] || '').trim(),
+                            cep: '', // Fica vazio para o cliente preencher depois se quiser
+                            pin_senha: '0000', // Senha padrão
+                            saldo_cashback: 0
+                        });
+                    }
+
+                    try {
+                        btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> Injetando no Supabase...';
+                        lucide.createIcons();
+                        
+                        // O comando upsert faz com que, se o cliente já existir (mesmo telefone), ele apenas atualize os dados em vez de dar erro.
+                        const { error } = await supabase.from('clientes').upsert(clientesFormatados, { onConflict: 'telefone' });
+                        
+                        if (error) throw error;
+
+                        res.className = 'mt-4 text-center text-sm font-bold p-4 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
+                        res.innerHTML = `🎉 Sucesso absoluto!<br>${clientesFormatados.length} clientes foram analisados, limpos e guardados no novo banco de dados.`;
+                        res.classList.remove('hidden');
+
+                    } catch (err) {
+                        console.error("Erro do Supabase:", err);
+                        res.className = 'mt-4 text-center text-sm font-bold p-4 rounded-xl bg-red-50 text-red-600 border border-red-200';
+                        res.innerHTML = `🚨 Ocorreu um erro ao gravar no banco:<br>${err.message}`;
+                        res.classList.remove('hidden');
+                    } finally {
+                        btn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5 inline"></i> Importação Finalizada';
+                        btn.classList.replace('bg-rose-600', 'bg-slate-300');
+                        btn.classList.replace('hover:bg-rose-700', 'hover:bg-slate-300');
+                        lucide.createIcons();
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
