@@ -2,186 +2,220 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Importador de Clientes 2- Morangos Tatuí</title>
+    <title>Importador de Clientes v2.0 - Morangos Tatuí</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- PapaParse é a biblioteca que lê arquivos CSV perfeitamente -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6 font-sans">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 md:p-6 font-sans">
 
-    <div class="bg-white max-w-xl w-full rounded-3xl shadow-xl border border-slate-200 p-8">
-        <div class="flex items-center gap-4 mb-6 border-b border-slate-100 pb-6">
-            <div class="bg-rose-100 p-3 rounded-2xl text-rose-600"><i data-lucide="database-zap" class="w-8 h-8"></i></div>
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Importador de Clientes</h1>
-                <p class="text-sm font-medium text-slate-500">Morangos Tatuí 🍓</p>
+    <div class="bg-white max-w-2xl w-full rounded-3xl shadow-xl border border-slate-200 p-6 md:p-8">
+        <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-6">
+            <div class="flex items-center gap-4">
+                <div class="bg-rose-100 p-3 rounded-2xl text-rose-600"><i data-lucide="users" class="w-8 h-8"></i></div>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight">Importador de Clientes</h1>
+                    <p class="text-sm font-medium text-slate-500">Morangos Tatuí 🍓</p>
+                </div>
+            </div>
+            <div class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-black tracking-widest border border-slate-200">
+                v2.0
             </div>
         </div>
 
         <div class="space-y-6">
             <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5">
-                <h3 class="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Como funciona?</h3>
+                <h3 class="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Como funciona a v2.0?</h3>
                 <p class="text-xs text-blue-600 leading-relaxed">
-                    Selecione o ficheiro <b>.csv</b> que descarregou do Google Sheets. O sistema vai ler a coluna de Endereço, separar a Rua do Número automaticamente, limpar a formatação dos telefones e criar a senha "0000" para todos os clientes antigos acederem ao novo Cardápio Digital.
+                    Selecione a sua planilha <b>.csv</b>. O sistema vai extrair os nomes, formatar os telefones, dividir os endereços e criar os acessos ao Cardápio Digital (PIN 0000). Acompanhe o processo em tempo real na caixa preta abaixo!
                 </p>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Selecione o Ficheiro CSV</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Selecione o Ficheiro CSV do Google Sheets</label>
                 <input type="file" id="csv-file" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-slate-50">
             </div>
 
-            <button id="btn-import" onclick="processarArquivo()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-xl shadow-lg flex justify-center items-center gap-2 transition-all">
-                <i data-lucide="upload-cloud" class="w-5 h-5"></i> Iniciar Importação para o Banco
+            <button id="btn-import" onclick="iniciarImportacao()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-xl shadow-lg shadow-rose-200 flex justify-center items-center gap-2 transition-all active:scale-95">
+                <i data-lucide="play" class="w-5 h-5"></i> INICIAR IMPORTAÇÃO
             </button>
-            
-            <div id="resultado" class="hidden text-center text-sm font-bold p-4 rounded-xl mt-4"></div>
+
+            <!-- Caixa de Logs Visuais -->
+            <div id="log-container" class="hidden mt-6">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Monitor de Progresso</h3>
+                <div id="log" class="bg-slate-900 text-emerald-400 font-mono text-xs p-4 rounded-xl h-56 overflow-y-auto space-y-1 shadow-inner">
+                    <!-- Logs entram aqui -->
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // Conexão com o seu banco de dados
+        // ⚙️ CONEXÃO CORRIGIDA: Usa "supabaseClient" para evitar o conflito com a palavra reservada "supabase"
         const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
         const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function mostrarErro(mensagem) {
-            const res = document.getElementById('resultado');
-            const btn = document.getElementById('btn-import');
-            
-            res.className = 'mt-4 text-center text-sm font-bold p-4 rounded-xl bg-red-50 text-red-600 border border-red-200';
-            res.innerHTML = `🚨 Ocorreu um erro:<br>${mensagem}`;
-            res.classList.remove('hidden');
-
-            btn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5 inline"></i> Tentar Novamente';
-            btn.disabled = false;
-            lucide.createIcons();
+        // Função para escrever na "tela preta"
+        function addLog(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const p = document.createElement('p');
+            p.innerText = `> ${msg}`;
+            if (type === 'error') p.className = 'text-red-400 font-bold';
+            if (type === 'success') p.className = 'text-emerald-400 font-bold mt-2';
+            if (type === 'warning') p.className = 'text-amber-400';
+            logDiv.appendChild(p);
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function processarArquivo() {
+        async function iniciarImportacao() {
             const fileInput = document.getElementById('csv-file');
             const btn = document.getElementById('btn-import');
-            const res = document.getElementById('resultado');
-
+            const logContainer = document.getElementById('log-container');
+            
             if (!fileInput.files.length) {
-                alert("Por favor, selecione o seu ficheiro .csv primeiro!");
+                alert("Por favor, selecione a sua planilha .csv primeiro!");
                 return;
             }
 
-            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> A ler e formatar dados...';
-            lucide.createIcons();
+            // Prepara UI
+            logContainer.classList.remove('hidden');
+            document.getElementById('log').innerHTML = '';
             btn.disabled = true;
-            res.classList.add('hidden');
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Lendo arquivo...';
+            lucide.createIcons();
 
-            try {
-                Papa.parse(fileInput.files[0], {
-                    header: true,
-                    skipEmptyLines: true,
-                    // Torna os cabeçalhos à prova de falhas (Ignora colunas vazias e caracteres ocultos)
-                    transformHeader: function(h) {
-                        if (!h || h.trim() === "") return "coluna_ignorada_" + Math.random();
-                        // Remove BOM (Byte Order Mark) invisível e formata
-                        return String(h).replace(/^\uFEFF/, '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    },
-                    complete: async function(results) {
-                        const linhas = results.data;
-                        let clientesFormatados = [];
+            addLog("Iniciando a leitura do arquivo CSV...");
 
-                        for (let linha of linhas) {
-                            // Tenta encontrar o nome e o telefone mesmo se os títulos das colunas variarem
-                            let nomeBruto = linha['nome'] || linha['cliente'] || linha['nome completo'] || '';
-                            let telBruto = linha['telefone'] || linha['celular'] || linha['contato'] || linha['whatsapp'] || '';
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                skipEmptyLines: true,
+                // Limpeza Extrema de Cabeçalhos
+                transformHeader: function(h) {
+                    if (!h) return "ignorar_" + Math.random();
+                    return String(h).replace(/^\uFEFF/, '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                },
+                complete: async function(results) {
+                    addLog(`Arquivo lido. Total de linhas brutas: ${results.data.length}`);
+                    addLog("Filtrando e organizando os dados...");
 
-                            // Se a linha estiver vazia, salta
-                            if (!nomeBruto || !telBruto) continue;
+                    let clientesFormatados = [];
+                    let ignorados = 0;
 
-                            // 1. Limpa o telefone
-                            let telLimpo = String(telBruto).replace(/\D/g, '');
-                            if (telLimpo.length < 10) continue; // Ignora telefones demasiado curtos (inválidos)
+                    for (let linha of results.data) {
+                        // Busca dinâmica pelos nomes das colunas, caso o título varie
+                        let chaves = Object.keys(linha);
+                        let chaveNome = chaves.find(k => k.includes('nome') || k.includes('cliente'));
+                        let chaveTel = chaves.find(k => k.includes('telefone') || k.includes('celular') || k.includes('whatsapp') || k.includes('contato'));
+                        let chaveEnd = chaves.find(k => k.includes('endereco') || k.includes('rua') || k.includes('morada'));
+                        let chaveBairro = chaves.find(k => k.includes('bairro'));
 
-                            // 2. Magia do Endereço (Separa Rua, Número e Complemento)
-                            let enderecoCru = linha['endereco'] || linha['morada'] || linha['rua'] || '';
-                            let partesEnd = enderecoCru.split(',');
-                            let rua = partesEnd[0].trim();
-                            let numero = '';
-                            let comp = '';
+                        let nomeBruto = chaveNome ? linha[chaveNome] : '';
+                        let telBruto = chaveTel ? linha[chaveTel] : '';
 
-                            if (partesEnd.length > 1) {
-                                let resto = partesEnd.slice(1).join(',').trim();
-                                let divIndex = resto.indexOf('/');
-                                if (divIndex !== -1) {
-                                    numero = resto.substring(0, divIndex).trim();
-                                    comp = resto.substring(divIndex + 1).trim();
-                                } else {
-                                    numero = resto.trim();
-                                }
-                            }
-
-                            clientesFormatados.push({
-                                nome: String(nomeBruto).trim(),
-                                telefone: telLimpo,
-                                rua: rua,
-                                numero: numero,
-                                complemento: comp,
-                                bairro: String(linha['bairro'] || '').trim(),
-                                cep: '', 
-                                pin_senha: '0000', 
-                                saldo_cashback: 0
-                            });
+                        if (!nomeBruto || !telBruto) {
+                            ignorados++;
+                            continue;
                         }
 
-                        try {
-                            if (clientesFormatados.length === 0) {
-                                throw new Error("Nenhum cliente foi encontrado. Verifique se o ficheiro possui colunas chamadas 'Nome' e 'Telefone'.");
-                            }
-
-                            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 inline"></i> Injetando no Supabase...';
-                            lucide.createIcons();
-                            
-                            // Injeção em Lotes (Chunks de 200) para evitar timeout do banco de dados
-                            const chunkSize = 200;
-                            let totalInseridos = 0;
-
-                            for (let i = 0; i < clientesFormatados.length; i += chunkSize) {
-                                const chunk = clientesFormatados.slice(i, i + chunkSize);
-                                
-                                const { error } = await supabase.from('clientes').insert(chunk);
-                                
-                                if (error) {
-                                    console.error("Erro no lote:", error);
-                                    throw new Error(error.message);
-                                }
-                                totalInseridos += chunk.length;
-                            }
-
-                            res.className = 'mt-4 text-center text-sm font-bold p-4 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200';
-                            res.innerHTML = `🎉 Sucesso absoluto!<br>${totalInseridos} clientes foram analisados, limpos e guardados no novo banco de dados.`;
-                            res.classList.remove('hidden');
-
-                            btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 inline"></i> Importação Finalizada';
-                            btn.classList.replace('bg-rose-600', 'bg-emerald-600');
-                            btn.classList.replace('hover:bg-rose-700', 'hover:bg-emerald-700');
-                            btn.disabled = true;
-                            lucide.createIcons();
-
-                        } catch (err) {
-                            mostrarErro(err.message);
+                        let telLimpo = String(telBruto).replace(/\D/g, '');
+                        if (telLimpo.length < 10) {
+                            ignorados++;
+                            continue;
                         }
-                    },
-                    error: function(err) {
-                        mostrarErro("Falha ao ler o ficheiro CSV. Tente descarregar novamente do Google Sheets.");
+
+                        let enderecoCru = chaveEnd ? linha[chaveEnd] : '';
+                        let partesEnd = enderecoCru.split(',');
+                        let rua = partesEnd[0].trim();
+                        let numero = '';
+                        let comp = '';
+
+                        if (partesEnd.length > 1) {
+                            let resto = partesEnd.slice(1).join(',').trim();
+                            let divIndex = resto.indexOf('/');
+                            if (divIndex !== -1) {
+                                numero = resto.substring(0, divIndex).trim();
+                                comp = resto.substring(divIndex + 1).trim();
+                            } else {
+                                numero = resto.trim();
+                            }
+                        }
+
+                        let bairro = chaveBairro ? String(linha[chaveBairro]).trim() : '';
+
+                        clientesFormatados.push({
+                            nome: String(nomeBruto).trim(),
+                            telefone: telLimpo,
+                            rua: rua,
+                            numero: numero,
+                            complemento: comp,
+                            bairro: bairro,
+                            cep: '',
+                            pin_senha: '0000',
+                            saldo_cashback: 0
+                        });
                     }
-                });
-            } catch (fatalError) {
-                mostrarErro("Erro crítico na execução da ferramenta.");
-            }
+
+                    addLog(`Formatação concluída: ${clientesFormatados.length} clientes válidos identificados.`);
+                    if (ignorados > 0) addLog(`${ignorados} linhas ignoradas (Falta de Nome ou Telefone inválido).`, 'warning');
+
+                    if (clientesFormatados.length === 0) {
+                        addLog("ERRO: Nenhum cliente válido encontrado. Verifique o arquivo.", 'error');
+                        liberarBotao();
+                        return;
+                    }
+
+                    addLog("Conectando ao banco de dados Supabase...");
+
+                    try {
+                        const chunkSize = 200;
+                        let sucessoTotal = 0;
+
+                        for (let i = 0; i < clientesFormatados.length; i += chunkSize) {
+                            const chunk = clientesFormatados.slice(i, i + chunkSize);
+                            addLog(`A enviar lote ${Math.ceil((i+1)/chunkSize)}... (${chunk.length} clientes)`);
+                            
+                            // Upsert: Atualiza se já existir, insere se for novo
+                            const { error } = await supabaseClient.from('clientes').upsert(chunk, { onConflict: 'telefone' });
+                            
+                            if (error) throw error;
+                            sucessoTotal += chunk.length;
+                        }
+
+                        addLog("🎉 TRANSFERÊNCIA CONCLUÍDA COM SUCESSO!", 'success');
+                        addLog(`Total inserido/atualizado: ${sucessoTotal} clientes.`, 'success');
+                        
+                        btn.innerHTML = '<i data-lucide="check-check" class="w-5 h-5"></i> IMPORTAÇÃO FINALIZADA';
+                        btn.classList.replace('bg-rose-600', 'bg-emerald-600');
+                        btn.classList.replace('hover:bg-rose-700', 'hover:bg-emerald-700');
+                        lucide.createIcons();
+
+                    } catch (err) {
+                        addLog(`ERRO NO BANCO: ${err.message}`, 'error');
+                        liberarBotao();
+                    }
+                },
+                error: function(err) {
+                    addLog(`ERRO NA LEITURA DO CSV: ${err.message}`, 'error');
+                    liberarBotao();
+                }
+            });
+        }
+
+        function liberarBotao() {
+            const btn = document.getElementById('btn-import');
+            btn.innerHTML = '<i data-lucide="rotate-ccw" class="w-5 h-5"></i> TENTAR NOVAMENTE';
+            btn.disabled = false;
+            lucide.createIcons();
         }
     </script>
 </body>
