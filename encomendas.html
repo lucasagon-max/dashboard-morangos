@@ -50,7 +50,6 @@
     </header>
 
     <main id="tab-encomendas" class="block">
-        <!-- Resumo Financeiro da Agenda -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Agendado</p>
@@ -90,72 +89,102 @@
         </div>
     </main>
 
+    <!-- ============================================================ -->
+    <!-- MODAL DE ENCOMENDA — estrutura corrigida                     -->
+    <!-- ============================================================ -->
     <div id="modal-encomenda" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]">
+
+            <!-- Cabeçalho -->
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2" id="modal-enc-title"><i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda</h3>
-                <button onclick="closeModalEnc()" class="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2" id="modal-enc-title">
+                    <i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda
+                </h3>
+                <button onclick="closeModalEnc()" class="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
+
+            <!-- Corpo com scroll -->
             <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-white">
                 <input type="hidden" id="enc-id">
-                
+
+                <!-- Linha 1: Cliente + Data -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-slate-100 pb-6">
+
+                    <!-- Cliente -->
                     <div class="relative">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Selecionar Cliente</label>
-                        <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Digite o nome ou telefone..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500 transition-colors">
-                        
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <i data-lucide="user" class="w-3 h-3"></i> Selecionar Cliente
+                        </label>
+                        <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Digite o nome ou telefone..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500 transition-colors">
+
                         <div id="client-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-48 overflow-y-auto z-[120] mt-1"></div>
-                        
-                        <!-- Formulário de Cliente Completo -->
+
+                        <!-- Formulário de Novo Cliente -->
                         <div id="new-client-form" class="hidden mt-3 p-4 bg-rose-50 border border-rose-100 rounded-xl space-y-3">
                             <div class="flex justify-between items-center mb-1">
                                 <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Cadastrar Novo Cliente</p>
-                                <button onclick="hideNewClientForm()" class="text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 shadow-sm"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                <button onclick="hideNewClientForm()" class="text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 shadow-sm">
+                                    <i data-lucide="x" class="w-3 h-3"></i>
+                                </button>
                             </div>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <input type="text" id="nc-nome" placeholder="Nome Completo *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
                                 <input type="tel" id="nc-tel" placeholder="WhatsApp (15) 9... *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" oninput="this.value = formatPhone(this.value)">
                             </div>
-                            
                             <div class="grid grid-cols-3 gap-3">
                                 <input type="text" id="nc-cep" placeholder="CEP" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" onblur="buscarCEP(this.value)" maxlength="9" oninput="formatCEPInput(this)">
                                 <input type="text" id="nc-rua" placeholder="Rua / Avenida" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
                             </div>
-
                             <div class="grid grid-cols-3 gap-3">
                                 <input type="text" id="nc-numero" placeholder="Número" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
                                 <input type="text" id="nc-bairro" placeholder="Bairro" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
                             </div>
-                            
                             <input type="text" id="nc-comp" placeholder="Complemento (Ex: Apto 12)" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
-                            
-                            <button onclick="saveNewClient()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 rounded-lg transition-colors mt-2 flex justify-center items-center gap-1 shadow-sm"><i data-lucide="user-check" class="w-4 h-4"></i> Salvar Cliente Completo</button>
+                            <button onclick="saveNewClient()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 rounded-lg transition-colors mt-2 flex justify-center items-center gap-1 shadow-sm">
+                                <i data-lucide="user-check" class="w-4 h-4"></i> Salvar Cliente Completo
+                            </button>
                         </div>
                     </div>
 
+                    <!-- Data e Hora -->
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Data e Hora da Entrega</label>
-                        <input type="datetime-local" id="enc-data" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm font-bold text-rose-900 outline-none focus:border-rose-500 transition-colors">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3 h-3"></i> Data e Hora da Entrega
+                        </label>
+                        <input type="datetime-local" id="enc-data"
+                            class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm font-bold text-rose-900 outline-none focus:border-rose-500 transition-colors">
                     </div>
                 </div>
 
+                <!-- Linha 2: Catálogo + Itens -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- Catálogo -->
                     <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 relative h-full flex flex-col">
-                        <label class="block text-[10px] font-bold text-blue-800 mb-2 flex items-center gap-1 uppercase tracking-widest"><i data-lucide="shopping-basket" class="w-3 h-3"></i> Catálogo de Produtos</label>
-                        <input type="text" id="product-search" placeholder="Pesquisar produto do cardápio..." class="w-full bg-white border border-blue-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500" oninput="searchProducts(this.value)">
-                        
+                        <label class="block text-[10px] font-bold text-blue-800 mb-2 flex items-center gap-1 uppercase tracking-widest">
+                            <i data-lucide="shopping-basket" class="w-3 h-3"></i> Catálogo de Produtos
+                        </label>
+                        <input type="text" id="product-search" placeholder="Pesquisar produto do cardápio..."
+                            class="w-full bg-white border border-blue-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500"
+                            oninput="searchProducts(this.value)">
+
                         <div id="product-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-60 overflow-y-auto z-[120] mt-1"></div>
-                        
+
                         <div id="variation-selector" class="hidden absolute top-full left-0 right-0 bg-white border-2 border-blue-500 shadow-2xl rounded-xl p-4 z-[130] mt-1">
                             <div class="flex justify-between items-center mb-3">
                                 <span id="variation-title" class="font-bold text-slate-800 text-sm">Opções do Item</span>
-                                <button onclick="closeVariationSelector()" class="bg-slate-100 hover:bg-slate-200 p-1 rounded-full"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button>
+                                <button onclick="closeVariationSelector()" class="bg-slate-100 hover:bg-slate-200 p-1 rounded-full">
+                                    <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+                                </button>
                             </div>
                             <div id="variation-options" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto"></div>
                         </div>
                     </div>
 
+                    <!-- Lista de Itens -->
                     <div class="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-4">
                         <div class="flex justify-between items-center mb-3">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Itens da Encomenda</label>
@@ -170,59 +199,77 @@
                     </div>
                 </div>
 
-<!-- Localize o grid de valores no seu modal e substitua por este com 4 colunas -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-slate-100 pt-5">
-    <div>
-        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Taxa de Entrega (R$)</label>
-        <input type="text" id="enc-entrega" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-lg font-black text-blue-800 outline-none focus:border-blue-500">
-    </div>
-    <div>
-        <label class="block text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Desconto Total (R$)</label>
-        <input type="text" id="enc-desconto" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-lg font-black text-rose-800 outline-none focus:border-rose-500">
-    </div>
-    <div>
-        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
-        <input type="text" id="enc-sinal" value="0,00" onblur="formatInputMoney(this)" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
-    </div>
-    <div>
-        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Final</label>
-        <input type="text" id="enc-total" value="0,00" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none">
-    </div>
-</div>
+                <!-- Linha 3: Valores (4 colunas) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Taxa de Entrega (R$)</label>
+                        <input type="text" id="enc-entrega" value="0,00"
+                            onblur="formatInputMoney(this); recalcModalTotal()"
+                            class="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-lg font-black text-blue-800 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Desconto (R$)</label>
+                        <input type="text" id="enc-desconto" value="0,00"
+                            onblur="formatInputMoney(this); recalcModalTotal()"
+                            class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-lg font-black text-rose-800 outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
+                        <input type="text" id="enc-sinal" value="0,00"
+                            onblur="formatInputMoney(this)"
+                            class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Final</label>
+                        <input type="text" id="enc-total" value="0,00" readonly
+                            class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none">
+                    </div>
+                </div>
 
-<!-- Atualize o select de Status para incluir a "Conta do Cliente" -->
-<select id="enc-status" ...>
-    <option value="Agendado">📅 Agendado</option>
-    <option value="Em Produção">👩‍🍳 Em Produção</option>
-    <option value="Pronto">✅ Pronto p/ Retirada</option>
-    <option value="Conta do Cliente">📖 Conta do Cliente (Ajuste Pendente)</option>
-    <option value="Concluído">🏁 Concluído / Pago</option>
-</select>
-            </div>
+                <!-- Linha 4: Status + Observações -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
+                        <select id="enc-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500">
+                            <option value="Agendado">📅 Agendado</option>
+                            <option value="Em Produção">👩‍🍳 Em Produção</option>
+                            <option value="Pronto">✅ Pronto p/ Retirada</option>
+                            <option value="Conta do Cliente">📖 Conta do Cliente (Ajuste Pendente)</option>
+                            <option value="Concluído">🏁 Concluído / Pago</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Observações Internas</label>
+                        <input type="text" id="enc-obs" placeholder="Ex: Entregar na festa as 18h..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:border-rose-500">
+                    </div>
                 </div>
-                
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Observações Internas</label>
-                    <input type="text" id="enc-obs" placeholder="Ex: Entregar na festa as 18h..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:border-rose-500">
-                </div>
-            </div>
+
+            </div><!-- /corpo -->
+
+            <!-- Rodapé -->
             <div class="bg-slate-50 p-5 border-t border-slate-100 flex justify-end gap-3 shrink-0">
                 <button onclick="closeModalEnc()" class="px-5 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
-                <button id="btn-save-enc" onclick="saveEncomenda()" class="bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-black hover:bg-rose-700 shadow-lg flex items-center gap-2 transition-all"><i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda</button>
+                <button id="btn-save-enc" onclick="saveEncomenda()" class="bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-black hover:bg-rose-700 shadow-lg flex items-center gap-2 transition-all">
+                    <i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda
+                </button>
             </div>
+
         </div>
-    </div>
+    </div><!-- /modal -->
 
 <script>
 let allData = [];
 let catalogProducts = [];
 let allClients = [];
-let currentEncItems = []; 
+let currentEncItems = [];
 
 const MP_ACCESS_TOKEN = 'APP_USR-7398589288908992-032715-7dd4cc5f51a2968edb29e1a6a55947d2-2908485918';
 const CHAVE_PIX_ALEATORIA = '7fdc442f-35de-46f2-9190-530344229f25';
 
-function toast(text, bg = "#e11d48") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
+function toast(text, bg = "#e11d48") {
+    Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast();
+}
 function formatMoney(val) { return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function formatPhone(v) {
     v = v.replace(/\D/g, '').slice(0, 11);
@@ -237,7 +284,7 @@ function parseMoney(val) {
     else if (clean.includes(',')) clean = clean.replace(',', '.');
     return parseFloat(clean) || 0;
 }
-function parsePrices(preco) { 
+function parsePrices(preco) {
     const strPreco = String(preco || '0');
     if (strPreco.includes('|')) {
         return strPreco.split('|').map(part => {
@@ -271,7 +318,7 @@ async function loadData() {
         if (error) throw error;
         allData = data;
         renderEncomendas();
-        if(document.getElementById('tab-producao').style.display === 'block') renderProducao();
+        if (document.getElementById('tab-producao').style.display === 'block') renderProducao();
     } catch (err) { toast("Erro ao carregar dados", "#ef4444"); }
 }
 
@@ -279,7 +326,7 @@ async function loadCatalogAndClients() {
     try {
         const resCat = await supabaseClient.from('produtos').select('*').eq('disponivel', 'Sim');
         if (resCat.data) catalogProducts = resCat.data;
-        const resCli = await supabaseClient.from('clientes').select('*'); // Agora puxa tudo para termos cep, rua, etc
+        const resCli = await supabaseClient.from('clientes').select('*');
         if (resCli.data) allClients = resCli.data;
     } catch(e) { console.error("Erro dicionários:", e); }
 }
@@ -290,7 +337,7 @@ async function loadCatalogAndClients() {
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
     const empty = document.getElementById('empty-encomendas');
-    
+
     const encomendas = allData.filter(o => {
         const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
         const isNotFinished = !o.status.toLowerCase().includes('concluí');
@@ -316,12 +363,12 @@ function renderEncomendas() {
 
     if (encomendas.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
-    
+
     grid.innerHTML = encomendas.map(o => {
         const total = parseMoney(o.total);
         const sinal = parseMoney(o.sinal_pago);
         const saldo = total - sinal;
-        
+
         let statusColor = "bg-slate-100 text-slate-700";
         if (o.status === "Pronto" || o.status === "Pendente") statusColor = "bg-emerald-100 text-emerald-700";
         if (o.status === "Em Produção") statusColor = "bg-blue-100 text-blue-700";
@@ -340,12 +387,10 @@ function renderEncomendas() {
                         <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor} ml-1">${o.status}</span>
                     </div>
                 </div>
-                
                 <h4 class="font-bold text-slate-800 text-lg mb-1 truncate">${o.cliente}</h4>
                 <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 line-clamp-3 leading-relaxed">
                     ${(o.itens || '').replace(/\|/g, '\n')}
                 </div>
-                
                 <div class="mt-auto pt-4 border-t border-slate-100 space-y-2">
                     <div class="flex justify-between items-center text-xs font-bold text-slate-500">
                         <span>Total: ${formatMoney(total)}</span>
@@ -356,7 +401,6 @@ function renderEncomendas() {
                         <span class="text-lg font-black text-rose-600">${formatMoney(saldo)}</span>
                     </div>
                 </div>
-
                 <div class="flex gap-2 mt-4">
                     <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo}, '${formatDateBr(o.data_entrega)}')" class="p-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl transition-colors shadow-sm" title="Enviar Lembrete / Cobrança via WhatsApp">
                         <i data-lucide="message-circle" class="w-4 h-4"></i>
@@ -373,9 +417,9 @@ function renderEncomendas() {
 }
 
 async function enviarParaCaixa(id) {
-    if(!confirm("Ao clicar em OK, esta encomenda aparecerá brilhando na tela do Caixa (PDV) para pagamento e fechamento final. Deseja continuar?")) return;
+    if (!confirm("Ao clicar em OK, esta encomenda aparecerá brilhando na tela do Caixa (PDV) para pagamento e fechamento final. Deseja continuar?")) return;
     const { error } = await supabaseClient.from('pedidos').update({ status: 'Pendente' }).eq('id', id);
-    if (!error) { toast("Enviado para o Caixa!", "#10b981"); loadData(); } 
+    if (!error) { toast("Enviado para o Caixa!", "#10b981"); loadData(); }
     else { toast("Erro ao enviar.", "#ef4444"); }
 }
 
@@ -399,13 +443,13 @@ async function cobrarWhatsApp(id, clienteStr, valorDevido, dataEntrega) {
     const nome = clienteStr.split('(')[0].trim();
     let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
     text += `Passando para confirmar que a sua encomenda está anotada e agendada para entrega/retirada em: *${dataEntrega}*.\n\n`;
-    
-    if(valorDevido > 0.01) {
+
+    if (valorDevido > 0.01) {
         text += `O saldo restante na entrega é de *${formatMoney(valorDevido)}*.\n`;
         if (linkPagamento.startsWith('http')) text += `Caso prefira adiantar o pagamento com segurança (Cartão ou Pix), acesse:\n👉 ${linkPagamento}\n\n`;
         else text += `Caso prefira adiantar via Pix:\n${linkPagamento}\n\n`;
     }
-    
+
     text += `Estamos preparando tudo com muito carinho! Qualquer dúvida, estamos à disposição. 🥰`;
 
     let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
@@ -426,7 +470,7 @@ function printEncomenda(id) {
         .divider{border-top:2px dashed #000;margin:10px 0}
         .client-name{font-size:28px;font-weight:900;margin:10px 0;line-height:1.1;display:block;text-transform:uppercase}
         .items{font-size:20px;font-weight:bold;white-space:pre-wrap;line-height:1.2;font-family:'Consolas',monospace}
-        .meta{font-size:16px;margin-bottom:5px; font-weight: bold;}
+        .meta{font-size:16px;margin-bottom:5px;font-weight:bold;}
         .total-section{text-align:right;margin-top:15px}
         .total-value{font-size:20px;font-weight:900}
     </style></head><body>
@@ -435,7 +479,7 @@ function printEncomenda(id) {
         <div class="meta">ENTREGA:<br>${formatDateBr(o.data_entrega)}</div>
         <div class="client-name">${o.cliente}</div>
         <div class="divider"></div>
-        <div class="items">${(o.itens||'').replace(/\|/g, '\n')}</div>
+        <div class="items">${(o.itens || '').replace(/\|/g, '\n')}</div>
         ${obs ? `<div class="divider"></div><div style="font-size:18px;font-weight:bold;margin:10px 0">OBS: ${obs}</div>` : ''}
         <div class="divider"></div>
         <div class="total-section">
@@ -454,7 +498,7 @@ function printEncomenda(id) {
 function renderProducao() {
     const list = document.getElementById('lista-producao');
     const empty = document.getElementById('empty-producao');
-    
+
     const pendentes = allData.filter(o => {
         const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
         const isNotFinished = !o.status.toLowerCase().includes('concluí');
@@ -466,7 +510,7 @@ function renderProducao() {
     empty.classList.add('hidden');
 
     let producaoAgrupada = {};
-    
+
     pendentes.forEach(pedido => {
         if (!pedido.itens) return;
         const itensArr = pedido.itens.split('|');
@@ -476,7 +520,7 @@ function renderProducao() {
                 const qtd = parseInt(match[1]);
                 const nomeProduto = match[2].trim();
                 if (producaoAgrupada[nomeProduto]) producaoAgrupada[nomeProduto].qtd += qtd;
-                else producaoAgrupada[nomeProduto] = { qtd: qtd };
+                else producaoAgrupada[nomeProduto] = { qtd };
             }
         });
     });
@@ -484,7 +528,10 @@ function renderProducao() {
     const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd }));
     arrProducao.sort((a, b) => b.qtd - a.qtd);
 
-    if(arrProducao.length === 0) { list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado.</p>'; return; }
+    if (arrProducao.length === 0) {
+        list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado.</p>';
+        return;
+    }
 
     list.innerHTML = arrProducao.map(item => `
         <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
@@ -497,11 +544,9 @@ function renderProducao() {
     `).join('');
 }
 
-
 // ==========================================
-// MODAL INTEGRAÇÕES: CLIENTE E CATÁLOGO
+// MODAL: CLIENTE
 // ==========================================
-
 function formatCEPInput(el) {
     let v = el.value.replace(/\D/g, '').slice(0, 8);
     if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
@@ -537,9 +582,12 @@ function searchClients(q) {
     const newForm = document.getElementById('new-client-form');
     newForm.classList.add('hidden');
     if (q.length < 2) { results.classList.add('hidden'); return; }
-    
-    const matches = allClients.filter(c => normalizeStr(c.nome).includes(normalizeStr(q)) || normalizeStr(c.telefone).includes(normalizeStr(q))).slice(0, 5);
-    
+
+    const matches = allClients.filter(c =>
+        normalizeStr(c.nome).includes(normalizeStr(q)) ||
+        normalizeStr(c.telefone).includes(normalizeStr(q))
+    ).slice(0, 5);
+
     let html = matches.map(c => `
         <div onclick="selectClient('${c.nome}', '${c.telefone}')" class="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0 flex justify-between items-center">
             <span class="font-bold text-slate-700 text-sm">${c.nome}</span>
@@ -582,47 +630,31 @@ async function saveNewClient() {
     const bairro = document.getElementById('nc-bairro').value.trim();
     const complemento = document.getElementById('nc-comp').value.trim();
 
-    if(!nome || tel.length < 10) return toast("Preencha Nome e Telefone válidos", "#f59e0b");
-    
+    if (!nome || tel.length < 10) return toast("Preencha Nome e Telefone válidos", "#f59e0b");
+
     try {
-        const payload = { 
-            nome, 
-            telefone: tel, 
-            cep, 
-            rua, 
-            numero, 
-            bairro, 
-            complemento, 
-            pin_senha: '0000', 
-            saldo_cashback: 0 
-        };
-        
+        const payload = { nome, telefone: tel, cep, rua, numero, bairro, complemento, pin_senha: '0000', saldo_cashback: 0 };
         await supabaseClient.from('clientes').insert([payload]);
         allClients.push(payload);
         selectClient(nome, tel);
-        
         document.getElementById('new-client-form').classList.add('hidden');
         toast("Cliente Cadastrado com Sucesso!", "#10B981");
-        
-        document.getElementById('nc-nome').value = '';
-        document.getElementById('nc-tel').value = '';
-        document.getElementById('nc-cep').value = '';
-        document.getElementById('nc-rua').value = '';
-        document.getElementById('nc-numero').value = '';
-        document.getElementById('nc-bairro').value = '';
-        document.getElementById('nc-comp').value = '';
+        ['nc-nome','nc-tel','nc-cep','nc-rua','nc-numero','nc-bairro','nc-comp'].forEach(id => document.getElementById(id).value = '');
     } catch(e) { toast("Erro ao cadastrar", "#ef4444"); }
 }
 
+// ==========================================
+// MODAL: CATÁLOGO
+// ==========================================
 function searchProducts(q) {
     const results = document.getElementById('product-results');
     document.getElementById('variation-selector').classList.add('hidden');
     if (q.length < 2) { results.classList.add('hidden'); return; }
-    
+
     const matches = catalogProducts.filter(p => normalizeStr(p.nome).includes(normalizeStr(q))).slice(0, 8);
     results.innerHTML = matches.map(p =>
         `<div onclick="showVariationOptions('${p.nome.replace(/'/g, "\\'")}', '${p.preco}', '${(p.categoria || '').replace(/'/g, "\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between items-center">
-            <div><span class="text-sm font-bold text-slate-700">${p.nome}</span></div>
+            <span class="text-sm font-bold text-slate-700">${p.nome}</span>
             <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">OPÇÕES</span>
         </div>`
     ).join('');
@@ -632,17 +664,25 @@ function searchProducts(q) {
 function showVariationOptions(nome, precoStr, categoria) {
     document.getElementById('product-results').classList.add('hidden');
     const varSelector = document.getElementById('variation-selector');
-    const optionsDiv  = document.getElementById('variation-options');
+    const optionsDiv = document.getElementById('variation-options');
     document.getElementById('variation-title').innerText = nome;
-    
+
     let html = '';
     const prices = parsePrices(precoStr);
-    
+
     if (prices.length > 1 && prices[0].label) {
         html += `<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Tamanhos / Tipos</p>`;
-        html += prices.map(v => `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${v.val}','${v.label.replace(/'/g, "\\'")}')" class="flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50 mb-1"><span class="text-sm font-medium">${v.label}</span><span class="text-sm font-bold text-blue-600">${formatMoney(v.val)}</span></div>`).join('');
+        html += prices.map(v =>
+            `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${v.val}','${v.label.replace(/'/g, "\\'")}')" class="flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50 mb-1">
+                <span class="text-sm font-medium">${v.label}</span>
+                <span class="text-sm font-bold text-blue-600">${formatMoney(v.val)}</span>
+            </div>`
+        ).join('');
     } else {
-        html += `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${prices[0].val}',null)" class="flex justify-between items-center p-3 border border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 mb-1"><span class="text-sm font-medium">Adicionar ${nome}</span><span class="text-sm font-bold text-emerald-600">${formatMoney(prices[0].val)}</span></div>`;
+        html += `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${prices[0].val}',null)" class="flex justify-between items-center p-3 border border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 mb-1">
+            <span class="text-sm font-medium">Adicionar ${nome}</span>
+            <span class="text-sm font-bold text-emerald-600">${formatMoney(prices[0].val)}</span>
+        </div>`;
     }
 
     const catLower = normalizeStr(categoria);
@@ -655,7 +695,10 @@ function showVariationOptions(nome, precoStr, categoria) {
         html += `<div class="border-t pt-2 mt-2"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Adicionais</p><div class="grid grid-cols-2 gap-2">`;
         html += adicionais.map(ad => {
             const adP = parsePrices(ad.preco)[0].val;
-            return `<div onclick="addExtraToEnc('${ad.nome.replace(/'/g, "\\'")}',${adP})" class="flex justify-between items-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"><span class="text-xs font-medium text-slate-600 truncate">${ad.nome}</span><span class="text-xs font-bold text-blue-500">+${formatMoney(adP)}</span></div>`;
+            return `<div onclick="addExtraToEnc('${ad.nome.replace(/'/g, "\\'")}',${adP})" class="flex justify-between items-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50">
+                <span class="text-xs font-medium text-slate-600 truncate">${ad.nome}</span>
+                <span class="text-xs font-bold text-blue-500">+${formatMoney(adP)}</span>
+            </div>`;
         }).join('');
         html += `</div></div>`;
     }
@@ -667,7 +710,7 @@ function showVariationOptions(nome, precoStr, categoria) {
 function closeVariationSelector() { document.getElementById('variation-selector').classList.add('hidden'); }
 
 // ==========================================
-// GESTÃO DA LISTA VISUAL
+// LISTA VISUAL DE ITENS
 // ==========================================
 function renderEncItems() {
     const container = document.getElementById('enc-items-visual-list');
@@ -693,7 +736,7 @@ function renderEncItems() {
             </div>
         </div>
     `).join('');
-    
+
     lucide.createIcons();
     recalcModalTotal();
 }
@@ -713,16 +756,26 @@ function removeItemEnc(id) {
     renderEncItems();
 }
 
+// ==========================================
+// recalcModalTotal — CORRIGIDA
+// Subtotal dos itens + taxa de entrega - desconto
+// ==========================================
 function recalcModalTotal() {
-    let total = 0;
-    currentEncItems.forEach(i => total += i.total);
-    document.getElementById('enc-total').value = total.toFixed(2).replace('.', ',');
+    let subtotal = 0;
+    currentEncItems.forEach(i => subtotal += i.total);
+
+    const taxaEntrega = parseMoney(document.getElementById('enc-entrega').value);
+    const desconto = parseMoney(document.getElementById('enc-desconto').value);
+
+    const totalFinal = (subtotal + taxaEntrega) - desconto;
+
+    document.getElementById('enc-total').value = totalFinal.toFixed(2).replace('.', ',');
 }
 
 function addItemToEnc(nome, precoVal, variacao = null) {
     const nameEx = variacao ? `${nome} (${variacao})` : nome;
     const price = parseFloat(precoVal);
-    
+
     const existing = currentEncItems.find(i => i.name === nameEx);
     if (existing) {
         existing.qty += 1;
@@ -730,7 +783,7 @@ function addItemToEnc(nome, precoVal, variacao = null) {
     } else {
         currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: 1, name: nameEx, unitPrice: price, total: price });
     }
-    
+
     renderEncItems();
     closeVariationSelector();
     document.getElementById('product-search').value = '';
@@ -739,17 +792,17 @@ function addItemToEnc(nome, precoVal, variacao = null) {
 
 function addExtraToEnc(nome, precoVal) {
     if (currentEncItems.length === 0) return toast("Adicione um item do cardápio primeiro!", "#f59e0b");
-    
+
     const lastItem = currentEncItems[currentEncItems.length - 1];
     if (lastItem.name.includes('(+')) {
-         lastItem.name = lastItem.name.replace(')', `, ${nome})`);
+        lastItem.name = lastItem.name.replace(')', `, ${nome})`);
     } else {
-         lastItem.name += ` (+ ${nome})`;
+        lastItem.name += ` (+ ${nome})`;
     }
-    
+
     lastItem.unitPrice += parseFloat(precoVal);
     lastItem.total = lastItem.qty * lastItem.unitPrice;
-    
+
     renderEncItems();
     toast(`+ ${nome}`, "#3b82f6");
 }
@@ -763,34 +816,33 @@ function addAvulsoItem() {
     const nome = document.getElementById('avulso-nome').value.trim();
     const precoRaw = document.getElementById('avulso-preco').value;
     const price = parseMoney(precoRaw);
-    
+
     if (!nome) return toast("Digite o nome do item avulso!", "#f59e0b");
-    
+
     currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: 1, name: nome, unitPrice: price, total: price });
-    
     document.getElementById('avulso-nome').value = '';
     document.getElementById('avulso-preco').value = '';
     document.getElementById('form-avulso').classList.add('hidden');
-    
     renderEncItems();
 }
 
 // ==========================================
-// SALVAR E EDITAR ENCOMENDA
+// ABRIR / FECHAR MODAL
 // ==========================================
 function openNovaEncomendaModal() {
     document.getElementById('enc-id').value = '';
     document.getElementById('enc-cliente').value = '';
     document.getElementById('enc-data').value = '';
-    
-    currentEncItems = [];
-    renderEncItems();
-    
-    document.getElementById('enc-total').value = '0,00';
+    document.getElementById('enc-entrega').value = '0,00';
+    document.getElementById('enc-desconto').value = '0,00';
     document.getElementById('enc-sinal').value = '0,00';
+    document.getElementById('enc-total').value = '0,00';
     document.getElementById('enc-status').value = 'Agendado';
     document.getElementById('enc-obs').value = '';
-    
+
+    currentEncItems = [];
+    renderEncItems();
+
     document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda';
     document.getElementById('modal-encomenda').classList.remove('hidden');
     lucide.createIcons();
@@ -799,29 +851,34 @@ function openNovaEncomendaModal() {
 function editEncomenda(id) {
     const order = allData.find(o => o.id == id);
     if (!order) return;
-    
+
     document.getElementById('enc-id').value = order.id;
     document.getElementById('enc-cliente').value = order.cliente;
     document.getElementById('enc-data').value = order.data_entrega ? order.data_entrega.slice(0, 16) : '';
-    
+
+    // Restaura taxa de entrega e desconto salvos (ou 0,00 se não existirem)
+    const taxaEntrega = parseMoney(order.taxa_entrega || 0).toFixed(2).replace('.', ',');
+    const desconto = parseMoney(order.desconto_total || 0).toFixed(2).replace('.', ',');
+    document.getElementById('enc-entrega').value = taxaEntrega;
+    document.getElementById('enc-desconto').value = desconto;
+
     currentEncItems = [];
     if (order.itens) {
-        const parts = order.itens.split('|');
-        parts.forEach(p => {
+        order.itens.split('|').forEach(p => {
             const m = p.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]$/);
             if (m) {
                 const qty = parseInt(m[1]);
                 const total = parseMoney(m[3]);
-                currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: qty, name: m[2].trim(), unitPrice: total / qty, total: total });
+                currentEncItems.push({ id: Math.random().toString(36).substring(7), qty, name: m[2].trim(), unitPrice: total / qty, total });
             }
         });
     }
     renderEncItems();
-    
+
     document.getElementById('enc-sinal').value = parseMoney(order.sinal_pago).toFixed(2).replace('.', ',');
     document.getElementById('enc-status').value = order.status;
     document.getElementById('enc-obs').value = order.obs || '';
-    
+
     document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="edit" class="text-blue-500"></i> Editar Encomenda';
     document.getElementById('modal-encomenda').classList.remove('hidden');
     lucide.createIcons();
@@ -829,26 +886,43 @@ function editEncomenda(id) {
 
 function closeModalEnc() { document.getElementById('modal-encomenda').classList.add('hidden'); }
 
+// ==========================================
+// saveEncomenda — CORRIGIDA
+// Inclui taxa_entrega e desconto_total no payload
+// ==========================================
 async function saveEncomenda() {
     const id = document.getElementById('enc-id').value;
     const cliente = document.getElementById('enc-cliente').value.trim();
     const data_entrega = document.getElementById('enc-data').value;
-    
+
     if (!cliente || !data_entrega) return toast("Cliente e Data são obrigatórios!", "#f59e0b");
     if (currentEncItems.length === 0) return toast("Adicione itens à encomenda!", "#f59e0b");
 
     const itensFmt = currentEncItems.map(i => `${i.qty}x ${i.name} [${formatMoney(i.total)}]`).join(' | ');
-    const total = formatMoney(parseMoney(document.getElementById('enc-total').value));
-    const sinal = formatMoney(parseMoney(document.getElementById('enc-sinal').value));
-    const status = document.getElementById('enc-status').value;
-    const obs = document.getElementById('enc-obs').value.trim();
+    const taxaEntregaFmt = formatMoney(parseMoney(document.getElementById('enc-entrega').value));
+    const descontoFmt    = formatMoney(parseMoney(document.getElementById('enc-desconto').value));
+    const totalFmt       = formatMoney(parseMoney(document.getElementById('enc-total').value));
+    const sinal          = formatMoney(parseMoney(document.getElementById('enc-sinal').value));
+    const status         = document.getElementById('enc-status').value;
+    const obs            = document.getElementById('enc-obs').value.trim();
 
     const btn = document.getElementById('btn-save-enc');
-    btn.disabled = true; btn.innerHTML = '<i class="lucide-loader-2 w-4 h-4 animate-spin"></i> Salvando...';
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Salvando...';
 
     const payload = {
-        cliente, data_entrega, itens: itensFmt, total, sinal_pago: sinal, status, obs,
-        tipo: 'Encomenda', pagamento: 'A Pagar', status_pagamento: 'Pendente'
+        cliente,
+        data_entrega,
+        itens: itensFmt,
+        total: totalFmt,
+        taxa_entrega: taxaEntregaFmt,   // ← novo campo
+        desconto_total: descontoFmt,    // ← novo campo
+        sinal_pago: sinal,
+        status,
+        obs,
+        tipo: 'Encomenda',
+        pagamento: 'A Pagar',
+        status_pagamento: 'Pendente'
     };
 
     let error;
@@ -856,7 +930,7 @@ async function saveEncomenda() {
         const res = await supabaseClient.from('pedidos').update(payload).eq('id', id);
         error = res.error;
     } else {
-        payload.id = new Date().getTime().toString().slice(-6);
+        payload.id   = new Date().getTime().toString().slice(-6);
         payload.data = new Date().toLocaleString("pt-BR");
         const res = await supabaseClient.from('pedidos').insert([payload]);
         error = res.error;
@@ -866,12 +940,19 @@ async function saveEncomenda() {
         toast("Salvo com sucesso!", "#10b981");
         closeModalEnc();
         loadData();
-    } else { toast("Erro ao salvar.", "#ef4444"); }
-    
-    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda';
+    } else {
+        toast("Erro ao salvar: " + (error.message || ''), "#ef4444");
+        console.error(error);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda';
     lucide.createIcons();
 }
 
+// ==========================================
+// INICIALIZAÇÃO
+// ==========================================
 loadCatalogAndClients().then(() => loadData());
 lucide.createIcons();
 </script>
