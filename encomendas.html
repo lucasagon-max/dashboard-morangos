@@ -170,24 +170,35 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total (Calculado Auto)</label>
-                        <input type="text" id="enc-total" value="0,00" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
-                        <input type="text" id="enc-sinal" value="0,00" onblur="formatInputMoney(this)" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status de Produção</label>
-                        <select id="enc-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:border-rose-500 h-[52px]">
-                            <option value="Agendado">📅 Agendado</option>
-                            <option value="Aguardando Sinal">⏳ Aguardando Sinal</option>
-                            <option value="Em Produção">👩‍🍳 Em Produção</option>
-                            <option value="Pronto">✅ Pronto p/ Retirada</option>
-                        </select>
-                    </div>
+<!-- Localize o grid de valores no seu modal e substitua por este com 4 colunas -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-slate-100 pt-5">
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Taxa de Entrega (R$)</label>
+        <input type="text" id="enc-entrega" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-lg font-black text-blue-800 outline-none focus:border-blue-500">
+    </div>
+    <div>
+        <label class="block text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Desconto Total (R$)</label>
+        <input type="text" id="enc-desconto" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-lg font-black text-rose-800 outline-none focus:border-rose-500">
+    </div>
+    <div>
+        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
+        <input type="text" id="enc-sinal" value="0,00" onblur="formatInputMoney(this)" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
+    </div>
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Final</label>
+        <input type="text" id="enc-total" value="0,00" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none">
+    </div>
+</div>
+
+<!-- Atualize o select de Status para incluir a "Conta do Cliente" -->
+<select id="enc-status" ...>
+    <option value="Agendado">📅 Agendado</option>
+    <option value="Em Produção">👩‍🍳 Em Produção</option>
+    <option value="Pronto">✅ Pronto p/ Retirada</option>
+    <option value="Conta do Cliente">📖 Conta do Cliente (Ajuste Pendente)</option>
+    <option value="Concluído">🏁 Concluído / Pago</option>
+</select>
+            </div>
                 </div>
                 
                 <div>
