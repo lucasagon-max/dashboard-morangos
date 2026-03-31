@@ -138,7 +138,7 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
                         <div class="flex justify-between items-center mb-3">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Itens</label>
-                            <button onclick="toggleAvulsoForm()" class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs font-bold">+ Avulso</button>
+                            <button onclick="toggleAvulsoForm()" class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs font-bold hover:bg-rose-200">+ Avulso</button>
                         </div>
                         <div id="form-avulso" class="hidden flex gap-2 mb-3 bg-white p-2 rounded-lg border">
                             <input type="text" id="avulso-nome" placeholder="Ex: Vela" class="flex-1 text-sm border p-1">
@@ -204,6 +204,7 @@ let currentEncItems = [];
 const MP_ACCESS_TOKEN = 'APP_USR-7398589288908992-032715-7dd4cc5f51a2968edb29e1a6a55947d2-2908485918';
 const CHAVE_PIX_ALEATORIA = '7fdc442f-35de-46f2-9190-530344229f25';
 
+// FUNÇÕES DE UTILIDADE
 function toast(text, bg = "#e11d48") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 function formatMoney(val) { return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function formatPhone(v) {
@@ -214,9 +215,7 @@ function formatPhone(v) {
 }
 function parseMoney(val) {
     if (!val) return 0;
-    let clean = String(val).replace('R$', '').trim();
-    if (clean.includes('.') && clean.includes(',')) clean = clean.replace('.', '').replace(',', '.');
-    else if (clean.includes(',')) clean = clean.replace(',', '.');
+    let clean = String(val).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
     return parseFloat(clean) || 0;
 }
 function formatInputMoney(el) { el.value = parseMoney(el.value).toFixed(2).replace('.', ','); }
@@ -237,6 +236,7 @@ function switchTab(tabId) {
     if (tabId === 'producao') renderProducao();
 }
 
+// CARREGAMENTO DE DADOS
 async function loadData() {
     try {
         const { data, error } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
@@ -255,7 +255,7 @@ async function loadCatalogAndClients() {
     } catch(e) { console.error("Erro dicionários:", e); }
 }
 
-// ABA 1: AGENDA
+// RENDERIZAÇÃO DASHBOARD
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
     const empty = document.getElementById('empty-encomendas');
@@ -314,7 +314,7 @@ function renderEncomendas() {
     lucide.createIcons();
 }
 
-// WHATSAPP REVISADO (Com Entrega e Desconto)
+// WHATSAPP (CORREÇÃO DE EMOJIS USANDO UNICODE ESCAPES)
 async function cobrarWhatsApp(id) {
     const o = allData.find(x => x.id == id);
     if(!o) return;
@@ -343,29 +343,40 @@ async function cobrarWhatsApp(id) {
     }
 
     const nome = o.cliente.split('(')[0].trim();
-    let text = `Olá, *${nome}*! Tudo bem? Aqui é da *Morangos Tatuí* 🍓.\n\n`;
+    
+    // EMOJIS EM UNICODE PARA EVITAR 
+    const emoMorangos = "\u{1F353}";
+    const emoEntrega  = "\u{1F6F5}";
+    const emoDesconto = "\u{1F381}";
+    const emoDinheiro = "\u{1F4B0}";
+    const emoCheck    = "\u2705";
+    const emoAlerta   = "\u{1F6A9}";
+    const emoDedo     = "\u{1F449}";
+    const emoCoração  = "\u{1F970}";
+
+    let text = `Olá, *${nome}*! Tudo bem? Aqui é da *Morangos Tatuí* ${emoMorangos}.\n\n`;
     text += `Passando para confirmar o agendamento da sua encomenda para o dia: *${formatDateBr(o.data_entrega)}*.\n\n`;
     text += `*Resumo da Encomenda:*\n${o.itens.replace(/\|/g, '\n')}\n`;
     text += `--------------------------\n`;
     text += `🛒 Itens: ${formatMoney(subtotalItens)}\n`;
-    if(taxaEntrega > 0) text += `🛵 Taxa de Entrega: ${formatMoney(taxaEntrega)}\n`;
-    if(desconto > 0) text += `🎁 Desconto: -${formatMoney(desconto)}\n`;
-    text += `💰 *TOTAL FINAL: ${formatMoney(totalPedido)}*\n`;
-    text += `✅ Sinal Já Pago: ${formatMoney(sinalPago)}\n`;
-    text += `🚩 *SALDO NA ENTREGA: ${formatMoney(saldo)}*\n\n`;
+    if(taxaEntrega > 0) text += `${emoEntrega} Taxa de Entrega: ${formatMoney(taxaEntrega)}\n`;
+    if(desconto > 0) text += `${emoDesconto} Desconto: -${formatMoney(desconto)}\n`;
+    text += `${emoDinheiro} *TOTAL FINAL: ${formatMoney(totalPedido)}*\n`;
+    text += `${emoCheck} Sinal Já Pago: ${formatMoney(sinalPago)}\n`;
+    text += `${emoAlerta} *SALDO NA ENTREGA: ${formatMoney(saldo)}*\n\n`;
 
     if(saldo > 0.1) {
-        if (linkPagamento.startsWith('http')) text += `Para agilizar, você pode pagar o saldo aqui:\n👉 ${linkPagamento}\n\n`;
+        if (linkPagamento.startsWith('http')) text += `Para agilizar, você pode pagar o saldo aqui:\n${emoDedo} ${linkPagamento}\n\n`;
         else text += `Pix para pagamento (Copia e Cola):\n\`${linkPagamento}\`\n\n`;
     }
-    text += `Qualquer dúvida, nos avise. Ficaremos felizes em atender! 🥰`;
+    text += `Estamos preparando tudo com carinho! Qualquer dúvida, nos avise. ${emoCoração}`;
 
     let phoneMatch = o.cliente.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
     let waLink = "https://wa.me/" + (phoneMatch ? "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] : "") + "?text=" + encodeURIComponent(text);
     window.open(waLink, '_blank');
 }
 
-// IMPRESSÃO REVISADA
+// IMPRESSÃO
 function printEncomenda(id) {
     const o = allData.find(x => x.id == id);
     if(!o) return;
@@ -406,7 +417,7 @@ function printEncomenda(id) {
     setTimeout(() => { win.focus(); win.print(); win.close(); }, 300);
 }
 
-// ABA 2: PRODUÇÃO (MELHORADA)
+// ABA PRODUÇÃO
 function renderProducao() {
     const list = document.getElementById('lista-producao');
     const pendentes = allData.filter(o => {
@@ -417,7 +428,6 @@ function renderProducao() {
     pendentes.forEach(p => {
         if (!p.itens) return;
         p.itens.split('|').forEach(str => {
-            // Regex melhorada para pegar quantidade e nome ignorando extras
             const match = str.trim().match(/^(\d+)x\s+(.+?)(?:\s+\[R\$.+\]|$)/);
             if (match) {
                 const q = parseInt(match[1]), n = match[2].trim();
@@ -436,7 +446,7 @@ function renderProducao() {
     `).join('') || '<p class="text-center py-10 text-slate-400">Nenhum item pendente.</p>';
 }
 
-// MODAL E CÁLCULOS
+// LÓGICA DO MODAL
 function recalcModalTotal() {
     let subtotal = 0;
     currentEncItems.forEach(i => subtotal += i.total);
@@ -468,7 +478,6 @@ function renderEncItems() {
     recalcModalTotal();
 }
 
-// CRUD
 function changeItemQty(id, delta) {
     const item = currentEncItems.find(i => i.id === id);
     if (item) { item.qty += delta; if (item.qty <= 0) removeItemEnc(id); else item.total = item.qty * item.unitPrice; renderEncItems(); }
@@ -514,7 +523,7 @@ function hideNewClientForm() { document.getElementById('new-client-form').classL
 async function saveNewClient() {
     const n = document.getElementById('nc-nome').value, t = document.getElementById('nc-tel').value.replace(/\D/g, '');
     if(!n || t.length<10) return;
-    const p = { nome: n, telefone: t, cep: document.getElementById('nc-cep').value, rua: document.getElementById('nc-rua').value, pin_senha:'0000', saldo_cashback:0 };
+    const p = { nome: n, telefone: t, cep: document.getElementById('nc-cep').value, rua: document.getElementById('nc-rua').value, numero: document.getElementById('nc-numero').value, bairro: document.getElementById('nc-bairro').value, pin_senha:'0000', saldo_cashback:0 };
     await supabaseClient.from('clientes').insert([p]);
     allClients.push(p); selectClient(n, t); hideNewClientForm(); toast("Cliente Salvo!");
 }
@@ -533,11 +542,6 @@ function searchProducts(q) {
     const matches = catalogProducts.filter(p => normalizeStr(p.nome).includes(normalizeStr(q))).slice(0, 8);
     res.innerHTML = matches.map(p => `<div onclick="showVariationOptions('${p.nome.replace(/'/g,"\\'")}', '${p.preco}', '${(p.categoria||'').replace(/'/g,"\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b flex justify-between items-center text-sm font-bold"><span>${p.nome}</span><span class="text-[10px] bg-blue-100 px-2 rounded">OPÇÕES</span></div>`).join('');
     res.classList.remove('hidden');
-}
-function parsePrices(preco) {
-    const strPreco = String(preco || '0');
-    if (strPreco.includes('|')) return strPreco.split('|').map(part => { const [l, v] = part.split(':'); return { label: l.trim(), val: parseMoney(v) }; });
-    return [{ label: null, val: parseMoney(strPreco) }];
 }
 function showVariationOptions(nome, precoStr, categoria) {
     document.getElementById('product-results').classList.add('hidden');
