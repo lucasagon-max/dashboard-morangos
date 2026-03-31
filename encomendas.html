@@ -81,7 +81,7 @@
             <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <div>
                     <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2"><i data-lucide="list-todo" class="text-rose-500"></i> Resumo de Produção</h2>
-                    <p class="text-sm text-slate-500 mt-1">Soma unificada das quantidades agendadas para facilitar o preparo na cozinha.</p>
+                    <p class="text-sm text-slate-500 mt-1">Soma de quantidades para facilitar o preparo.</p>
                 </div>
             </div>
             <div id="lista-producao" class="space-y-3"></div>
@@ -89,13 +89,9 @@
         </div>
     </main>
 
-    <!-- ============================================================ -->
-    <!-- MODAL DE ENCOMENDA — estrutura corrigida                     -->
-    <!-- ============================================================ -->
+    <!-- MODAL DE ENCOMENDA -->
     <div id="modal-encomenda" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]">
-
-            <!-- Cabeçalho -->
             <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
                 <h3 class="font-black text-lg text-slate-800 flex items-center gap-2" id="modal-enc-title">
                     <i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda
@@ -105,132 +101,77 @@
                 </button>
             </div>
 
-            <!-- Corpo com scroll -->
             <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-white">
                 <input type="hidden" id="enc-id">
 
-                <!-- Linha 1: Cliente + Data -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-b border-slate-100 pb-6">
-
-                    <!-- Cliente -->
                     <div class="relative">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <i data-lucide="user" class="w-3 h-3"></i> Selecionar Cliente
-                        </label>
-                        <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Digite o nome ou telefone..."
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500 transition-colors">
-
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Cliente</label>
+                        <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Nome ou telefone..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500">
                         <div id="client-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-48 overflow-y-auto z-[120] mt-1"></div>
-
-                        <!-- Formulário de Novo Cliente -->
+                        
                         <div id="new-client-form" class="hidden mt-3 p-4 bg-rose-50 border border-rose-100 rounded-xl space-y-3">
-                            <div class="flex justify-between items-center mb-1">
-                                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Cadastrar Novo Cliente</p>
-                                <button onclick="hideNewClientForm()" class="text-rose-400 hover:text-rose-600 bg-white rounded-full p-1 shadow-sm">
-                                    <i data-lucide="x" class="w-3 h-3"></i>
-                                </button>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <input type="text" id="nc-nome" placeholder="Nome Completo *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
-                                <input type="tel" id="nc-tel" placeholder="WhatsApp (15) 9... *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" oninput="this.value = formatPhone(this.value)">
-                            </div>
+                            <input type="text" id="nc-nome" placeholder="Nome *" class="w-full p-2.5 rounded-lg text-sm border">
+                            <input type="tel" id="nc-tel" placeholder="Whats *" class="w-full p-2.5 rounded-lg text-sm border" oninput="this.value = formatPhone(this.value)">
                             <div class="grid grid-cols-3 gap-3">
-                                <input type="text" id="nc-cep" placeholder="CEP" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" onblur="buscarCEP(this.value)" maxlength="9" oninput="formatCEPInput(this)">
-                                <input type="text" id="nc-rua" placeholder="Rua / Avenida" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
+                                <input type="text" id="nc-cep" placeholder="CEP" class="w-full p-2.5 border rounded-lg" onblur="buscarCEP(this.value)" maxlength="9">
+                                <input type="text" id="nc-rua" placeholder="Rua" class="col-span-2 w-full p-2.5 border rounded-lg">
                             </div>
-                            <div class="grid grid-cols-3 gap-3">
-                                <input type="text" id="nc-numero" placeholder="Número" class="col-span-1 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
-                                <input type="text" id="nc-bairro" placeholder="Bairro" class="col-span-2 w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
-                            </div>
-                            <input type="text" id="nc-comp" placeholder="Complemento (Ex: Apto 12)" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
-                            <button onclick="saveNewClient()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 rounded-lg transition-colors mt-2 flex justify-center items-center gap-1 shadow-sm">
-                                <i data-lucide="user-check" class="w-4 h-4"></i> Salvar Cliente Completo
-                            </button>
+                            <button onclick="saveNewClient()" class="w-full bg-rose-600 text-white text-xs font-bold py-3 rounded-lg">Salvar Cliente</button>
                         </div>
                     </div>
-
-                    <!-- Data e Hora -->
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <i data-lucide="clock" class="w-3 h-3"></i> Data e Hora da Entrega
-                        </label>
-                        <input type="datetime-local" id="enc-data"
-                            class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm font-bold text-rose-900 outline-none focus:border-rose-500 transition-colors">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Entrega</label>
+                        <input type="datetime-local" id="enc-data" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm font-bold outline-none">
                     </div>
                 </div>
 
-                <!-- Linha 2: Catálogo + Itens -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    <!-- Catálogo -->
-                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 relative h-full flex flex-col">
-                        <label class="block text-[10px] font-bold text-blue-800 mb-2 flex items-center gap-1 uppercase tracking-widest">
-                            <i data-lucide="shopping-basket" class="w-3 h-3"></i> Catálogo de Produtos
-                        </label>
-                        <input type="text" id="product-search" placeholder="Pesquisar produto do cardápio..."
-                            class="w-full bg-white border border-blue-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500"
-                            oninput="searchProducts(this.value)">
-
-                        <div id="product-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-60 overflow-y-auto z-[120] mt-1"></div>
-
-                        <div id="variation-selector" class="hidden absolute top-full left-0 right-0 bg-white border-2 border-blue-500 shadow-2xl rounded-xl p-4 z-[130] mt-1">
-                            <div class="flex justify-between items-center mb-3">
-                                <span id="variation-title" class="font-bold text-slate-800 text-sm">Opções do Item</span>
-                                <button onclick="closeVariationSelector()" class="bg-slate-100 hover:bg-slate-200 p-1 rounded-full">
-                                    <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-                                </button>
-                            </div>
-                            <div id="variation-options" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto"></div>
-                        </div>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 h-full flex flex-col relative">
+                        <label class="block text-[10px] font-bold text-blue-800 mb-2 uppercase tracking-widest">Cardápio</label>
+                        <input type="text" id="product-search" placeholder="Pesquisar..." class="w-full bg-white border border-blue-200 rounded-xl p-3 text-sm outline-none" oninput="searchProducts(this.value)">
+                        <div id="product-results" class="hidden absolute top-full left-0 right-0 bg-white border shadow-xl rounded-xl max-h-60 overflow-y-auto z-[120] mt-1"></div>
+                        <div id="variation-selector" class="hidden absolute top-full left-0 right-0 bg-white border-2 border-blue-500 shadow-2xl rounded-xl p-4 z-[130] mt-1"></div>
                     </div>
 
-                    <!-- Lista de Itens -->
-                    <div class="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
                         <div class="flex justify-between items-center mb-3">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Itens da Encomenda</label>
-                            <button onclick="toggleAvulsoForm()" class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs font-bold hover:bg-rose-200 transition-colors">+ Item Avulso</button>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Itens</label>
+                            <button onclick="toggleAvulsoForm()" class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs font-bold">+ Avulso</button>
                         </div>
-                        <div id="form-avulso" class="hidden flex gap-2 mb-3 bg-white p-2 rounded-lg border border-slate-200">
-                            <input type="text" id="avulso-nome" placeholder="Ex: Vela" class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-md px-2 outline-none">
-                            <input type="text" id="avulso-preco" placeholder="R$ 0,00" class="w-20 text-sm bg-slate-50 border border-slate-200 rounded-md px-2 outline-none" onblur="formatInputMoney(this)">
-                            <button onclick="addAvulsoItem()" class="bg-rose-600 text-white rounded-md px-3 text-sm font-bold">Add</button>
+                        <div id="form-avulso" class="hidden flex gap-2 mb-3 bg-white p-2 rounded-lg border">
+                            <input type="text" id="avulso-nome" placeholder="Ex: Vela" class="flex-1 text-sm border p-1">
+                            <input type="text" id="avulso-preco" placeholder="R$ 0,00" class="w-20 text-sm border p-1" onblur="formatInputMoney(this)">
+                            <button onclick="addAvulsoItem()" class="bg-rose-600 text-white rounded px-3 text-sm font-bold">Add</button>
                         </div>
-                        <div id="enc-items-visual-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+                        <div id="enc-items-visual-list" class="space-y-2"></div>
                     </div>
                 </div>
 
-                <!-- Linha 3: Valores (4 colunas) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-5">
                     <div>
-                        <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Taxa de Entrega (R$)</label>
-                        <input type="text" id="enc-entrega" value="0,00"
-                            onblur="formatInputMoney(this); recalcModalTotal()"
-                            class="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-lg font-black text-blue-800 outline-none focus:border-blue-500">
+                        <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Entrega (R$)</label>
+                        <input type="text" id="enc-entrega" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-lg font-black text-blue-800 outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1">Desconto (R$)</label>
-                        <input type="text" id="enc-desconto" value="0,00"
-                            onblur="formatInputMoney(this); recalcModalTotal()"
-                            class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-lg font-black text-rose-800 outline-none focus:border-rose-500">
+                        <input type="text" id="enc-desconto" value="0,00" onblur="formatInputMoney(this); recalcModalTotal()" class="w-full bg-rose-50 border border-rose-200 rounded-xl p-3 text-lg font-black text-rose-800 outline-none">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal Pago (R$)</label>
-                        <input type="text" id="enc-sinal" value="0,00"
-                            onblur="formatInputMoney(this)"
-                            class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none focus:border-emerald-500">
+                        <label class="block text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sinal (R$)</label>
+                        <input type="text" id="enc-sinal" value="0,00" onblur="formatInputMoney(this)" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-lg font-black text-emerald-800 outline-none">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Final</label>
-                        <input type="text" id="enc-total" value="0,00" readonly
-                            class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800 outline-none">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Líquido</label>
+                        <input type="text" id="enc-total" value="0,00" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-lg font-black text-slate-800">
                     </div>
                 </div>
 
-                <!-- Linha 4: Status + Observações -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
-                        <select id="enc-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500">
+                        <select id="enc-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none h-[52px]">
                             <option value="Agendado">📅 Agendado</option>
                             <option value="Em Produção">👩‍🍳 Em Produção</option>
                             <option value="Pronto">✅ Pronto p/ Retirada</option>
@@ -239,24 +180,20 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Observações Internas</label>
-                        <input type="text" id="enc-obs" placeholder="Ex: Entregar na festa as 18h..."
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:border-rose-500">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Obs. Internas</label>
+                        <input type="text" id="enc-obs" placeholder="Detalhes da entrega..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none">
                     </div>
                 </div>
+            </div>
 
-            </div><!-- /corpo -->
-
-            <!-- Rodapé -->
             <div class="bg-slate-50 p-5 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-                <button onclick="closeModalEnc()" class="px-5 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
-                <button id="btn-save-enc" onclick="saveEncomenda()" class="bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-black hover:bg-rose-700 shadow-lg flex items-center gap-2 transition-all">
+                <button onclick="closeModalEnc()" class="px-5 py-3 text-sm font-bold text-slate-500">Cancelar</button>
+                <button id="btn-save-enc" onclick="saveEncomenda()" class="bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-black shadow-lg flex items-center gap-2">
                     <i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda
                 </button>
             </div>
-
         </div>
-    </div><!-- /modal -->
+    </div>
 
 <script>
 let allData = [];
@@ -267,9 +204,7 @@ let currentEncItems = [];
 const MP_ACCESS_TOKEN = 'APP_USR-7398589288908992-032715-7dd4cc5f51a2968edb29e1a6a55947d2-2908485918';
 const CHAVE_PIX_ALEATORIA = '7fdc442f-35de-46f2-9190-530344229f25';
 
-function toast(text, bg = "#e11d48") {
-    Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast();
-}
+function toast(text, bg = "#e11d48") { Toastify({ text, duration: 3000, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 function formatMoney(val) { return Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function formatPhone(v) {
     v = v.replace(/\D/g, '').slice(0, 11);
@@ -283,16 +218,6 @@ function parseMoney(val) {
     if (clean.includes('.') && clean.includes(',')) clean = clean.replace('.', '').replace(',', '.');
     else if (clean.includes(',')) clean = clean.replace(',', '.');
     return parseFloat(clean) || 0;
-}
-function parsePrices(preco) {
-    const strPreco = String(preco || '0');
-    if (strPreco.includes('|')) {
-        return strPreco.split('|').map(part => {
-            const [label, val] = part.split(':');
-            return { label: label.trim(), val: parseMoney(val) };
-        });
-    }
-    return [{ label: null, val: parseMoney(strPreco) }];
 }
 function formatInputMoney(el) { el.value = parseMoney(el.value).toFixed(2).replace('.', ','); }
 function formatDateBr(isoString) {
@@ -318,7 +243,6 @@ async function loadData() {
         if (error) throw error;
         allData = data;
         renderEncomendas();
-        if (document.getElementById('tab-producao').style.display === 'block') renderProducao();
     } catch (err) { toast("Erro ao carregar dados", "#ef4444"); }
 }
 
@@ -331,48 +255,32 @@ async function loadCatalogAndClients() {
     } catch(e) { console.error("Erro dicionários:", e); }
 }
 
-// ==========================================
 // ABA 1: AGENDA
-// ==========================================
 function renderEncomendas() {
     const grid = document.getElementById('grid-encomendas');
     const empty = document.getElementById('empty-encomendas');
 
     const encomendas = allData.filter(o => {
-        const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
-        const isNotFinished = !o.status.toLowerCase().includes('concluí');
-        const isEncomenda = (o.tipo && o.tipo.toLowerCase().includes('encomenda')) || (o.data_entrega && o.data_entrega !== '');
-        return isNotCanceled && isNotFinished && isEncomenda;
+        const s = o.status.toLowerCase();
+        return !s.includes('cancelad') && !s.includes('concluí') && (o.tipo === 'Encomenda' || o.data_entrega);
     });
 
-    let totalGeralEncomendado = 0;
-    let totalGeralSinal = 0;
-
-    encomendas.forEach(pedido => {
-        totalGeralEncomendado += parseMoney(pedido.total);
-        totalGeralSinal += parseMoney(pedido.sinal_pago);
-    });
-
-    const totalGeralSaldo = totalGeralEncomendado - totalGeralSinal;
-    document.getElementById('agenda-total-val').innerText = formatMoney(totalGeralEncomendado);
-    document.getElementById('agenda-sinal-val').innerText = formatMoney(totalGeralSinal);
-    document.getElementById('agenda-saldo-val').innerText = formatMoney(totalGeralSaldo);
-
-    encomendas.sort((a, b) => new Date(a.data_entrega || '2099') - new Date(b.data_entrega || '2099'));
-    document.getElementById('enc-count').innerText = `${encomendas.length} agendadas`;
+    let totEnc = 0, totSinal = 0;
+    encomendas.forEach(p => { totEnc += parseMoney(p.total); totSinal += parseMoney(p.sinal_pago); });
+    document.getElementById('agenda-total-val').innerText = formatMoney(totEnc);
+    document.getElementById('agenda-sinal-val').innerText = formatMoney(totSinal);
+    document.getElementById('agenda-saldo-val').innerText = formatMoney(totEnc - totSinal);
 
     if (encomendas.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
 
-    grid.innerHTML = encomendas.map(o => {
-        const total = parseMoney(o.total);
-        const sinal = parseMoney(o.sinal_pago);
-        const saldo = total - sinal;
-
+    grid.innerHTML = encomendas.sort((a,b)=>new Date(a.data_entrega)-new Date(b.data_entrega)).map(o => {
+        const total = parseMoney(o.total), sinal = parseMoney(o.sinal_pago), saldo = total - sinal;
+        
         let statusColor = "bg-slate-100 text-slate-700";
-        if (o.status === "Pronto" || o.status === "Pendente") statusColor = "bg-emerald-100 text-emerald-700";
-        if (o.status === "Em Produção") statusColor = "bg-blue-100 text-blue-700";
-        if (o.status === "Aguardando Sinal") statusColor = "bg-red-100 text-red-700";
+        if (o.status === "Pronto") statusColor = "bg-emerald-100 text-emerald-700";
+        if (o.status === "Conta do Cliente") statusColor = "bg-amber-100 text-amber-700 font-bold border border-amber-200";
+        if (o.status === "Aguardando Sinal") statusColor = "bg-rose-100 text-rose-700";
 
         return `
         <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden">
@@ -382,33 +290,23 @@ function renderEncomendas() {
                     <div class="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border border-rose-100">
                         <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formatDateBr(o.data_entrega)}
                     </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="printEncomenda('${o.id}')" class="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors" title="Imprimir Comanda"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                        <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor} ml-1">${o.status}</span>
-                    </div>
+                    <span class="text-[10px] font-bold px-2 py-1 rounded-md ${statusColor}">${o.status}</span>
                 </div>
                 <h4 class="font-bold text-slate-800 text-lg mb-1 truncate">${o.cliente}</h4>
-                <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 line-clamp-3 leading-relaxed">
+                <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 line-clamp-2">
                     ${(o.itens || '').replace(/\|/g, '\n')}
                 </div>
-                <div class="mt-auto pt-4 border-t border-slate-100 space-y-2">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-500">
-                        <span>Total: ${formatMoney(total)}</span>
-                        <span class="text-emerald-600">Sinal: ${formatMoney(sinal)}</span>
-                    </div>
+                <div class="mt-auto pt-4 border-t border-slate-100">
                     <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        <span class="text-[10px] font-black uppercase text-slate-400">Saldo na Entrega</span>
+                        <span class="text-[10px] font-black uppercase text-slate-400">Saldo</span>
                         <span class="text-lg font-black text-rose-600">${formatMoney(saldo)}</span>
                     </div>
                 </div>
                 <div class="flex gap-2 mt-4">
-                    <button onclick="cobrarWhatsApp('${o.id}', '${o.cliente}', ${saldo}, '${formatDateBr(o.data_entrega)}')" class="p-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl transition-colors shadow-sm" title="Enviar Lembrete / Cobrança via WhatsApp">
-                        <i data-lucide="message-circle" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="editEncomenda('${o.id}')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">Editar</button>
-                    <button onclick="enviarParaCaixa('${o.id}')" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1 shadow-sm" title="Disponibiliza no PDV para finalização">
-                        <i data-lucide="monitor-check" class="w-3.5 h-3.5"></i> p/ Caixa
-                    </button>
+                    <button onclick="cobrarWhatsApp('${o.id}')" class="p-2.5 bg-[#25D366] text-white rounded-xl shadow-sm"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                    <button onclick="printEncomenda('${o.id}')" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl shadow-sm"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                    <button onclick="editEncomenda('${o.id}')" class="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">Editar</button>
+                    <button onclick="enviarParaCaixa('${o.id}')" class="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Pagar</button>
                 </div>
             </div>
         </div>`;
@@ -416,543 +314,301 @@ function renderEncomendas() {
     lucide.createIcons();
 }
 
-async function enviarParaCaixa(id) {
-    if (!confirm("Ao clicar em OK, esta encomenda aparecerá brilhando na tela do Caixa (PDV) para pagamento e fechamento final. Deseja continuar?")) return;
-    const { error } = await supabaseClient.from('pedidos').update({ status: 'Pendente' }).eq('id', id);
-    if (!error) { toast("Enviado para o Caixa!", "#10b981"); loadData(); }
-    else { toast("Erro ao enviar.", "#ef4444"); }
-}
+// WHATSAPP REVISADO (Com Entrega e Desconto)
+async function cobrarWhatsApp(id) {
+    const o = allData.find(x => x.id == id);
+    if(!o) return;
 
-async function cobrarWhatsApp(id, clienteStr, valorDevido, dataEntrega) {
+    const totalPedido = parseMoney(o.total);
+    const sinalPago = parseMoney(o.sinal_pago);
+    const taxaEntrega = parseMoney(o.taxa_entrega || '0');
+    const desconto = parseMoney(o.desconto_total || '0');
+    const saldo = totalPedido - sinalPago;
+    const subtotalItens = (totalPedido - taxaEntrega) + desconto;
+
     let linkPagamento = '';
-    try {
-        const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                items: [{ title: `Acerto Encomenda #${String(id).slice(-4)} - Morangos Tatuí`, quantity: 1, currency_id: 'BRL', unit_price: Number(valorDevido.toFixed(2)) }],
-                payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
-            })
-        });
-        const data = await response.json();
-        if (data.init_point) linkPagamento = data.init_point;
-    } catch (e) {
-        linkPagamento = `Chave Pix Copia e Cola: ${CHAVE_PIX_ALEATORIA}`;
+    if (saldo > 0.5) {
+        try {
+            const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: [{ title: `Acerto Encomenda Morangos Tatuí`, quantity: 1, currency_id: 'BRL', unit_price: Number(saldo.toFixed(2)) }],
+                    payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
+                })
+            });
+            const data = await response.json();
+            if (data.init_point) linkPagamento = data.init_point;
+        } catch (e) { linkPagamento = CHAVE_PIX_ALEATORIA; }
     }
 
-    const nome = clienteStr.split('(')[0].trim();
-    let text = `Olá, *${nome}*! Tudo bem? Aqui é da Morangos Tatuí 🍓.\n\n`;
-    text += `Passando para confirmar que a sua encomenda está anotada e agendada para entrega/retirada em: *${dataEntrega}*.\n\n`;
+    const nome = o.cliente.split('(')[0].trim();
+    let text = `Olá, *${nome}*! Tudo bem? Aqui é da *Morangos Tatuí* 🍓.\n\n`;
+    text += `Passando para confirmar o agendamento da sua encomenda para o dia: *${formatDateBr(o.data_entrega)}*.\n\n`;
+    text += `*Resumo da Encomenda:*\n${o.itens.replace(/\|/g, '\n')}\n`;
+    text += `--------------------------\n`;
+    text += `🛒 Itens: ${formatMoney(subtotalItens)}\n`;
+    if(taxaEntrega > 0) text += `🛵 Taxa de Entrega: ${formatMoney(taxaEntrega)}\n`;
+    if(desconto > 0) text += `🎁 Desconto: -${formatMoney(desconto)}\n`;
+    text += `💰 *TOTAL FINAL: ${formatMoney(totalPedido)}*\n`;
+    text += `✅ Sinal Já Pago: ${formatMoney(sinalPago)}\n`;
+    text += `🚩 *SALDO NA ENTREGA: ${formatMoney(saldo)}*\n\n`;
 
-    if (valorDevido > 0.01) {
-        text += `O saldo restante na entrega é de *${formatMoney(valorDevido)}*.\n`;
-        if (linkPagamento.startsWith('http')) text += `Caso prefira adiantar o pagamento com segurança (Cartão ou Pix), acesse:\n👉 ${linkPagamento}\n\n`;
-        else text += `Caso prefira adiantar via Pix:\n${linkPagamento}\n\n`;
+    if(saldo > 0.1) {
+        if (linkPagamento.startsWith('http')) text += `Para agilizar, você pode pagar o saldo aqui:\n👉 ${linkPagamento}\n\n`;
+        else text += `Pix para pagamento (Copia e Cola):\n\`${linkPagamento}\`\n\n`;
     }
+    text += `Qualquer dúvida, nos avise. Ficaremos felizes em atender! 🥰`;
 
-    text += `Estamos preparando tudo com muito carinho! Qualquer dúvida, estamos à disposição. 🥰`;
-
-    let phoneMatch = clienteStr.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
-    let waLink = "https://wa.me/";
-    if (phoneMatch) waLink += "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] + "?text=" + encodeURIComponent(text);
-    else waLink += "?text=" + encodeURIComponent(text);
+    let phoneMatch = o.cliente.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
+    let waLink = "https://wa.me/" + (phoneMatch ? "55" + phoneMatch[1] + phoneMatch[2] + phoneMatch[3] : "") + "?text=" + encodeURIComponent(text);
     window.open(waLink, '_blank');
 }
 
+// IMPRESSÃO REVISADA
 function printEncomenda(id) {
     const o = allData.find(x => x.id == id);
-    if (!o) return;
-    const obs = o.obs || '';
+    if(!o) return;
+    const taxaEntrega = parseMoney(o.taxa_entrega || '0');
+    const desconto = parseMoney(o.desconto_total || '0');
+    const subtotalItens = parseMoney(o.total) - taxaEntrega + desconto;
+
     const win = window.open('', '', 'width=450,height=600');
-    win.document.write(`<html><head><title>Imprimir Encomenda #${id}</title><style>
-        @page{margin:0}body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;color:#000}
-        .header{text-align:center;margin-bottom:10px}.header h2{margin:0;font-size:1.2em}.header p{margin:2px 0;font-size:1em}
+    win.document.write(`<html><head><title>Comanda</title><style>
+        body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;font-weight:bold;color:#000}
+        .header{text-align:center;margin-bottom:10px}
         .divider{border-top:2px dashed #000;margin:10px 0}
-        .client-name{font-size:28px;font-weight:900;margin:10px 0;line-height:1.1;display:block;text-transform:uppercase}
-        .items{font-size:20px;font-weight:bold;white-space:pre-wrap;line-height:1.2;font-family:'Consolas',monospace}
-        .meta{font-size:16px;margin-bottom:5px;font-weight:bold;}
-        .total-section{text-align:right;margin-top:15px}
-        .total-value{font-size:20px;font-weight:900}
+        .client{font-size:24px;text-transform:uppercase;margin:10px 0;line-height:1}
+        .item-list{font-size:18px;margin-bottom:10px}
+        .financeiro{text-align:right; font-size:14px}
+        .falta{font-size:22px;margin-top:5px;border:2px solid #000;padding:5px;display:inline-block}
+        .carteira{background:#000;color:#fff;padding:5px;text-align:center;margin-top:10px}
     </style></head><body>
         <div class="header"><h2>MORANGOS TATUÍ</h2><p>ENCOMENDA #${String(id).slice(-4)}</p></div>
         <div class="divider"></div>
-        <div class="meta">ENTREGA:<br>${formatDateBr(o.data_entrega)}</div>
-        <div class="client-name">${o.cliente}</div>
+        <div>ENTREGA: ${formatDateBr(o.data_entrega)}</div>
+        <div class="client">${o.cliente}</div>
         <div class="divider"></div>
-        <div class="items">${(o.itens || '').replace(/\|/g, '\n')}</div>
-        ${obs ? `<div class="divider"></div><div style="font-size:18px;font-weight:bold;margin:10px 0">OBS: ${obs}</div>` : ''}
+        <div class="item-list">${(o.itens||'').replace(/\|/g, '<br>')}</div>
+        ${o.obs ? `<div class="divider"></div><div style="font-size:16px">OBS: ${o.obs}</div>` : ''}
         <div class="divider"></div>
-        <div class="total-section">
-            <span style="font-size:14px">TOTAL: ${formatMoney(parseMoney(o.total))}</span><br>
-            <span style="font-size:14px">SINAL: ${formatMoney(parseMoney(o.sinal_pago))}</span><br>
-            <div class="total-value" style="margin-top:5px">FALTA: ${formatMoney(parseMoney(o.total) - parseMoney(o.sinal_pago))}</div>
+        <div class="financeiro">
+            PRODUTOS: ${formatMoney(subtotalItens)}<br>
+            ENTREGA: ${formatMoney(taxaEntrega)}<br>
+            DESCONTO: -${formatMoney(desconto)}<br>
+            TOTAL PEDIDO: ${o.total}<br>
+            SINAL PAGO: ${o.sinal_pago}<br>
+            <div class="falta">FALTA: ${formatMoney(parseMoney(o.total)-parseMoney(o.sinal_pago))}</div>
         </div>
+        ${o.status === "Conta do Cliente" ? '<div class="carteira">CONTA DO CLIENTE (LANÇADO)</div>' : ''}
     </body></html>`);
     win.document.close();
     setTimeout(() => { win.focus(); win.print(); win.close(); }, 300);
 }
 
-// ==========================================
-// ABA 2: PRODUÇÃO
-// ==========================================
+// ABA 2: PRODUÇÃO (MELHORADA)
 function renderProducao() {
     const list = document.getElementById('lista-producao');
-    const empty = document.getElementById('empty-producao');
-
     const pendentes = allData.filter(o => {
-        const isNotCanceled = !o.status.toLowerCase().includes('cancelad');
-        const isNotFinished = !o.status.toLowerCase().includes('concluí');
-        const isEncomenda = (o.tipo && o.tipo.toLowerCase().includes('encomenda')) || (o.data_entrega && o.data_entrega !== '');
-        return isNotCanceled && isNotFinished && isEncomenda;
+        const s = o.status.toLowerCase();
+        return !s.includes('cancelad') && !s.includes('concluí') && !s.includes('pronto');
     });
-
-    if (pendentes.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-    empty.classList.add('hidden');
-
-    let producaoAgrupada = {};
-
-    pendentes.forEach(pedido => {
-        if (!pedido.itens) return;
-        const itensArr = pedido.itens.split('|');
-        itensArr.forEach(str => {
-            const match = str.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]/);
+    let prod = {};
+    pendentes.forEach(p => {
+        if (!p.itens) return;
+        p.itens.split('|').forEach(str => {
+            // Regex melhorada para pegar quantidade e nome ignorando extras
+            const match = str.trim().match(/^(\d+)x\s+(.+?)(?:\s+\[R\$.+\]|$)/);
             if (match) {
-                const qtd = parseInt(match[1]);
-                const nomeProduto = match[2].trim();
-                if (producaoAgrupada[nomeProduto]) producaoAgrupada[nomeProduto].qtd += qtd;
-                else producaoAgrupada[nomeProduto] = { qtd };
+                const q = parseInt(match[1]), n = match[2].trim();
+                prod[n] = (prod[n] || 0) + q;
             }
         });
     });
-
-    const arrProducao = Object.keys(producaoAgrupada).map(nome => ({ nome, qtd: producaoAgrupada[nome].qtd }));
-    arrProducao.sort((a, b) => b.qtd - a.qtd);
-
-    if (arrProducao.length === 0) {
-        list.innerHTML = '<p class="text-sm text-slate-500 py-4">Nenhum item formatado corretamente encontrado.</p>';
-        return;
-    }
-
-    list.innerHTML = arrProducao.map(item => `
-        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
+    list.innerHTML = Object.keys(prod).map(n => `
+        <div class="flex items-center justify-between bg-slate-50 border p-4 rounded-xl">
             <div class="flex items-center gap-4">
-                <div class="bg-white border border-slate-200 w-12 h-12 rounded-lg flex items-center justify-center font-black text-rose-600 text-xl shadow-sm">${item.qtd}x</div>
-                <h4 class="font-bold text-slate-800 text-sm md:text-base">${item.nome}</h4>
+                <div class="bg-white border w-12 h-12 rounded-lg flex items-center justify-center font-black text-rose-600 text-xl">${prod[n]}x</div>
+                <h4 class="font-bold text-slate-800">${n}</h4>
             </div>
-            <input type="checkbox" class="w-6 h-6 text-rose-500 rounded border-slate-300 focus:ring-rose-500 cursor-pointer shadow-sm">
+            <input type="checkbox" class="w-6 h-6 rounded cursor-pointer">
         </div>
-    `).join('');
+    `).join('') || '<p class="text-center py-10 text-slate-400">Nenhum item pendente.</p>';
 }
 
-// ==========================================
-// MODAL: CLIENTE
-// ==========================================
-function formatCEPInput(el) {
-    let v = el.value.replace(/\D/g, '').slice(0, 8);
-    if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
-    el.value = v;
+// MODAL E CÁLCULOS
+function recalcModalTotal() {
+    let subtotal = 0;
+    currentEncItems.forEach(i => subtotal += i.total);
+    const taxa = parseMoney(document.getElementById('enc-entrega').value);
+    const desc = parseMoney(document.getElementById('enc-desconto').value);
+    const final = (subtotal + taxa) - desc;
+    document.getElementById('enc-total').value = final.toFixed(2).replace('.', ',');
 }
 
-async function buscarCEP(cepStr) {
-    let cep = cepStr.replace(/\D/g, '');
-    if (cep.length === 8) {
-        try {
-            document.getElementById('nc-rua').value = 'Buscando...';
-            document.getElementById('nc-bairro').value = 'Buscando...';
-            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-            const data = await res.json();
-            if (!data.erro) {
-                document.getElementById('nc-rua').value = data.logradouro;
-                document.getElementById('nc-bairro').value = data.bairro;
-                document.getElementById('nc-numero').focus();
-            } else {
-                toast('CEP não encontrado.', '#f59e0b');
-                document.getElementById('nc-rua').value = '';
-                document.getElementById('nc-bairro').value = '';
-            }
-        } catch(e) {
-            document.getElementById('nc-rua').value = '';
-            document.getElementById('nc-bairro').value = '';
-        }
-    }
-}
-
-function searchClients(q) {
-    const results = document.getElementById('client-results');
-    const newForm = document.getElementById('new-client-form');
-    newForm.classList.add('hidden');
-    if (q.length < 2) { results.classList.add('hidden'); return; }
-
-    const matches = allClients.filter(c =>
-        normalizeStr(c.nome).includes(normalizeStr(q)) ||
-        normalizeStr(c.telefone).includes(normalizeStr(q))
-    ).slice(0, 5);
-
-    let html = matches.map(c => `
-        <div onclick="selectClient('${c.nome}', '${c.telefone}')" class="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0 flex justify-between items-center">
-            <span class="font-bold text-slate-700 text-sm">${c.nome}</span>
-            <span class="text-xs text-slate-400 font-mono">${formatPhone(c.telefone)}</span>
-        </div>
-    `).join('');
-
-    html += `
-        <div onclick="showNewClientForm('${q}')" class="p-3 bg-rose-50 text-rose-600 font-bold text-sm cursor-pointer hover:bg-rose-100 flex items-center gap-2">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> + Cadastrar "${q}"
-        </div>
-    `;
-    results.innerHTML = html;
-    results.classList.remove('hidden');
-    lucide.createIcons();
-}
-
-function selectClient(nome, telefone) {
-    document.getElementById('enc-cliente').value = `${nome} (${formatPhone(telefone)})`;
-    document.getElementById('client-results').classList.add('hidden');
-}
-
-function showNewClientForm(nomeDigitado) {
-    document.getElementById('client-results').classList.add('hidden');
-    document.getElementById('new-client-form').classList.remove('hidden');
-    document.getElementById('nc-nome').value = nomeDigitado;
-    document.getElementById('nc-tel').focus();
-}
-
-function hideNewClientForm() {
-    document.getElementById('new-client-form').classList.add('hidden');
-}
-
-async function saveNewClient() {
-    const nome = document.getElementById('nc-nome').value.trim();
-    const tel = document.getElementById('nc-tel').value.replace(/\D/g, '');
-    const cep = document.getElementById('nc-cep').value.replace(/\D/g, '');
-    const rua = document.getElementById('nc-rua').value.trim();
-    const numero = document.getElementById('nc-numero').value.trim();
-    const bairro = document.getElementById('nc-bairro').value.trim();
-    const complemento = document.getElementById('nc-comp').value.trim();
-
-    if (!nome || tel.length < 10) return toast("Preencha Nome e Telefone válidos", "#f59e0b");
-
-    try {
-        const payload = { nome, telefone: tel, cep, rua, numero, bairro, complemento, pin_senha: '0000', saldo_cashback: 0 };
-        await supabaseClient.from('clientes').insert([payload]);
-        allClients.push(payload);
-        selectClient(nome, tel);
-        document.getElementById('new-client-form').classList.add('hidden');
-        toast("Cliente Cadastrado com Sucesso!", "#10B981");
-        ['nc-nome','nc-tel','nc-cep','nc-rua','nc-numero','nc-bairro','nc-comp'].forEach(id => document.getElementById(id).value = '');
-    } catch(e) { toast("Erro ao cadastrar", "#ef4444"); }
-}
-
-// ==========================================
-// MODAL: CATÁLOGO
-// ==========================================
-function searchProducts(q) {
-    const results = document.getElementById('product-results');
-    document.getElementById('variation-selector').classList.add('hidden');
-    if (q.length < 2) { results.classList.add('hidden'); return; }
-
-    const matches = catalogProducts.filter(p => normalizeStr(p.nome).includes(normalizeStr(q))).slice(0, 8);
-    results.innerHTML = matches.map(p =>
-        `<div onclick="showVariationOptions('${p.nome.replace(/'/g, "\\'")}', '${p.preco}', '${(p.categoria || '').replace(/'/g, "\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between items-center">
-            <span class="text-sm font-bold text-slate-700">${p.nome}</span>
-            <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">OPÇÕES</span>
-        </div>`
-    ).join('');
-    results.classList.remove('hidden');
-}
-
-function showVariationOptions(nome, precoStr, categoria) {
-    document.getElementById('product-results').classList.add('hidden');
-    const varSelector = document.getElementById('variation-selector');
-    const optionsDiv = document.getElementById('variation-options');
-    document.getElementById('variation-title').innerText = nome;
-
-    let html = '';
-    const prices = parsePrices(precoStr);
-
-    if (prices.length > 1 && prices[0].label) {
-        html += `<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Tamanhos / Tipos</p>`;
-        html += prices.map(v =>
-            `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${v.val}','${v.label.replace(/'/g, "\\'")}')" class="flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50 mb-1">
-                <span class="text-sm font-medium">${v.label}</span>
-                <span class="text-sm font-bold text-blue-600">${formatMoney(v.val)}</span>
-            </div>`
-        ).join('');
-    } else {
-        html += `<div onclick="addItemToEnc('${nome.replace(/'/g, "\\'")}','${prices[0].val}',null)" class="flex justify-between items-center p-3 border border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 mb-1">
-            <span class="text-sm font-medium">Adicionar ${nome}</span>
-            <span class="text-sm font-bold text-emerald-600">${formatMoney(prices[0].val)}</span>
-        </div>`;
-    }
-
-    const catLower = normalizeStr(categoria);
-    const adicionais = catalogProducts.filter(item => {
-        const c = normalizeStr(item.categoria || '');
-        return c.includes('adicional') && (c.includes('all') || c.includes(catLower));
-    });
-
-    if (adicionais.length > 0) {
-        html += `<div class="border-t pt-2 mt-2"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Adicionais</p><div class="grid grid-cols-2 gap-2">`;
-        html += adicionais.map(ad => {
-            const adP = parsePrices(ad.preco)[0].val;
-            return `<div onclick="addExtraToEnc('${ad.nome.replace(/'/g, "\\'")}',${adP})" class="flex justify-between items-center p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50">
-                <span class="text-xs font-medium text-slate-600 truncate">${ad.nome}</span>
-                <span class="text-xs font-bold text-blue-500">+${formatMoney(adP)}</span>
-            </div>`;
-        }).join('');
-        html += `</div></div>`;
-    }
-
-    optionsDiv.innerHTML = html;
-    varSelector.classList.remove('hidden');
-}
-
-function closeVariationSelector() { document.getElementById('variation-selector').classList.add('hidden'); }
-
-// ==========================================
-// LISTA VISUAL DE ITENS
-// ==========================================
 function renderEncItems() {
     const container = document.getElementById('enc-items-visual-list');
-    if (currentEncItems.length === 0) {
-        container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs font-bold">Nenhum item adicionado.</div>';
-        recalcModalTotal();
-        return;
-    }
-
     container.innerHTML = currentEncItems.map(item => `
-        <div class="flex justify-between items-center bg-white border border-slate-200 p-2 rounded-xl shadow-sm mb-2">
+        <div class="flex justify-between items-center bg-white border p-2 rounded-xl mb-2">
             <div class="flex items-center gap-3">
-                <div class="flex items-center bg-slate-50 rounded-lg border border-slate-200">
-                    <button onclick="changeItemQty('${item.id}', -1)" class="w-7 h-7 flex items-center justify-center text-slate-500 font-bold hover:text-rose-500">-</button>
-                    <span class="text-xs font-black w-5 text-center text-slate-800">${item.qty}</span>
-                    <button onclick="changeItemQty('${item.id}', 1)" class="w-7 h-7 flex items-center justify-center text-slate-500 font-bold hover:text-emerald-500">+</button>
+                <div class="flex items-center bg-slate-50 rounded-lg border">
+                    <button onclick="changeItemQty('${item.id}', -1)" class="w-7 h-7 font-bold">-</button>
+                    <span class="text-xs font-black w-5 text-center">${item.qty}</span>
+                    <button onclick="changeItemQty('${item.id}', 1)" class="w-7 h-7 font-bold">+</button>
                 </div>
-                <span class="text-sm font-bold text-slate-700 truncate max-w-[160px] md:max-w-xs">${item.name}</span>
+                <span class="text-sm font-bold text-slate-700 truncate max-w-[150px]">${item.name}</span>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-sm font-black text-rose-600">${formatMoney(item.total)}</span>
-                <button onclick="removeItemEnc('${item.id}')" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <button onclick="removeItemEnc('${item.id}')" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
         </div>
-    `).join('');
-
+    `).join('') || '<div class="text-center py-6 text-slate-400 text-xs font-bold">Carrinho vazio.</div>';
     lucide.createIcons();
     recalcModalTotal();
 }
 
+// CRUD
 function changeItemQty(id, delta) {
     const item = currentEncItems.find(i => i.id === id);
-    if (item) {
-        item.qty += delta;
-        if (item.qty <= 0) currentEncItems = currentEncItems.filter(i => i.id !== id);
-        else item.total = item.qty * item.unitPrice;
-        renderEncItems();
-    }
+    if (item) { item.qty += delta; if (item.qty <= 0) removeItemEnc(id); else item.total = item.qty * item.unitPrice; renderEncItems(); }
 }
-
-function removeItemEnc(id) {
-    currentEncItems = currentEncItems.filter(i => i.id !== id);
-    renderEncItems();
-}
-
-// ==========================================
-// recalcModalTotal — CORRIGIDA
-// Subtotal dos itens + taxa de entrega - desconto
-// ==========================================
-function recalcModalTotal() {
-    let subtotal = 0;
-    currentEncItems.forEach(i => subtotal += i.total);
-
-    const taxaEntrega = parseMoney(document.getElementById('enc-entrega').value);
-    const desconto = parseMoney(document.getElementById('enc-desconto').value);
-
-    const totalFinal = (subtotal + taxaEntrega) - desconto;
-
-    document.getElementById('enc-total').value = totalFinal.toFixed(2).replace('.', ',');
-}
-
+function removeItemEnc(id) { currentEncItems = currentEncItems.filter(i => i.id !== id); renderEncItems(); }
 function addItemToEnc(nome, precoVal, variacao = null) {
     const nameEx = variacao ? `${nome} (${variacao})` : nome;
     const price = parseFloat(precoVal);
-
     const existing = currentEncItems.find(i => i.name === nameEx);
-    if (existing) {
-        existing.qty += 1;
-        existing.total = existing.qty * existing.unitPrice;
-    } else {
-        currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: 1, name: nameEx, unitPrice: price, total: price });
-    }
-
-    renderEncItems();
-    closeVariationSelector();
-    document.getElementById('product-search').value = '';
-    toast(`+ ${nameEx}`, "#10b981");
+    if (existing) { existing.qty += 1; existing.total = existing.qty * existing.unitPrice; }
+    else { currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: 1, name: nameEx, unitPrice: price, total: price }); }
+    renderEncItems(); closeVariationSelector(); document.getElementById('product-search').value = '';
 }
-
 function addExtraToEnc(nome, precoVal) {
-    if (currentEncItems.length === 0) return toast("Adicione um item do cardápio primeiro!", "#f59e0b");
-
-    const lastItem = currentEncItems[currentEncItems.length - 1];
-    if (lastItem.name.includes('(+')) {
-        lastItem.name = lastItem.name.replace(')', `, ${nome})`);
-    } else {
-        lastItem.name += ` (+ ${nome})`;
-    }
-
-    lastItem.unitPrice += parseFloat(precoVal);
-    lastItem.total = lastItem.qty * lastItem.unitPrice;
-
+    if (currentEncItems.length === 0) return;
+    const last = currentEncItems[currentEncItems.length - 1];
+    if (last.name.includes('(+')) last.name = last.name.replace(')', `, ${nome})`);
+    else last.name += ` (+ ${nome})`;
+    last.unitPrice += parseFloat(precoVal);
+    last.total = last.qty * last.unitPrice;
     renderEncItems();
-    toast(`+ ${nome}`, "#3b82f6");
 }
-
-function toggleAvulsoForm() {
-    document.getElementById('form-avulso').classList.toggle('hidden');
-    document.getElementById('avulso-nome').focus();
-}
-
 function addAvulsoItem() {
     const nome = document.getElementById('avulso-nome').value.trim();
-    const precoRaw = document.getElementById('avulso-preco').value;
-    const price = parseMoney(precoRaw);
-
-    if (!nome) return toast("Digite o nome do item avulso!", "#f59e0b");
-
+    const price = parseMoney(document.getElementById('avulso-preco').value);
+    if (!nome) return;
     currentEncItems.push({ id: Math.random().toString(36).substring(7), qty: 1, name: nome, unitPrice: price, total: price });
-    document.getElementById('avulso-nome').value = '';
-    document.getElementById('avulso-preco').value = '';
-    document.getElementById('form-avulso').classList.add('hidden');
-    renderEncItems();
+    document.getElementById('avulso-nome').value = ''; document.getElementById('avulso-preco').value = '';
+    document.getElementById('form-avulso').classList.add('hidden'); renderEncItems();
 }
 
-// ==========================================
-// ABRIR / FECHAR MODAL
-// ==========================================
+// CLIENTE E CATALOGO
+function searchClients(q) {
+    const res = document.getElementById('client-results');
+    if (q.length < 2) { res.classList.add('hidden'); return; }
+    const matches = allClients.filter(c => normalizeStr(c.nome).includes(normalizeStr(q)) || normalizeStr(c.telefone).includes(normalizeStr(q))).slice(0, 5);
+    res.innerHTML = matches.map(c => `<div onclick="selectClient('${c.nome}', '${c.telefone}')" class="p-3 hover:bg-slate-50 cursor-pointer border-b font-bold text-sm text-slate-700">${c.nome} - ${formatPhone(c.telefone)}</div>`).join('') + `<div onclick="showNewClientForm('${q}')" class="p-3 bg-rose-50 text-rose-600 font-bold text-sm cursor-pointer hover:bg-rose-100">+ Cadastrar "${q}"</div>`;
+    res.classList.remove('hidden');
+}
+function selectClient(n, t) { document.getElementById('enc-cliente').value = `${n} (${formatPhone(t)})`; document.getElementById('client-results').classList.add('hidden'); }
+function showNewClientForm(n) { document.getElementById('client-results').classList.add('hidden'); document.getElementById('new-client-form').classList.remove('hidden'); document.getElementById('nc-nome').value = n; }
+function hideNewClientForm() { document.getElementById('new-client-form').classList.add('hidden'); }
+async function saveNewClient() {
+    const n = document.getElementById('nc-nome').value, t = document.getElementById('nc-tel').value.replace(/\D/g, '');
+    if(!n || t.length<10) return;
+    const p = { nome: n, telefone: t, cep: document.getElementById('nc-cep').value, rua: document.getElementById('nc-rua').value, pin_senha:'0000', saldo_cashback:0 };
+    await supabaseClient.from('clientes').insert([p]);
+    allClients.push(p); selectClient(n, t); hideNewClientForm(); toast("Cliente Salvo!");
+}
+function formatCEPInput(el) { let v = el.value.replace(/\D/g, '').slice(0, 8); if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5); el.value = v; }
+async function buscarCEP(cepStr) {
+    let cep = cepStr.replace(/\D/g, '');
+    if (cep.length === 8) {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (!data.erro) { document.getElementById('nc-rua').value = data.logradouro; }
+    }
+}
+function searchProducts(q) {
+    const res = document.getElementById('product-results');
+    if (q.length < 2) { res.classList.add('hidden'); return; }
+    const matches = catalogProducts.filter(p => normalizeStr(p.nome).includes(normalizeStr(q))).slice(0, 8);
+    res.innerHTML = matches.map(p => `<div onclick="showVariationOptions('${p.nome.replace(/'/g,"\\'")}', '${p.preco}', '${(p.categoria||'').replace(/'/g,"\\'")}')" class="p-3 hover:bg-blue-50 cursor-pointer border-b flex justify-between items-center text-sm font-bold"><span>${p.nome}</span><span class="text-[10px] bg-blue-100 px-2 rounded">OPÇÕES</span></div>`).join('');
+    res.classList.remove('hidden');
+}
+function parsePrices(preco) {
+    const strPreco = String(preco || '0');
+    if (strPreco.includes('|')) return strPreco.split('|').map(part => { const [l, v] = part.split(':'); return { label: l.trim(), val: parseMoney(v) }; });
+    return [{ label: null, val: parseMoney(strPreco) }];
+}
+function showVariationOptions(nome, precoStr, categoria) {
+    document.getElementById('product-results').classList.add('hidden');
+    const vs = document.getElementById('variation-selector'), opt = document.getElementById('variation-options');
+    document.getElementById('variation-title').innerText = nome;
+    let html = '';
+    const prices = parsePrices(precoStr);
+    if (prices.length > 1 && prices[0].label) {
+        html += prices.map(v => `<div onclick="addItemToEnc('${nome}','${v.val}','${v.label}')" class="p-3 border rounded mb-1 flex justify-between cursor-pointer hover:bg-blue-50"><span>${v.label}</span><b>${formatMoney(v.val)}</b></div>`).join('');
+    } else { html += `<div onclick="addItemToEnc('${nome}','${prices[0].val}',null)" class="p-4 border-2 border-emerald-500 rounded flex justify-between cursor-pointer hover:bg-emerald-50"><span>Adicionar</span><b>${formatMoney(prices[0].val)}</b></div>`; }
+    
+    const catLower = normalizeStr(categoria);
+    const adicionais = catalogProducts.filter(item => { const c = normalizeStr(item.categoria || ''); return c.includes('adicional') && (c.includes('all') || c.includes(catLower)); });
+    if (adicionais.length > 0) {
+        html += `<div class="border-t pt-2 mt-2"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Extras</p><div class="grid grid-cols-2 gap-2">`;
+        html += adicionais.map(ad => `<div onclick="addExtraToEnc('${ad.nome}',${parsePrices(ad.preco)[0].val})" class="p-2 border rounded cursor-pointer hover:bg-slate-50 text-xs">${ad.nome}</div>`).join('');
+        html += `</div></div>`;
+    }
+    opt.innerHTML = html; vs.classList.remove('hidden');
+}
+function closeVariationSelector() { document.getElementById('variation-selector').classList.add('hidden'); }
+function toggleAvulsoForm() { document.getElementById('form-avulso').classList.toggle('hidden'); document.getElementById('avulso-nome').focus(); }
+
+// PERSISTENCIA
 function openNovaEncomendaModal() {
-    document.getElementById('enc-id').value = '';
-    document.getElementById('enc-cliente').value = '';
-    document.getElementById('enc-data').value = '';
-    document.getElementById('enc-entrega').value = '0,00';
-    document.getElementById('enc-desconto').value = '0,00';
-    document.getElementById('enc-sinal').value = '0,00';
-    document.getElementById('enc-total').value = '0,00';
-    document.getElementById('enc-status').value = 'Agendado';
-    document.getElementById('enc-obs').value = '';
-
-    currentEncItems = [];
-    renderEncItems();
-
-    document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda';
-    document.getElementById('modal-encomenda').classList.remove('hidden');
-    lucide.createIcons();
+    document.getElementById('enc-id').value = ''; document.getElementById('enc-cliente').value = '';
+    document.getElementById('enc-data').value = ''; document.getElementById('enc-entrega').value = '0,00';
+    document.getElementById('enc-desconto').value = '0,00'; document.getElementById('enc-sinal').value = '0,00';
+    document.getElementById('enc-obs').value = ''; document.getElementById('enc-status').value = 'Agendado';
+    currentEncItems = []; renderEncItems(); document.getElementById('modal-encomenda').classList.remove('hidden');
 }
-
 function editEncomenda(id) {
     const order = allData.find(o => o.id == id);
-    if (!order) return;
-
     document.getElementById('enc-id').value = order.id;
     document.getElementById('enc-cliente').value = order.cliente;
     document.getElementById('enc-data').value = order.data_entrega ? order.data_entrega.slice(0, 16) : '';
-
-    // Restaura taxa de entrega e desconto salvos (ou 0,00 se não existirem)
-    const taxaEntrega = parseMoney(order.taxa_entrega || 0).toFixed(2).replace('.', ',');
-    const desconto = parseMoney(order.desconto_total || 0).toFixed(2).replace('.', ',');
-    document.getElementById('enc-entrega').value = taxaEntrega;
-    document.getElementById('enc-desconto').value = desconto;
-
+    document.getElementById('enc-entrega').value = parseMoney(order.taxa_entrega).toFixed(2).replace('.', ',');
+    document.getElementById('enc-desconto').value = parseMoney(order.desconto_total).toFixed(2).replace('.', ',');
+    document.getElementById('enc-sinal').value = parseMoney(order.sinal_pago).toFixed(2).replace('.', ',');
+    document.getElementById('enc-status').value = order.status;
+    document.getElementById('enc-obs').value = order.obs || '';
     currentEncItems = [];
     if (order.itens) {
         order.itens.split('|').forEach(p => {
             const m = p.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]$/);
-            if (m) {
-                const qty = parseInt(m[1]);
-                const total = parseMoney(m[3]);
-                currentEncItems.push({ id: Math.random().toString(36).substring(7), qty, name: m[2].trim(), unitPrice: total / qty, total });
-            }
+            if (m) { const qty = parseInt(m[1]), tot = parseMoney(m[3]); currentEncItems.push({ id: Math.random().toString(36).substring(7), qty, name: m[2].trim(), unitPrice: tot / qty, total: tot }); }
         });
     }
-    renderEncItems();
-
-    document.getElementById('enc-sinal').value = parseMoney(order.sinal_pago).toFixed(2).replace('.', ',');
-    document.getElementById('enc-status').value = order.status;
-    document.getElementById('enc-obs').value = order.obs || '';
-
-    document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="edit" class="text-blue-500"></i> Editar Encomenda';
-    document.getElementById('modal-encomenda').classList.remove('hidden');
-    lucide.createIcons();
+    renderEncItems(); document.getElementById('modal-encomenda').classList.remove('hidden');
 }
-
 function closeModalEnc() { document.getElementById('modal-encomenda').classList.add('hidden'); }
-
-// ==========================================
-// saveEncomenda — CORRIGIDA
-// Inclui taxa_entrega e desconto_total no payload
-// ==========================================
 async function saveEncomenda() {
-    const id = document.getElementById('enc-id').value;
-    const cliente = document.getElementById('enc-cliente').value.trim();
-    const data_entrega = document.getElementById('enc-data').value;
-
-    if (!cliente || !data_entrega) return toast("Cliente e Data são obrigatórios!", "#f59e0b");
-    if (currentEncItems.length === 0) return toast("Adicione itens à encomenda!", "#f59e0b");
-
-    const itensFmt = currentEncItems.map(i => `${i.qty}x ${i.name} [${formatMoney(i.total)}]`).join(' | ');
-    const taxaEntregaFmt = formatMoney(parseMoney(document.getElementById('enc-entrega').value));
-    const descontoFmt    = formatMoney(parseMoney(document.getElementById('enc-desconto').value));
-    const totalFmt       = formatMoney(parseMoney(document.getElementById('enc-total').value));
-    const sinal          = formatMoney(parseMoney(document.getElementById('enc-sinal').value));
-    const status         = document.getElementById('enc-status').value;
-    const obs            = document.getElementById('enc-obs').value.trim();
-
-    const btn = document.getElementById('btn-save-enc');
-    btn.disabled = true;
-    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Salvando...';
-
+    const btn = document.getElementById('btn-save-enc'); btn.disabled = true;
     const payload = {
-        cliente,
-        data_entrega,
-        itens: itensFmt,
-        total: totalFmt,
-        taxa_entrega: taxaEntregaFmt,   // ← novo campo
-        desconto_total: descontoFmt,    // ← novo campo
-        sinal_pago: sinal,
-        status,
-        obs,
-        tipo: 'Encomenda',
-        pagamento: 'A Pagar',
-        status_pagamento: 'Pendente'
+        cliente: document.getElementById('enc-cliente').value,
+        data_entrega: document.getElementById('enc-data').value,
+        itens: currentEncItems.map(i => `${i.qty}x ${i.name} [${formatMoney(i.total)}]`).join(' | '),
+        total: formatMoney(parseMoney(document.getElementById('enc-total').value)),
+        taxa_entrega: formatMoney(parseMoney(document.getElementById('enc-entrega').value)),
+        desconto_total: formatMoney(parseMoney(document.getElementById('enc-desconto').value)),
+        sinal_pago: formatMoney(parseMoney(document.getElementById('enc-sinal').value)),
+        status: document.getElementById('enc-status').value,
+        obs: document.getElementById('enc-obs').value,
+        tipo: 'Encomenda', pagamento: 'A Pagar', status_pagamento: 'Pendente'
     };
-
-    let error;
-    if (id) {
-        const res = await supabaseClient.from('pedidos').update(payload).eq('id', id);
-        error = res.error;
-    } else {
-        payload.id   = new Date().getTime().toString().slice(-6);
-        payload.data = new Date().toLocaleString("pt-BR");
-        const res = await supabaseClient.from('pedidos').insert([payload]);
-        error = res.error;
-    }
-
-    if (!error) {
-        toast("Salvo com sucesso!", "#10b981");
-        closeModalEnc();
-        loadData();
-    } else {
-        toast("Erro ao salvar: " + (error.message || ''), "#ef4444");
-        console.error(error);
-    }
-
+    const id = document.getElementById('enc-id').value;
+    const { error } = id ? await supabaseClient.from('pedidos').update(payload).eq('id', id) : await supabaseClient.from('pedidos').insert([{...payload, id: Date.now().toString().slice(-6), data: new Date().toLocaleString("pt-BR")}]);
+    if (!error) { toast("Salvo com sucesso!"); closeModalEnc(); loadData(); } else toast("Erro ao salvar!");
     btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Salvar Encomenda';
-    lucide.createIcons();
 }
 
-// ==========================================
-// INICIALIZAÇÃO
-// ==========================================
 loadCatalogAndClients().then(() => loadData());
 lucide.createIcons();
 </script>
