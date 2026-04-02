@@ -107,9 +107,11 @@
   <div class="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center gap-3 flex-wrap sticky top-[65px] z-40">
     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Filtro</span>
     <button class="fbtn active px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white [&.active]:bg-brand-600 [&.active]:border-brand-600 [&.active]:text-white" onclick="setFilter('all',this)">Tudo</button>
-    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('month',this)">Este mês</button>
-    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('lastmonth',this)">Mês passado</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('today',this)">Hoje</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('yesterday',this)">Ontem</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('7days',this)">Últimos 7 dias</button>
     <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('week',this)">Esta semana</button>
+    <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('month',this)">Este mês</button>
     <button class="fbtn px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-brand-500 hover:text-brand-600 transition-colors bg-white" onclick="setFilter('custom',this)">Personalizado</button>
     
     <div id="customRange" class="hidden items-center gap-2 ml-2">
@@ -219,14 +221,41 @@ function parseDate(v){
 }
 
 function getRange(){
-  const now=new Date(), td=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  if(currentFilter==='all')return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
-  if(currentFilter==='month')return{f:new Date(td.getFullYear(),td.getMonth(),1),t:new Date(td.getFullYear(),td.getMonth()+1,0)};
-  if(currentFilter==='lastmonth')return{f:new Date(td.getFullYear(),td.getMonth()-1,1),t:new Date(td.getFullYear(),td.getMonth(),0)};
-  if(currentFilter==='week'){const day=td.getDay()||7; const m=new Date(td); m.setDate(td.getDate()-day+1); const s=new Date(m); s.setDate(m.getDate()+6); return{f:m,t:s};}
-  if(currentFilter==='yesterday'){const y=new Date(td); y.setDate(td.getDate()-1); return{f:y,t:y};}
-  if(currentFilter==='custom'&&customFrom&&customTo)return{f:customFrom,t:customTo};
-  return{f:new Date(2000,0,1),t:new Date(2100,0,1)};
+  const now = new Date();
+  const td = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  if(currentFilter === 'all') return {f: new Date(2000,0,1), t: new Date(2100,0,1)};
+  
+  if(currentFilter === 'today') return {f: td, t: td};
+  
+  if(currentFilter === 'yesterday'){
+    const y = new Date(td);
+    y.setDate(td.getDate() - 1);
+    return {f: y, t: y};
+  }
+  
+  if(currentFilter === '7days'){
+    const f = new Date(td);
+    f.setDate(td.getDate() - 6); // Hoje + 6 dias anteriores
+    return {f: f, t: td};
+  }
+  
+  if(currentFilter === 'week'){
+    const day = td.getDay() || 7; 
+    const m = new Date(td);
+    m.setDate(td.getDate() - day + 1); // Segunda-feira
+    const s = new Date(m);
+    s.setDate(m.getDate() + 6); // Domingo
+    return {f: m, t: s};
+  }
+  
+  if(currentFilter === 'month') {
+    return {f: new Date(td.getFullYear(), td.getMonth(), 1), t: new Date(td.getFullYear(), td.getMonth() + 1, 0)};
+  }
+  
+  if(currentFilter === 'custom' && customFrom && customTo) return {f: customFrom, t: customTo};
+  
+  return {f: new Date(2000,0,1), t: new Date(2100,0,1)};
 }
 
 function filterRows(rows,field){
@@ -262,10 +291,16 @@ function applyCustom(){
 }
 
 function periodText(){
-  const{f,t}=getRange(); const fd=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-  if(currentFilter==='all')return'Período completo'; if(currentFilter==='month')return'Este mês';
-  if(currentFilter==='lastmonth')return'Mês passado'; if(currentFilter==='week')return'Esta semana';
-  if(currentFilter==='yesterday')return'Ontem'; return`${fd(f)} até ${fd(t)}`;
+  const {f, t} = getRange();
+  const fd = d => d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'});
+  
+  if(currentFilter === 'all') return 'Período completo';
+  if(currentFilter === 'today') return 'Hoje (' + fd(f) + ')';
+  if(currentFilter === 'yesterday') return 'Ontem (' + fd(f) + ')';
+  if(currentFilter === '7days') return 'Últimos 7 dias';
+  if(currentFilter === 'week') return 'Esta semana';
+  if(currentFilter === 'month') return 'Este mês';
+  return `${fd(f)} até ${fd(t)}`;
 }
 
 // ── UTILS ──
