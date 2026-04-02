@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,90 +7,176 @@
     <link rel="icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans">
+<body class="bg-slate-50 text-slate-900">
 
-    <header class="bg-white border-b sticky top-0 z-10">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
-            <div class="text-right">
-                <h1 class="text-lg font-bold text-slate-800">Controle de Taxas MP</h1>
-                <p class="text-xs text-slate-500 uppercase tracking-wider">Morangos Tatuí</p>
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 md:h-20 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
+                <div class="hidden md:block h-8 w-px bg-slate-200"></div>
+                <h1 class="hidden md:block text-xl font-extrabold text-red-600">Gestão Financeira</h1>
+            </div>
+            <div id="user-status" class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Dashboard V1.0
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-8">
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
         
-        <div class="flex flex-wrap gap-2 mb-8" id="filtros">
-            <button onclick="buscarVendas('hoje')" class="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition shadow-sm">Hoje</button>
-            <button onclick="buscarVendas('ontem')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Ontem</button>
-            <button onclick="buscarVendas('7dias')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Últimos 7 dias</button>
-            <button onclick="buscarVendas('mes')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Este Mês</button>
+        <!-- Filtros Rápidos -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+            <div class="space-y-3">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Período de Análise</label>
+                <div class="flex flex-wrap gap-2" id="filtros-botoes">
+                    <button onclick="definirPeriodo('hoje')" class="btn-periodo px-5 py-2 bg-red-600 text-white rounded-full text-sm font-semibold shadow-md transition-all active:scale-95" data-id="hoje">Hoje</button>
+                    <button onclick="definirPeriodo('ontem')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="ontem">Ontem</button>
+                    <button onclick="definirPeriodo('7dias')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="7dias">7 dias</button>
+                    <button onclick="definirPeriodo('semana')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="semana">Esta Semana</button>
+                    <button onclick="definirPeriodo('mes')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="mes">Este Mês</button>
+                </div>
+            </div>
+
+            <!-- Filtro Personalizado -->
+            <div class="bg-white p-3 rounded-2xl border shadow-sm flex items-center gap-3">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Início</span>
+                    <input type="date" id="data-inicio" class="text-sm font-medium focus:outline-none p-1">
+                </div>
+                <div class="h-6 w-px bg-slate-200"></div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Fim</span>
+                    <input type="date" id="data-fim" class="text-sm font-medium focus:outline-none p-1">
+                </div>
+                <button onclick="definirPeriodo('personalizado')" class="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </button>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Vendas (Bruto)</p>
-                <h2 id="total-bruto" class="text-3xl font-black text-slate-800 font-mono">R$ 0,00</h2>
+        <!-- Cards de Resumo -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 overflow-hidden relative">
+                <div class="absolute top-0 right-0 p-3 opacity-10">
+                    <svg width="60" height="60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                </div>
+                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Total Bruto</p>
+                <h2 id="total-bruto" class="text-3xl font-black text-slate-800">R$ 0,00</h2>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
-                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Taxas Retidas</p>
-                <h2 id="total-taxas" class="text-3xl font-black text-red-600 font-mono">- R$ 0,00</h2>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
+                <p class="text-red-400 text-xs font-black uppercase tracking-widest mb-1">Taxas Retidas</p>
+                <h2 id="total-taxas" class="text-3xl font-black text-red-600">R$ 0,00</h2>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
-                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Líquido em Conta</p>
-                <h2 id="total-liquido" class="text-3xl font-black text-emerald-600 font-mono">R$ 0,00</h2>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
+                <p class="text-emerald-400 text-xs font-black uppercase tracking-widest mb-1">Líquido Estimado</p>
+                <h2 id="total-liquido" class="text-3xl font-black text-emerald-600">R$ 0,00</h2>
+            </div>
+            <div class="bg-slate-900 p-6 rounded-3xl shadow-sm">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1 text-white opacity-60">Qtd. Vendas</p>
+                <h2 id="total-vendas" class="text-3xl font-black text-white">0</h2>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-4 border-b bg-slate-50/50">
-                <h3 class="font-bold text-slate-700">Extrato Detalhado</h3>
+        <!-- Tabela -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="font-bold text-slate-800">Histórico de Transações</h3>
+                <span id="label-periodo" class="text-[10px] bg-slate-100 px-3 py-1 rounded-full font-bold uppercase text-slate-500">Hoje</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="text-xs uppercase text-slate-400 bg-slate-50">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
                         <tr>
-                            <th class="px-6 py-3 font-semibold">Data/Hora</th>
-                            <th class="px-6 py-3 font-semibold">Método</th>
-                            <th class="px-6 py-3 font-semibold text-right">Bruto</th>
-                            <th class="px-6 py-3 font-semibold text-right text-red-400">Taxa</th>
-                            <th class="px-6 py-3 font-semibold text-right text-emerald-500">Líquido</th>
+                            <th class="px-6 py-4">Data e Hora</th>
+                            <th class="px-6 py-4">ID / Método</th>
+                            <th class="px-6 py-4 text-right">Valor Bruto</th>
+                            <th class="px-6 py-4 text-right">Taxa (MP)</th>
+                            <th class="px-6 py-4 text-right">Líquido</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-corpo" class="text-sm text-slate-600">
-                        </tbody>
+                    <tbody id="tabela-corpo" class="text-sm divide-y divide-slate-50">
+                        <!-- Gerado por JS -->
+                    </tbody>
                 </table>
+            </div>
+            <div id="sem-dados" class="hidden p-12 text-center text-slate-400 italic">
+                Nenhuma venda encontrada para o período selecionado.
             </div>
         </div>
     </main>
 
     <script>
-        // === CONFIGURAÇÃO DO SUPABASE ===
-        const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co';
+        // === CONFIGURAÇÃO SUPABASE ATUALIZADA ===
+        const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function buscarVendas(periodo) {
+        async function definirPeriodo(tipo) {
             let dataInicio = new Date();
+            let dataFim = new Date();
+            
+            // Ajuste de horas para o início do dia
             dataInicio.setHours(0, 0, 0, 0);
+            dataFim.setHours(23, 59, 59, 999);
 
-            if (periodo === 'ontem') {
-                dataInicio.setDate(dataInicio.getDate() - 1);
-                let dataFim = new Date(dataInicio);
-                dataFim.setHours(23, 59, 59, 999);
-                // Ajuste para pegar apenas o dia de ontem
-            } else if (periodo === '7dias') {
-                dataInicio.setDate(dataInicio.getDate() - 7);
-            } else if (periodo === 'mes') {
-                dataInicio.setDate(1);
+            // Atualiza UI dos botões
+            document.querySelectorAll('.btn-periodo').forEach(btn => {
+                if(btn.dataset.id === tipo) {
+                    btn.classList.add('bg-red-600', 'text-white');
+                    btn.classList.remove('bg-white', 'text-slate-600');
+                } else {
+                    btn.classList.remove('bg-red-600', 'text-white');
+                    btn.classList.add('bg-white', 'text-slate-600');
+                }
+            });
+
+            switch (tipo) {
+                case 'hoje':
+                    document.getElementById('label-periodo').innerText = 'Hoje';
+                    break;
+                case 'ontem':
+                    dataInicio.setDate(dataInicio.getDate() - 1);
+                    dataFim.setDate(dataFim.getDate() - 1);
+                    document.getElementById('label-periodo').innerText = 'Ontem';
+                    break;
+                case '7dias':
+                    dataInicio.setDate(dataInicio.getDate() - 7);
+                    document.getElementById('label-periodo').innerText = 'Últimos 7 dias';
+                    break;
+                case 'semana':
+                    const diaDaSemana = dataInicio.getDay(); // 0 (domingo) a 6 (sábado)
+                    dataInicio.setDate(dataInicio.getDate() - diaDaSemana);
+                    document.getElementById('label-periodo').innerText = 'Esta Semana';
+                    break;
+                case 'mes':
+                    dataInicio.setDate(1);
+                    document.getElementById('label-periodo').innerText = 'Este Mês';
+                    break;
+                case 'personalizado':
+                    const inicioManual = document.getElementById('data-inicio').value;
+                    const fimManual = document.getElementById('data-fim').value;
+                    if (!inicioManual || !fimManual) return alert('Selecione as datas de início e fim');
+                    dataInicio = new Date(inicioManual + 'T00:00:00');
+                    dataFim = new Date(fimManual + 'T23:59:59');
+                    document.getElementById('label-periodo').innerText = 'Personalizado';
+                    break;
             }
 
-            const { data, error } = await supabase
+            carregarVendas(dataInicio, dataFim);
+        }
+
+        async function carregarVendas(inicio, fim) {
+            const { data, error } = await supabaseClient
                 .from('vendas_mercado_pago')
                 .select('*')
-                .gte('data_venda', dataInicio.toISOString())
+                .gte('data_venda', inicio.toISOString())
+                .lte('data_venda', fim.toISOString())
                 .order('data_venda', { ascending: false });
 
             if (error) {
@@ -98,38 +184,59 @@
                 return;
             }
 
-            renderizarPainel(data);
+            atualizarUI(data);
         }
 
-        function renderizarPainel(vendas) {
-            let bruto = 0; let taxas = 0; let liquido = 0;
+        function atualizarUI(vendas) {
             const corpo = document.getElementById('tabela-corpo');
+            const semDados = document.getElementById('sem-dados');
             corpo.innerHTML = '';
+            
+            if (vendas.length === 0) {
+                semDados.classList.remove('hidden');
+                document.getElementById('total-bruto').innerText = 'R$ 0,00';
+                document.getElementById('total-taxas').innerText = 'R$ 0,00';
+                document.getElementById('total-liquido').innerText = 'R$ 0,00';
+                document.getElementById('total-vendas').innerText = '0';
+                return;
+            }
+            
+            semDados.classList.add('hidden');
+            let tBruto = 0, tTaxa = 0, tLiq = 0;
 
             vendas.forEach(v => {
-                bruto += v.valor_bruto;
-                taxas += v.taxa_mp;
-                liquido += v.valor_liquido;
+                tBruto += v.valor_bruto;
+                tTaxa += v.taxa_mp;
+                tLiq += v.valor_liquido;
 
-                const dataFormatada = new Date(v.data_venda).toLocaleString('pt-BR');
+                const dataObj = new Date(v.data_venda);
+                const dataFormatada = dataObj.toLocaleDateString('pt-BR') + ' ' + dataObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
                 corpo.innerHTML += `
-                    <tr class="border-b hover:bg-slate-50 transition">
-                        <td class="px-6 py-4">${dataFormatada}</td>
-                        <td class="px-6 py-4 uppercase text-xs font-bold">${v.metodo_pagamento}</td>
-                        <td class="px-6 py-4 text-right font-mono">R$ ${v.valor_bruto.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-mono text-red-500">R$ ${v.taxa_mp.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-mono font-bold text-emerald-600">R$ ${v.valor_liquido.toFixed(2)}</td>
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-slate-500">${dataFormatada}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-slate-300 font-bold">ID ${v.id}</span>
+                                <span class="uppercase font-bold text-xs text-slate-700">${v.metodo_pagamento.replace('_', ' ')}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-700">R$ ${v.valor_bruto.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-bold text-red-500">- R$ ${v.taxa_mp.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-black text-emerald-600">R$ ${v.valor_liquido.toFixed(2)}</td>
                     </tr>
                 `;
             });
 
-            document.getElementById('total-bruto').innerText = `R$ ${bruto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('total-taxas').innerText = `- R$ ${taxas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('total-liquido').innerText = `R$ ${liquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            const fmt = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('total-bruto').innerText = fmt(tBruto);
+            document.getElementById('total-taxas').innerText = fmt(tTaxa);
+            document.getElementById('total-liquido').innerText = fmt(tLiq);
+            document.getElementById('total-vendas').innerText = vendas.length;
         }
 
-        // Carregar hoje ao iniciar
-        buscarVendas('hoje');
+        // Inicia carregando o dia de hoje
+        definirPeriodo('hoje');
     </script>
 </body>
 </html>
