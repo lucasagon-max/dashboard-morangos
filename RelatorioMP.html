@@ -18,232 +18,297 @@
         .heatmap-cell:hover { filter: brightness(0.9); transform: scale(1.1); z-index: 10; }
         .tab-active { border-bottom: 3px solid #dc2626; color: #dc2626; }
         .btn-filter-active { background-color: #dc2626 !important; color: white !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        /* Esconde o conteúdo antes do login */
+        #main-content { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
-    <!-- Header -->
-    <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="h-16 md:h-20 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
-                    <h1 class="hidden md:block text-xl font-extrabold text-red-600 uppercase tracking-tighter">Mercado Pago - Morangos Tatuí</h1>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Sync</span>
-                </div>
+    <!-- ── TELA DE LOGIN ── -->
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
+        <div class="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl text-center space-y-6">
+            <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-20 mx-auto">
+            <div class="space-y-2">
+                <h2 class="text-xl font-black text-slate-900">Acesso Restrito</h2>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Controle Financeiro</p>
             </div>
-            <!-- Navegação de Abas -->
-            <nav class="flex gap-8">
-                <button onclick="switchTab('geral')" id="tab-geral" class="tab-btn pb-3 text-sm font-bold text-slate-500 tab-active transition-all">Visão Geral</button>
-                <button onclick="switchTab('avancada')" id="tab-avancada" class="tab-btn pb-3 text-sm font-bold text-slate-500 transition-all">Análise Avançada</button>
-            </nav>
+            <div class="space-y-4">
+                <input type="password" id="password-input" placeholder="Digite a senha de acesso" 
+                    class="w-full px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-center font-bold">
+                <button onclick="checkAuth()" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-500/20">
+                    Entrar no Painel
+                </button>
+            </div>
+            <p id="login-error" class="text-red-500 text-[10px] font-bold uppercase hidden">Senha incorreta. Tente novamente.</p>
         </div>
-    </header>
+    </div>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-8">
-        
-        <!-- ABA 1: VISÃO GERAL -->
-        <section id="view-geral" class="space-y-6">
-            <!-- Filtros Específicos Geral -->
-            <div class="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border shadow-sm mb-6">
-                <div class="flex flex-wrap gap-2" id="filtros-geral">
-                    <button onclick="definirPeriodo('hoje', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600 btn-filter-active" data-id="hoje">Hoje</button>
-                    <button onclick="definirPeriodo('ontem', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="ontem">Ontem</button>
-                    <button onclick="definirPeriodo('7dias', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="7dias">7 dias</button>
-                    <button onclick="definirPeriodo('mes', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="mes">Este Mês</button>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="flex flex-col px-2 border-r">
-                        <span class="text-[9px] text-slate-400 font-bold uppercase">Início</span>
-                        <input type="date" id="data-inicio-geral" onchange="sincronizarDataFim('geral')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
+    <!-- ── CONTEÚDO DO DASHBOARD ── -->
+    <div id="main-content">
+        <!-- Header -->
+        <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="h-16 md:h-20 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
+                        <h1 class="hidden md:block text-xl font-extrabold text-red-600 uppercase tracking-tighter">Gestão Morangos Tatuí</h1>
                     </div>
-                    <div class="flex flex-col px-2">
-                        <span class="text-[9px] text-slate-400 font-bold uppercase">Fim</span>
-                        <input type="date" id="data-fim-geral" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
+                    <div class="flex items-center gap-4">
+                        <button onclick="logout()" class="text-[10px] font-bold text-slate-400 hover:text-red-600 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-lg">Sair</button>
+                        <div class="flex items-center gap-2 border-l pl-4">
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Sync</span>
+                        </div>
                     </div>
-                    <button onclick="definirPeriodo('personalizado', 'geral')" class="p-2 bg-slate-900 text-white rounded-lg hover:bg-red-600 transition h-full px-4 font-bold text-xs uppercase">Filtrar</button>
                 </div>
+                <!-- Navegação de Abas -->
+                <nav class="flex gap-8">
+                    <button onclick="switchTab('geral')" id="tab-geral" class="tab-btn pb-3 text-sm font-bold text-slate-500 tab-active transition-all">Visão Geral</button>
+                    <button onclick="switchTab('avancada')" id="tab-avancada" class="tab-btn pb-3 text-sm font-bold text-slate-500 transition-all">Análise Avançada</button>
+                </nav>
             </div>
+        </header>
 
-            <!-- Cards de Resumo -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Faturamento Bruto</p>
-                    <h2 id="total-bruto" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
+        <main class="max-w-7xl mx-auto p-4 md:p-8">
+            
+            <!-- ABA 1: VISÃO GERAL -->
+            <section id="view-geral" class="space-y-6">
+                <!-- Filtros Específicos Geral -->
+                <div class="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border shadow-sm mb-6">
+                    <div class="flex flex-wrap gap-2" id="filtros-geral">
+                        <button onclick="definirPeriodo('hoje', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600 btn-filter-active" data-id="hoje">Hoje</button>
+                        <button onclick="definirPeriodo('ontem', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="ontem">Ontem</button>
+                        <button onclick="definirPeriodo('7dias', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="7dias">7 dias</button>
+                        <button onclick="definirPeriodo('mes', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="mes">Este Mês</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex flex-col px-2 border-r">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Início</span>
+                            <input type="date" id="data-inicio-geral" onchange="sincronizarDataFim('geral')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
+                        </div>
+                        <div class="flex flex-col px-2">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Fim</span>
+                            <input type="date" id="data-fim-geral" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
+                        </div>
+                        <button onclick="definirPeriodo('personalizado', 'geral')" class="p-2 bg-slate-900 text-white rounded-lg hover:bg-red-600 transition h-full px-4 font-bold text-xs uppercase">Filtrar</button>
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
-                    <p class="text-red-400 text-[10px] font-black uppercase mb-1 tracking-widest">Taxas MP</p>
-                    <h2 id="total-taxas" class="text-2xl font-black text-red-600">R$ 0,00</h2>
-                </div>
-                <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-emerald-500">
-                    <p class="text-emerald-400 text-[10px] font-black uppercase mb-1 tracking-widest">Líquido Real</p>
-                    <h2 id="total-liquido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2>
-                </div>
-                <div class="bg-slate-900 p-5 rounded-3xl border shadow-sm">
-                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 tracking-widest text-white">Ticket Médio</p>
-                    <h2 id="ticket-medio" class="text-2xl font-black text-white">R$ 0,00</h2>
-                </div>
-            </div>
 
-            <!-- Gráficos Visão Geral -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm">
-                    <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Evolução Diária</h3>
-                    <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
+                <!-- Cards de Resumo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                        <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Faturamento Bruto</p>
+                        <h2 id="total-bruto" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
+                        <p class="text-red-400 text-[10px] font-black uppercase mb-1 tracking-widest">Taxas MP</p>
+                        <h2 id="total-taxas" class="text-2xl font-black text-red-600">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-emerald-500">
+                        <p class="text-emerald-400 text-[10px] font-black uppercase mb-1 tracking-widest">Líquido Real</p>
+                        <h2 id="total-liquido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-slate-900 p-5 rounded-3xl border shadow-sm">
+                        <p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 tracking-widest text-white">Ticket Médio</p>
+                        <h2 id="ticket-medio" class="text-2xl font-black text-white">R$ 0,00</h2>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Modalidades</h3>
-                    <div class="chart-container"><canvas id="chartCategorias"></canvas></div>
-                </div>
-            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Bandeiras Detalhadas</h3>
-                    <div class="chart-container"><canvas id="chartBandeiras"></canvas></div>
+                <!-- Gráficos Visão Geral -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm">
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Evolução Diária</h3>
+                        <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Modalidades</h3>
+                        <div class="chart-container"><canvas id="chartCategorias"></canvas></div>
+                    </div>
                 </div>
-                <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm overflow-hidden">
-                    <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Eficiência das Taxas</h3>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Bandeiras Detalhadas</h3>
+                        <div class="chart-container"><canvas id="chartBandeiras"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm overflow-hidden">
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Eficiência das Taxas</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="text-[10px] uppercase text-slate-400 font-black">
+                                    <tr>
+                                        <th class="pb-2">Modalidade</th>
+                                        <th class="pb-2 text-right">Volume</th>
+                                        <th class="pb-2 text-right text-red-400">Taxa Média</th>
+                                        <th class="pb-2 text-right text-emerald-600">Margem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-eficiencia" class="text-xs font-bold divide-y divide-slate-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Detalhada -->
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 text-sm">
+                            Histórico de Vendas: <span id="label-periodo-geral" class="text-red-600 uppercase font-black">HOJE</span>
+                        </h3>
+                        <span class="text-[10px] font-bold text-slate-400" id="count-vendas">0 vendas</span>
+                    </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="text-[10px] uppercase text-slate-400 font-black">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
                                 <tr>
-                                    <th class="pb-2">Modalidade</th>
-                                    <th class="pb-2 text-right">Volume</th>
-                                    <th class="pb-2 text-right text-red-400">Taxa Média</th>
-                                    <th class="pb-2 text-right text-emerald-600">Margem</th>
+                                    <th class="px-6 py-4">Data/Hora</th>
+                                    <th class="px-6 py-4">Cliente / Pagador</th>
+                                    <th class="px-6 py-4">Método</th>
+                                    <th class="px-6 py-4 text-right">Bruto</th>
+                                    <th class="px-6 py-4 text-right text-red-400">Taxa</th>
+                                    <th class="px-6 py-4 text-right text-emerald-600">Líquido</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabela-eficiencia" class="text-xs font-bold divide-y divide-slate-50"></tbody>
+                            <tbody id="tabela-corpo" class="text-[11px] divide-y divide-slate-50 bg-white font-medium"></tbody>
                         </table>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Tabela Detalhada -->
-            <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-700 text-sm">
-                        Histórico de Vendas: <span id="label-periodo-geral" class="text-red-600 uppercase font-black">HOJE</span>
-                    </h3>
-                    <span class="text-[10px] font-bold text-slate-400" id="count-vendas">0 vendas</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
-                            <tr>
-                                <th class="px-6 py-4">Data/Hora</th>
-                                <th class="px-6 py-4">Cliente / Pagador</th>
-                                <th class="px-6 py-4">Método</th>
-                                <th class="px-6 py-4 text-right">Bruto</th>
-                                <th class="px-6 py-4 text-right text-red-400">Taxa</th>
-                                <th class="px-6 py-4 text-right text-emerald-600">Líquido</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-corpo" class="text-[11px] divide-y divide-slate-50 bg-white font-medium"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ABA 2: ANÁLISE AVANÇADA -->
-        <section id="view-avancada" class="hidden space-y-6 animate-in fade-in duration-500">
-            <!-- Filtros Específicos Avançados -->
-            <div class="flex flex-col lg:flex-row justify-between gap-4 bg-slate-900 p-4 rounded-3xl border shadow-lg mb-6">
-                <div class="flex flex-wrap gap-2" id="filtros-avancado">
-                    <button onclick="definirPeriodo('7dias', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400" data-id="7dias">Últimos 7 dias</button>
-                    <button onclick="definirPeriodo('mes', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400 btn-filter-active" data-id="mes">Este Mês</button>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="flex flex-col px-2 border-r border-slate-700">
-                        <span class="text-[9px] text-slate-500 font-bold uppercase">Início</span>
-                        <input type="date" id="data-inicio-avancada" onchange="sincronizarDataFim('avancada')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
+            <!-- ABA 2: ANÁLISE AVANÇADA -->
+            <section id="view-avancada" class="hidden space-y-6 animate-in fade-in duration-500">
+                <!-- Filtros Específicos Avançados -->
+                <div class="flex flex-col lg:flex-row justify-between gap-4 bg-slate-900 p-4 rounded-3xl border shadow-lg mb-6">
+                    <div class="flex flex-wrap gap-2" id="filtros-avancado">
+                        <button onclick="definirPeriodo('7dias', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400" data-id="7dias">Últimos 7 dias</button>
+                        <button onclick="definirPeriodo('mes', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400 btn-filter-active" data-id="mes">Este Mês</button>
                     </div>
-                    <div class="flex flex-col px-2">
-                        <span class="text-[9px] text-slate-500 font-bold uppercase">Fim</span>
-                        <input type="date" id="data-fim-avancada" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
-                    </div>
-                    <button onclick="definirPeriodo('personalizado', 'avancada')" class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition h-full px-4 font-bold text-xs uppercase">Analisar Período</button>
-                </div>
-            </div>
-
-            <!-- Heatmap de Horários -->
-            <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h3 class="text-xs font-black uppercase text-slate-400">Mapa de Calor (Hábitos de Compra)</h3>
-                        <p class="text-[10px] text-slate-400 italic" id="label-periodo-avancada">Mostrando dados deste mês.</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-50 border"></div><span class="text-[8px] font-bold uppercase text-slate-400">Baixo</span></div>
-                        <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-600"></div><span class="text-[8px] font-bold uppercase text-slate-400">Pico</span></div>
-                    </div>
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <div class="min-w-[900px]">
-                        <div id="heatmap-header" class="grid grid-cols-[100px_repeat(24,1fr)] mb-2">
-                            <!-- Gerado via JS -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex flex-col px-2 border-r border-slate-700">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase">Início</span>
+                            <input type="date" id="data-inicio-avancada" onchange="sincronizarDataFim('avancada')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
                         </div>
-                        <div id="heatmap-body" class="space-y-1"></div>
+                        <div class="flex flex-col px-2">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase">Fim</span>
+                            <input type="date" id="data-fim-avancada" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
+                        </div>
+                        <button onclick="definirPeriodo('personalizado', 'avancada')" class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition h-full px-4 font-bold text-xs uppercase">Analisar Período</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Crescimento -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-8 rounded-3xl border shadow-sm flex flex-col justify-center items-center text-center">
-                    <h3 class="text-xs font-black uppercase text-slate-400 mb-8">Performance vs Período Anterior</h3>
-                    <div class="relative flex items-center justify-center">
-                        <svg class="w-40 h-40 transform -rotate-90">
-                            <circle cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
-                            <circle id="growth-circle" cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" stroke-dasharray="452.39" stroke-dashoffset="452.39" class="text-emerald-500 transition-all duration-1000 rounded-full" />
-                        </svg>
-                        <div class="absolute">
-                            <span id="growth-percent" class="text-3xl font-black text-slate-800">+0%</span>
+                <!-- Heatmap de Horários -->
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-xs font-black uppercase text-slate-400">Mapa de Calor (Hábitos de Compra)</h3>
+                            <p class="text-[10px] text-slate-400 italic" id="label-periodo-avancada">Mostrando dados deste mês.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-50 border"></div><span class="text-[8px] font-bold uppercase text-slate-400">Baixo</span></div>
+                            <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-600"></div><span class="text-[8px] font-bold uppercase text-slate-400">Pico</span></div>
                         </div>
                     </div>
-                    <p id="insight-semanal" class="mt-8 text-sm font-bold"></p>
+                    
+                    <div class="overflow-x-auto">
+                        <div class="min-w-[900px]">
+                            <div id="heatmap-header" class="grid grid-cols-[100px_repeat(24,1fr)] mb-2"></div>
+                            <div id="heatmap-body" class="space-y-1"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
-                    <h3 class="text-xs font-black uppercase text-slate-400">Volumes Comparativos</h3>
-                    <div class="space-y-6">
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                                <span>Período Anterior</span>
-                                <span id="vol-sem-passada">R$ 0,00</span>
-                            </div>
-                            <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
-                                <div id="bar-sem-passada" class="h-full bg-slate-300 transition-all duration-1000" style="width: 0%"></div>
+                <!-- Crescimento -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-8 rounded-3xl border shadow-sm flex flex-col justify-center items-center text-center">
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-8">Performance vs Período Anterior</h3>
+                        <div class="relative flex items-center justify-center">
+                            <svg class="w-40 h-40 transform -rotate-90">
+                                <circle cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
+                                <circle id="growth-circle" cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" stroke-dasharray="452.39" stroke-dashoffset="452.39" class="text-emerald-500 transition-all duration-1000 rounded-full" />
+                            </svg>
+                            <div class="absolute">
+                                <span id="growth-percent" class="text-3xl font-black text-slate-800">+0%</span>
                             </div>
                         </div>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-[10px] font-black uppercase text-red-600">
-                                <span>Período Seleccionado</span>
-                                <span id="vol-sem-atual">R$ 0,00</span>
+                        <p id="insight-semanal" class="mt-8 text-sm font-bold"></p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+                        <h3 class="text-xs font-black uppercase text-slate-400">Volumes Comparativos</h3>
+                        <div class="space-y-6">
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                                    <span>Período Anterior</span>
+                                    <span id="vol-sem-passada">R$ 0,00</span>
+                                </div>
+                                <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div id="bar-sem-passada" class="h-full bg-slate-300 transition-all duration-1000" style="width: 0%"></div>
+                                </div>
                             </div>
-                            <div class="h-3 bg-red-100 rounded-full overflow-hidden">
-                                <div id="bar-sem-atual" class="h-full bg-red-600 transition-all duration-1000" style="width: 0%"></div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[10px] font-black uppercase text-red-600">
+                                    <span>Período Seleccionado</span>
+                                    <span id="vol-sem-atual">R$ 0,00</span>
+                                </div>
+                                <div class="h-3 bg-red-100 rounded-full overflow-hidden">
+                                    <div id="bar-sem-atual" class="h-full bg-red-600 transition-all duration-1000" style="width: 0%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
+        </main>
+    </div>
 
     <script>
+        // === CONFIGURAÇÃO DE SEGURANÇA ===
+        const SENHA_MESTRA = "morango2026"; // <--- ALTERE A SENHA AQUI
+
+        function checkAuth() {
+            const input = document.getElementById('password-input').value;
+            const error = document.getElementById('login-error');
+            
+            if (input === SENHA_MESTRA) {
+                // Sucesso: Esconde login e mostra conteúdo
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-content').style.display = 'block';
+                // Salva na sessão para não pedir de novo enquanto a guia estiver aberta
+                sessionStorage.setItem('auth_morangos', 'true');
+                // Inicia o carregamento dos dados
+                definirPeriodo('hoje', 'geral');
+            } else {
+                error.classList.remove('hidden');
+                document.getElementById('password-input').value = "";
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('auth_morangos');
+            window.location.reload();
+        }
+
+        // Verifica se já está logado ao carregar
+        window.onload = () => {
+            if (sessionStorage.getItem('auth_morangos') === 'true') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-content').style.display = 'block';
+                definirPeriodo('hoje', 'geral');
+            }
+            
+            // Permite dar Enter no campo de senha
+            document.getElementById('password-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkAuth();
+            });
+        };
+
+        // === LÓGICA DO DASHBOARD ===
         const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         Chart.register(ChartDataLabels);
         let chEvol = null, chCat = null, chBand = null;
-        let vendasGeral = [], vendasAvancada = [];
 
         function switchTab(tab) {
             document.getElementById('view-geral').classList.toggle('hidden', tab !== 'geral');
@@ -299,15 +364,14 @@
             const { data, error } = await sb.from('vendas_mercado_pago').select('*').gte('data_venda', i.toISOString()).lte('data_venda', f.toISOString()).order('data_venda', {ascending: true});
             
             if(!error) {
-                if(tab === 'geral') { vendasGeral = data; renderGeral(data); }
-                else { vendasAvancada = data; renderAvancado(data); }
+                if(tab === 'geral') renderGeral(data);
+                else renderAvancado(data);
             }
         }
 
         function renderGeral(vendas) {
             const corpo = document.getElementById('tabela-corpo');
             const eficie = document.getElementById('tabela-eficiencia');
-            
             if(!corpo || !eficie) return;
 
             corpo.innerHTML = ''; eficie.innerHTML = '';
@@ -316,13 +380,10 @@
             vendas.forEach(v => {
                 b += v.valor_bruto; t += v.taxa_mp; l += v.valor_liquido;
                 const info = traduzirPagamento(v.metodo_pagamento);
-                
                 if(!catStats[info.cat]) catStats[info.cat] = { vol: 0, taxa: 0, color: info.color };
                 catStats[info.cat].vol += v.valor_bruto; catStats[info.cat].taxa += v.taxa_mp;
-                
                 if(!bandStats[info.label]) bandStats[info.label] = { vol: 0, color: info.color };
                 bandStats[info.label].vol += v.valor_bruto;
-                
                 const dia = new Date(v.data_venda).toLocaleDateString('pt-BR');
                 evol[dia] = (evol[dia] || 0) + v.valor_bruto;
 
@@ -349,44 +410,31 @@
             document.getElementById('count-vendas').innerText = `${vendas.length} vendas`;
             document.getElementById('ticket-medio').innerText = f(vendas.length ? b/vendas.length : 0);
 
-            // Gráficos
-            const canvasEvol = document.getElementById('chartEvolucao');
-            if(canvasEvol) {
-                if(chEvol) chEvol.destroy();
-                chEvol = new Chart(canvasEvol, {
-                    type:'line', data:{labels:Object.keys(evol), datasets:[{data:Object.values(evol), borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,0.1)', fill:true, tension:0.4, borderWidth:4, pointRadius:4}]},
-                    options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{beginAtZero:true}}}
-                });
-            }
+            if(chEvol) chEvol.destroy();
+            chEvol = new Chart(document.getElementById('chartEvolucao'), {
+                type:'line', data:{labels:Object.keys(evol), datasets:[{data:Object.values(evol), borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,0.1)', fill:true, tension:0.4, borderWidth:4, pointRadius:4}]},
+                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{beginAtZero:true}}}
+            });
 
-            const canvasCat = document.getElementById('chartCategorias');
-            if(canvasCat) {
-                if(chCat) chCat.destroy();
-                chCat = new Chart(canvasCat, {
-                    type:'doughnut', data:{labels:Object.keys(catStats), datasets:[{data:Object.values(catStats).map(s=>s.vol), backgroundColor:Object.values(catStats).map(s=>s.color), borderWidth:0}]},
-                    options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels: {color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v, c) => (v * 100 / c.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0) + "%", display: (c) => c.dataset.data[c.dataIndex] / c.dataset.data.reduce((a,b)=>a+b,0) > 0.05 }}}
-                });
-            }
+            if(chCat) chCat.destroy();
+            chCat = new Chart(document.getElementById('chartCategorias'), {
+                type:'doughnut', data:{labels:Object.keys(catStats), datasets:[{data:Object.values(catStats).map(s=>s.vol), backgroundColor:Object.values(catStats).map(s=>s.color), borderWidth:0}]},
+                options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels: {color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v, c) => (v * 100 / c.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0) + "%", display: (c) => c.dataset.data[c.dataIndex] / c.dataset.data.reduce((a,b)=>a+b,0) > 0.05 }}}
+            });
 
-            const canvasBand = document.getElementById('chartBandeiras');
-            if(canvasBand) {
-                if(chBand) chBand.destroy();
-                chBand = new Chart(canvasBand, {
-                    type:'bar', data:{labels:Object.keys(bandStats), datasets:[{data:Object.values(bandStats).map(s=>s.vol), backgroundColor:Object.values(bandStats).map(s=>s.color), borderRadius:6}]},
-                    options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels: {anchor:'end', align:'top', font:{size:8, weight:'bold'}, formatter: (v) => 'R$'+v.toFixed(0)}}, scales:{x:{grid:{display:false}, ticks:{font:{size:8}}}, y:{display:false}}}
-                });
-            }
+            if(chBand) chBand.destroy();
+            chBand = new Chart(document.getElementById('chartBandeiras'), {
+                type:'bar', data:{labels:Object.keys(bandStats), datasets:[{data:Object.values(bandStats).map(s=>s.vol), backgroundColor:Object.values(bandStats).map(s=>s.color), borderRadius:6}]},
+                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels: {anchor:'end', align:'top', font:{size:8, weight:'bold'}, formatter: (v) => 'R$'+v.toFixed(0)}}, scales:{x:{grid:{display:false}, ticks:{font:{size:8}}}, y:{display:false}}}
+            });
         }
 
         function renderAvancado(vendas) {
             const header = document.getElementById('heatmap-header');
             const body = document.getElementById('heatmap-body');
-            
             if(!header || !body) return;
 
-            // Gerar Header de Horas
             header.innerHTML = '<div></div>' + Array.from({length: 24}).map((_, i) => `<div class="text-[9px] font-bold text-slate-400 text-center">${i}h</div>`).join('');
-            
             body.innerHTML = '';
             const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             const matriz = Array.from({length: 7}, () => Array(24).fill(0));
@@ -414,37 +462,24 @@
                 body.innerHTML += htmlLinha;
             });
 
-            // Lógica de Crescimento
             const metade = Math.floor(vendas.length / 2);
             const primeiraMetade = vendas.slice(0, metade).reduce((a,v)=>a+v.valor_bruto, 0);
             const segundaMetade = vendas.slice(metade).reduce((a,v)=>a+v.valor_bruto, 0);
-            
             const cresc = primeiraMetade ? ((segundaMetade - primeiraMetade) / primeiraMetade * 100) : 0;
-            const growthPercentEl = document.getElementById('growth-percent');
-            const growthCircleEl = document.getElementById('growth-circle');
             
-            if(growthPercentEl) growthPercentEl.innerText = (cresc >= 0 ? '+' : '') + cresc.toFixed(1) + '%';
-            if(growthCircleEl) growthCircleEl.style.strokeDashoffset = 452.39 - (Math.min(Math.max(cresc, 0), 100) / 100 * 452.39);
+            document.getElementById('growth-percent').innerText = (cresc >= 0 ? '+' : '') + cresc.toFixed(1) + '%';
+            document.getElementById('growth-circle').style.strokeDashoffset = 452.39 - (Math.min(Math.max(cresc, 0), 100) / 100 * 452.39);
+            document.getElementById('vol-sem-passada').innerText = 'R$ ' + primeiraMetade.toLocaleString();
+            document.getElementById('vol-sem-atual').innerText = 'R$ ' + segundaMetade.toLocaleString();
             
-            const volPassadaEl = document.getElementById('vol-sem-passada');
-            const volAtualEl = document.getElementById('vol-sem-atual');
-            if(volPassadaEl) volPassadaEl.innerText = 'R$ ' + primeiraMetade.toLocaleString();
-            if(volAtualEl) volAtualEl.innerText = 'R$ ' + segundaMetade.toLocaleString();
-            
-            const barPassadaEl = document.getElementById('bar-sem-passada');
-            const barAtualEl = document.getElementById('bar-sem-atual');
             const totalComp = primeiraMetade + segundaMetade;
-            if(barPassadaEl) barPassadaEl.style.width = totalComp ? (primeiraMetade/totalComp*100)+'%' : '50%';
-            if(barAtualEl) barAtualEl.style.width = totalComp ? (segundaMetade/totalComp*100)+'%' : '50%';
+            document.getElementById('bar-sem-passada').style.width = totalComp ? (primeiraMetade/totalComp*100)+'%' : '50%';
+            document.getElementById('bar-sem-atual').style.width = totalComp ? (segundaMetade/totalComp*100)+'%' : '50%';
             
             const insightEl = document.getElementById('insight-semanal');
-            if(insightEl) {
-                insightEl.innerText = cresc >= 0 ? 'Excelente! O volume de vendas está a subir.' : 'Atenção! O volume está abaixo da metade anterior.';
-                insightEl.className = `mt-8 text-sm font-bold ${cresc >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
-            }
+            insightEl.innerText = cresc >= 0 ? 'Excelente! O volume de vendas está a subir.' : 'Atenção! O volume está abaixo da metade anterior.';
+            insightEl.className = `mt-8 text-sm font-bold ${cresc >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
         }
-
-        window.onload = () => definirPeriodo('hoje', 'geral');
     </script>
 </body>
 </html>
