@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Vendas | Morangos Tatuí</title>
+    <link rel="icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 font-sans">
+
+    <header class="bg-white border-b sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
+            <div class="text-right">
+                <h1 class="text-lg font-bold text-slate-800">Controle de Taxas MP</h1>
+                <p class="text-xs text-slate-500 uppercase tracking-wider">Morangos Tatuí</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+        
+        <div class="flex flex-wrap gap-2 mb-8" id="filtros">
+            <button onclick="buscarVendas('hoje')" class="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition shadow-sm">Hoje</button>
+            <button onclick="buscarVendas('ontem')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Ontem</button>
+            <button onclick="buscarVendas('7dias')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Últimos 7 dias</button>
+            <button onclick="buscarVendas('mes')" class="px-4 py-2 bg-white border text-slate-600 rounded-full text-sm font-medium hover:bg-slate-100 transition shadow-sm">Este Mês</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Vendas (Bruto)</p>
+                <h2 id="total-bruto" class="text-3xl font-black text-slate-800 font-mono">R$ 0,00</h2>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
+                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Taxas Retidas</p>
+                <h2 id="total-taxas" class="text-3xl font-black text-red-600 font-mono">- R$ 0,00</h2>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
+                <p class="text-slate-500 text-xs font-bold uppercase mb-1">Líquido em Conta</p>
+                <h2 id="total-liquido" class="text-3xl font-black text-emerald-600 font-mono">R$ 0,00</h2>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b bg-slate-50/50">
+                <h3 class="font-bold text-slate-700">Extrato Detalhado</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="text-xs uppercase text-slate-400 bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 font-semibold">Data/Hora</th>
+                            <th class="px-6 py-3 font-semibold">Método</th>
+                            <th class="px-6 py-3 font-semibold text-right">Bruto</th>
+                            <th class="px-6 py-3 font-semibold text-right text-red-400">Taxa</th>
+                            <th class="px-6 py-3 font-semibold text-right text-emerald-500">Líquido</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo" class="text-sm text-slate-600">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // === CONFIGURAÇÃO DO SUPABASE ===
+        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
+        const SUPABASE_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function buscarVendas(periodo) {
+            let dataInicio = new Date();
+            dataInicio.setHours(0, 0, 0, 0);
+
+            if (periodo === 'ontem') {
+                dataInicio.setDate(dataInicio.getDate() - 1);
+                let dataFim = new Date(dataInicio);
+                dataFim.setHours(23, 59, 59, 999);
+                // Ajuste para pegar apenas o dia de ontem
+            } else if (periodo === '7dias') {
+                dataInicio.setDate(dataInicio.getDate() - 7);
+            } else if (periodo === 'mes') {
+                dataInicio.setDate(1);
+            }
+
+            const { data, error } = await supabase
+                .from('vendas_mercado_pago')
+                .select('*')
+                .gte('data_venda', dataInicio.toISOString())
+                .order('data_venda', { ascending: false });
+
+            if (error) {
+                console.error('Erro:', error);
+                return;
+            }
+
+            renderizarPainel(data);
+        }
+
+        function renderizarPainel(vendas) {
+            let bruto = 0; let taxas = 0; let liquido = 0;
+            const corpo = document.getElementById('tabela-corpo');
+            corpo.innerHTML = '';
+
+            vendas.forEach(v => {
+                bruto += v.valor_bruto;
+                taxas += v.taxa_mp;
+                liquido += v.valor_liquido;
+
+                const dataFormatada = new Date(v.data_venda).toLocaleString('pt-BR');
+                corpo.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="px-6 py-4">${dataFormatada}</td>
+                        <td class="px-6 py-4 uppercase text-xs font-bold">${v.metodo_pagamento}</td>
+                        <td class="px-6 py-4 text-right font-mono">R$ ${v.valor_bruto.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-mono text-red-500">R$ ${v.taxa_mp.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-mono font-bold text-emerald-600">R$ ${v.valor_liquido.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('total-bruto').innerText = `R$ ${bruto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('total-taxas').innerText = `- R$ ${taxas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('total-liquido').innerText = `R$ ${liquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+
+        // Carregar hoje ao iniciar
+        buscarVendas('hoje');
+    </script>
+</body>
+</html>
