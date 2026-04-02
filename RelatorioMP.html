@@ -3,239 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Vendas | Morangos Tatuí</title>
+    <title>Dashboard Pro | Morangos Tatuí</title>
     <link rel="icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
     <!-- Header -->
-    <header class="bg-white border-b sticky top-0 z-20 shadow-sm">
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 h-16 md:h-20 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
                 <div class="hidden md:block h-8 w-px bg-slate-200"></div>
-                <h1 class="hidden md:block text-xl font-extrabold text-red-600">Gestão Financeira</h1>
+                <h1 class="hidden md:block text-xl font-extrabold text-red-600">Performance de Vendas</h1>
             </div>
-            <div id="user-status" class="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Dashboard V1.0
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md font-bold animate-pulse">AO VIVO</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-8">
+    <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
         
-        <!-- Filtros Rápidos -->
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-            <div class="space-y-3">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Período de Análise</label>
-                <div class="flex flex-wrap gap-2" id="filtros-botoes">
-                    <button onclick="definirPeriodo('hoje')" class="btn-periodo px-5 py-2 bg-red-600 text-white rounded-full text-sm font-semibold shadow-md transition-all active:scale-95" data-id="hoje">Hoje</button>
-                    <button onclick="definirPeriodo('ontem')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="ontem">Ontem</button>
-                    <button onclick="definirPeriodo('7dias')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="7dias">7 dias</button>
-                    <button onclick="definirPeriodo('semana')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="semana">Esta Semana</button>
-                    <button onclick="definirPeriodo('mes')" class="btn-periodo px-5 py-2 bg-white border text-slate-600 rounded-full text-sm font-semibold hover:bg-slate-100 transition-all active:scale-95" data-id="mes">Este Mês</button>
-                </div>
+        <!-- Filtros e Período -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="flex flex-wrap gap-2" id="filtros-botoes">
+                <button onclick="definirPeriodo('hoje')" class="btn-periodo px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95" data-id="hoje">Hoje</button>
+                <button onclick="definirPeriodo('ontem')" class="btn-periodo px-5 py-2.5 bg-white border text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100 transition-all active:scale-95" data-id="ontem">Ontem</button>
+                <button onclick="definirPeriodo('7dias')" class="btn-periodo px-5 py-2.5 bg-white border text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100 transition-all active:scale-95" data-id="7dias">7 dias</button>
+                <button onclick="definirPeriodo('mes')" class="btn-periodo px-5 py-2.5 bg-white border text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100 transition-all active:scale-95" data-id="mes">Este Mês</button>
             </div>
 
-            <!-- Filtro Personalizado -->
-            <div class="bg-white p-3 rounded-2xl border shadow-sm flex items-center gap-3">
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Início</span>
-                    <input type="date" id="data-inicio" class="text-sm font-medium focus:outline-none p-1">
-                </div>
-                <div class="h-6 w-px bg-slate-200"></div>
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Fim</span>
-                    <input type="date" id="data-fim" class="text-sm font-medium focus:outline-none p-1">
-                </div>
-                <button onclick="definirPeriodo('personalizado')" class="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            <div class="bg-white p-2 rounded-2xl border shadow-sm flex flex-wrap items-center gap-3">
+                <input type="date" id="data-inicio" class="text-sm font-semibold p-1 border-none focus:ring-0">
+                <span class="text-slate-300 font-bold">até</span>
+                <input type="date" id="data-fim" class="text-sm font-semibold p-1 border-none focus:ring-0">
+                <button onclick="definirPeriodo('personalizado')" class="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                 </button>
             </div>
         </div>
 
-        <!-- Cards de Resumo -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 overflow-hidden relative">
-                <div class="absolute top-0 right-0 p-3 opacity-10">
-                    <svg width="60" height="60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-                </div>
-                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Total Bruto</p>
+        <!-- Cards de Resumo Principais -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Bruto</p>
                 <h2 id="total-bruto" class="text-3xl font-black text-slate-800">R$ 0,00</h2>
             </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
-                <p class="text-red-400 text-xs font-black uppercase tracking-widest mb-1">Taxas Retidas</p>
+            <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
+                <p class="text-red-400 text-[10px] font-black uppercase tracking-widest mb-1">Taxas Totais</p>
                 <h2 id="total-taxas" class="text-3xl font-black text-red-600">R$ 0,00</h2>
             </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
-                <p class="text-emerald-400 text-xs font-black uppercase tracking-widest mb-1">Líquido Estimado</p>
+            <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-emerald-500">
+                <p class="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-1">Líquido Real</p>
                 <h2 id="total-liquido" class="text-3xl font-black text-emerald-600">R$ 0,00</h2>
             </div>
-            <div class="bg-slate-900 p-6 rounded-3xl shadow-sm">
-                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1 text-white opacity-60">Qtd. Vendas</p>
-                <h2 id="total-vendas" class="text-3xl font-black text-white">0</h2>
+            <div class="bg-slate-900 p-6 rounded-3xl border shadow-sm">
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Ticket Médio</p>
+                <h2 id="ticket-medio" class="text-3xl font-black text-white">R$ 0,00</h2>
+            </div>
+        </div>
+
+        <!-- Seção de Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Gráfico de Evolução -->
+            <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    Evolução das Vendas
+                </h3>
+                <div class="chart-container">
+                    <canvas id="chartEvolucao"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico de Modalidades -->
+            <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                    Métodos de Pagamento
+                </h3>
+                <div class="chart-container">
+                    <canvas id="chartMetodos"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights Extras -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-red-50 p-6 rounded-3xl border border-red-100 flex flex-col items-center text-center">
+                <span class="text-red-500 font-black text-2xl mb-1" id="perc-taxa">0%</span>
+                <span class="text-red-400 text-[10px] font-bold uppercase">Média de Taxas Retidas</span>
+            </div>
+            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 flex flex-col items-center text-center">
+                <span class="text-blue-500 font-black text-2xl mb-1" id="qtd-vendas">0</span>
+                <span class="text-blue-400 text-[10px] font-bold uppercase">Total de Pedidos</span>
+            </div>
+            <div class="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex flex-col items-center text-center">
+                <span class="text-amber-600 font-black text-xl mb-1" id="metodo-favorito">-</span>
+                <span class="text-amber-500 text-[10px] font-bold uppercase">Método Mais Usado</span>
             </div>
         </div>
 
         <!-- Tabela -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h3 class="font-bold text-slate-800">Histórico de Transações</h3>
-                <span id="label-periodo" class="text-[10px] bg-slate-100 px-3 py-1 rounded-full font-bold uppercase text-slate-500">Hoje</span>
+        <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-800">Detalhes das Transações</h3>
+                <span id="label-periodo" class="text-[10px] bg-slate-200 px-3 py-1 rounded-full font-bold uppercase text-slate-600">Hoje</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
                         <tr>
                             <th class="px-6 py-4">Data e Hora</th>
-                            <th class="px-6 py-4">ID / Método</th>
-                            <th class="px-6 py-4 text-right">Valor Bruto</th>
-                            <th class="px-6 py-4 text-right">Taxa (MP)</th>
-                            <th class="px-6 py-4 text-right">Líquido</th>
+                            <th class="px-6 py-4">Método</th>
+                            <th class="px-6 py-4 text-right">Bruto</th>
+                            <th class="px-6 py-4 text-right text-red-400">Taxa</th>
+                            <th class="px-6 py-4 text-right text-emerald-600">Líquido</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-corpo" class="text-sm divide-y divide-slate-50">
-                        <!-- Gerado por JS -->
-                    </tbody>
+                    <tbody id="tabela-corpo" class="text-sm divide-y divide-slate-50"></tbody>
                 </table>
-            </div>
-            <div id="sem-dados" class="hidden p-12 text-center text-slate-400 italic">
-                Nenhuma venda encontrada para o período selecionado.
             </div>
         </div>
     </main>
 
     <script>
-        // === CONFIGURAÇÃO SUPABASE ATUALIZADA ===
+        // === CONFIGURAÇÃO SUPABASE ===
         const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function definirPeriodo(tipo) {
-            let dataInicio = new Date();
-            let dataFim = new Date();
-            
-            // Ajuste de horas para o início do dia
-            dataInicio.setHours(0, 0, 0, 0);
-            dataFim.setHours(23, 59, 59, 999);
+        // Variáveis para os gráficos
+        let chartEvolucao = null;
+        let chartMetodos = null;
 
-            // Atualiza UI dos botões
+        async function definirPeriodo(tipo) {
+            let inicio = new Date();
+            let fim = new Date();
+            inicio.setHours(0, 0, 0, 0);
+            fim.setHours(23, 59, 59, 999);
+
             document.querySelectorAll('.btn-periodo').forEach(btn => {
-                if(btn.dataset.id === tipo) {
-                    btn.classList.add('bg-red-600', 'text-white');
-                    btn.classList.remove('bg-white', 'text-slate-600');
-                } else {
-                    btn.classList.remove('bg-red-600', 'text-white');
-                    btn.classList.add('bg-white', 'text-slate-600');
-                }
+                const isActive = btn.dataset.id === tipo;
+                btn.classList.toggle('bg-red-600', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('bg-white', !isActive);
+                btn.classList.toggle('text-slate-600', !isActive);
             });
 
-            switch (tipo) {
-                case 'hoje':
-                    document.getElementById('label-periodo').innerText = 'Hoje';
-                    break;
-                case 'ontem':
-                    dataInicio.setDate(dataInicio.getDate() - 1);
-                    dataFim.setDate(dataFim.getDate() - 1);
-                    document.getElementById('label-periodo').innerText = 'Ontem';
-                    break;
-                case '7dias':
-                    dataInicio.setDate(dataInicio.getDate() - 7);
-                    document.getElementById('label-periodo').innerText = 'Últimos 7 dias';
-                    break;
-                case 'semana':
-                    const diaDaSemana = dataInicio.getDay(); // 0 (domingo) a 6 (sábado)
-                    dataInicio.setDate(dataInicio.getDate() - diaDaSemana);
-                    document.getElementById('label-periodo').innerText = 'Esta Semana';
-                    break;
-                case 'mes':
-                    dataInicio.setDate(1);
-                    document.getElementById('label-periodo').innerText = 'Este Mês';
-                    break;
-                case 'personalizado':
-                    const inicioManual = document.getElementById('data-inicio').value;
-                    const fimManual = document.getElementById('data-fim').value;
-                    if (!inicioManual || !fimManual) return alert('Selecione as datas de início e fim');
-                    dataInicio = new Date(inicioManual + 'T00:00:00');
-                    dataFim = new Date(fimManual + 'T23:59:59');
-                    document.getElementById('label-periodo').innerText = 'Personalizado';
-                    break;
+            if (tipo === 'ontem') {
+                inicio.setDate(inicio.getDate() - 1);
+                fim.setDate(fim.getDate() - 1);
+                document.getElementById('label-periodo').innerText = 'Ontem';
+            } else if (tipo === '7dias') {
+                inicio.setDate(inicio.getDate() - 7);
+                document.getElementById('label-periodo').innerText = 'Últimos 7 dias';
+            } else if (tipo === 'mes') {
+                inicio.setDate(1);
+                document.getElementById('label-periodo').innerText = 'Este Mês';
+            } else if (tipo === 'personalizado') {
+                const dI = document.getElementById('data-inicio').value;
+                const dF = document.getElementById('data-fim').value;
+                if (!dI || !dF) return alert('Selecione as datas');
+                inicio = new Date(dI + 'T00:00:00');
+                fim = new Date(dF + 'T23:59:59');
+                document.getElementById('label-periodo').innerText = 'Personalizado';
+            } else {
+                document.getElementById('label-periodo').innerText = 'Hoje';
             }
 
-            carregarVendas(dataInicio, dataFim);
+            carregarDados(inicio, fim);
         }
 
-        async function carregarVendas(inicio, fim) {
+        async function carregarDados(inicio, fim) {
             const { data, error } = await supabaseClient
                 .from('vendas_mercado_pago')
                 .select('*')
                 .gte('data_venda', inicio.toISOString())
                 .lte('data_venda', fim.toISOString())
-                .order('data_venda', { ascending: false });
+                .order('data_venda', { ascending: true });
 
-            if (error) {
-                console.error('Erro:', error);
-                return;
-            }
-
-            atualizarUI(data);
+            if (error) return console.error(error);
+            processarDados(data);
         }
 
-        function atualizarUI(vendas) {
+        function processarDados(vendas) {
             const corpo = document.getElementById('tabela-corpo');
-            const semDados = document.getElementById('sem-dados');
             corpo.innerHTML = '';
             
-            if (vendas.length === 0) {
-                semDados.classList.remove('hidden');
-                document.getElementById('total-bruto').innerText = 'R$ 0,00';
-                document.getElementById('total-taxas').innerText = 'R$ 0,00';
-                document.getElementById('total-liquido').innerText = 'R$ 0,00';
-                document.getElementById('total-vendas').innerText = '0';
-                return;
-            }
-            
-            semDados.classList.add('hidden');
-            let tBruto = 0, tTaxa = 0, tLiq = 0;
+            let bruto = 0, taxas = 0, liquido = 0;
+            const metodosCount = {};
+            const evolucaoData = {};
 
             vendas.forEach(v => {
-                tBruto += v.valor_bruto;
-                tTaxa += v.taxa_mp;
-                tLiq += v.valor_liquido;
+                bruto += v.valor_bruto;
+                taxas += v.taxa_mp;
+                liquido += v.valor_liquido;
 
-                const dataObj = new Date(v.data_venda);
-                const dataFormatada = dataObj.toLocaleDateString('pt-BR') + ' ' + dataObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                // Contagem métodos
+                const m = v.metodo_pagamento || 'Outro';
+                metodosCount[m] = (metodosCount[m] || 0) + v.valor_bruto;
 
-                corpo.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-slate-500">${dataFormatada}</td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col">
-                                <span class="text-[10px] text-slate-300 font-bold">ID ${v.id}</span>
-                                <span class="uppercase font-bold text-xs text-slate-700">${v.metodo_pagamento.replace('_', ' ')}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right font-bold text-slate-700">R$ ${v.valor_bruto.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-bold text-red-500">- R$ ${v.taxa_mp.toFixed(2)}</td>
+                // Agrupamento para gráfico de linha (por dia)
+                const dia = new Date(v.data_venda).toLocaleDateString('pt-BR');
+                evolucaoData[dia] = (evolucaoData[dia] || 0) + v.valor_bruto;
+
+                // Tabela (Invertendo ordem para os mais recentes no topo)
+                const row = `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-4 font-medium text-slate-500 italic">${new Date(v.data_venda).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="px-6 py-4 font-bold uppercase text-[10px] text-slate-700">${v.metodo_pagamento.replace('_',' ')}</td>
+                        <td class="px-6 py-4 text-right font-bold tracking-tight">R$ ${v.valor_bruto.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-bold text-red-500">R$ ${v.taxa_mp.toFixed(2)}</td>
                         <td class="px-6 py-4 text-right font-black text-emerald-600">R$ ${v.valor_liquido.toFixed(2)}</td>
-                    </tr>
-                `;
+                    </tr>`;
+                corpo.insertAdjacentHTML('afterbegin', row);
             });
 
-            const fmt = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('total-bruto').innerText = fmt(tBruto);
-            document.getElementById('total-taxas').innerText = fmt(tTaxa);
-            document.getElementById('total-liquido').innerText = fmt(tLiq);
-            document.getElementById('total-vendas').innerText = vendas.length;
+            // Atualizar Cards
+            const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('total-bruto').innerText = fmt(bruto);
+            document.getElementById('total-taxas').innerText = fmt(taxas);
+            document.getElementById('total-liquido').innerText = fmt(liquido);
+            document.getElementById('qtd-vendas').innerText = vendas.length;
+            document.getElementById('ticket-medio').innerText = vendas.length ? fmt(bruto / vendas.length) : 'R$ 0,00';
+            document.getElementById('perc-taxa').innerText = bruto ? ((taxas / bruto) * 100).toFixed(1) + '%' : '0%';
+
+            // Determinar método favorito
+            let favorito = '-';
+            let maxM = 0;
+            for(let key in metodosCount) {
+                if(metodosCount[key] > maxM) { maxM = metodosCount[key]; favorito = key; }
+            }
+            document.getElementById('metodo-favorito').innerText = favorito.replace('_', ' ').toUpperCase();
+
+            renderizarGraficos(evolucaoData, metodosCount);
         }
 
-        // Inicia carregando o dia de hoje
+        function renderizarGraficos(evolucao, metodos) {
+            // Gráfico de Linha (Evolução)
+            const ctxEvol = document.getElementById('chartEvolucao').getContext('2d');
+            if (chartEvolucao) chartEvolucao.destroy();
+            chartEvolucao = new Chart(ctxEvol, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(evolucao),
+                    datasets: [{
+                        label: 'Vendas Brutas (R$)',
+                        data: Object.values(evolucao),
+                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Gráfico de Pizza (Métodos)
+            const ctxMet = document.getElementById('chartMetodos').getContext('2d');
+            if (chartMetodos) chartMetodos.destroy();
+            chartMetodos = new Chart(ctxMet, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(metodos).map(k => k.toUpperCase()),
+                    datasets: [{
+                        data: Object.values(metodos),
+                        backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Início
         definirPeriodo('hoje');
     </script>
 </body>
