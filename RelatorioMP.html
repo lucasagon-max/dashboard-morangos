@@ -18,14 +18,14 @@
         .tab-active { border-bottom: 3px solid #dc2626; color: #dc2626; }
         .btn-filter-active { background-color: #dc2626 !important; color: white !important; }
         #main-content { display: none; }
-        .truncate-name { max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .truncate-name { max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
     <!-- ── TELA DE LOGIN ── -->
     <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
-        <div class="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl text-center space-y-6">
+        <div class="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl text-center space-y-6 border-t-8 border-red-600">
             <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-20 mx-auto">
             <div class="space-y-2">
                 <h2 class="text-xl font-black text-slate-900 italic">Acesso Restrito</h2>
@@ -62,7 +62,7 @@
 
         <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
             
-            <!-- FILTROS (Comuns às abas, mas independentes em lógica) -->
+            <!-- FILTROS -->
             <div class="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border shadow-sm">
                 <div class="flex flex-wrap gap-2" id="filtros-container">
                     <button onclick="definirPeriodo('hoje')" class="btn-periodo px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600 btn-filter-active" data-id="hoje">Hoje</button>
@@ -81,58 +81,56 @@
             <!-- CARDS DE MÉTRICAS -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-slate-200">
-                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Faturamento Bruto</p>
-                    <h2 id="total-bruto" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
+                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest text-center sm:text-left">Faturamento Bruto</p>
+                    <h2 id="total-bruto" class="text-2xl font-black text-slate-800 text-center sm:text-left">R$ 0,00</h2>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
-                    <p class="text-red-400 text-[10px] font-black uppercase mb-1 tracking-widest">Taxas Retidas</p>
-                    <h2 id="total-taxas" class="text-2xl font-black text-red-600">R$ 0,00</h2>
+                    <p class="text-red-400 text-[10px] font-black uppercase mb-1 tracking-widest text-center sm:text-left">Taxas Retidas</p>
+                    <h2 id="total-taxas" class="text-2xl font-black text-red-600 text-center sm:text-left">R$ 0,00</h2>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-emerald-500">
-                    <p class="text-emerald-400 text-[10px] font-black uppercase mb-1 tracking-widest">Saldo Líquido</p>
-                    <h2 id="total-liquido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2>
+                    <p class="text-emerald-400 text-[10px] font-black uppercase mb-1 tracking-widest text-center sm:text-left">Saldo Líquido</p>
+                    <h2 id="total-liquido" class="text-2xl font-black text-emerald-600 text-center sm:text-left">R$ 0,00</h2>
                 </div>
                 <div class="bg-slate-900 p-5 rounded-3xl border shadow-sm">
-                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 tracking-widest text-white">Ticket Médio</p>
-                    <h2 id="ticket-medio" class="text-2xl font-black text-white">R$ 0,00</h2>
+                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 tracking-widest text-white text-center sm:text-left">Vendas / Ticket Médio</p>
+                    <div class="flex flex-col sm:flex-row items-center sm:items-end gap-2 justify-center sm:justify-start">
+                        <h2 id="count-vendas" class="text-2xl font-black text-white leading-none">0</h2>
+                        <span id="ticket-medio" class="text-[10px] text-red-400 font-bold uppercase mb-1">R$ 0,00</span>
+                    </div>
                 </div>
             </div>
 
             <!-- ABA 1: VISÃO GERAL -->
             <section id="view-geral" class="space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Gráfico de Evolução -->
                     <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6">Evolução de Faturamento</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6 italic">Evolução Diária de Faturamento</h3>
                         <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                     </div>
-                    <!-- Gráfico de Categorias -->
                     <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6 text-center">Modalidades</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6 text-center">Meios de Pagamento</h3>
                         <div class="chart-container"><canvas id="chartCategorias"></canvas></div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Gráfico de Origem -->
                     <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6">Origem das Vendas</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6 italic">Canal de Origem</h3>
                         <div class="chart-container"><canvas id="chartOrigem"></canvas></div>
                     </div>
-                    <!-- Gráfico de Bandeiras -->
                     <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6">Bandeiras Detalhadas</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-6 italic text-center">Bandeiras Detalhadas</h3>
                         <div class="chart-container"><canvas id="chartBandeiras"></canvas></div>
                     </div>
                 </div>
 
-                <!-- Tabela de Transações -->
+                <!-- Tabela de Transações Restaurada -->
                 <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
                     <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                         <h3 class="font-bold text-slate-700 text-sm italic">
-                            Histórico do Período: <span id="label-periodo" class="text-red-600 uppercase font-black tracking-tighter">HOJE</span>
+                            Histórico de Lançamentos: <span id="label-periodo" class="text-red-600 uppercase font-black tracking-tighter">HOJE</span>
                         </h3>
-                        <span class="text-[10px] font-bold text-slate-400" id="count-vendas">0 vendas</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -142,7 +140,9 @@
                                     <th class="px-6 py-4">Cliente</th>
                                     <th class="px-6 py-4">Origem</th>
                                     <th class="px-6 py-4">Método</th>
-                                    <th class="px-6 py-4 text-right">Líquido</th>
+                                    <th class="px-6 py-4 text-right">Bruto</th>
+                                    <th class="px-6 py-4 text-right text-red-400">Taxa</th>
+                                    <th class="px-6 py-4 text-right text-emerald-600">Líquido</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-corpo" class="text-[11px] divide-y divide-slate-50 bg-white font-medium"></tbody>
@@ -153,7 +153,6 @@
 
             <!-- ABA 2: ANÁLISE AVANÇADA -->
             <section id="view-avancada" class="hidden space-y-6 animate-in fade-in duration-500">
-                <!-- Heatmap -->
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
                     <h3 class="text-xs font-black uppercase text-slate-400 mb-6">Mapa de Calor (Horários de Pico)</h3>
                     <div class="overflow-x-auto">
@@ -164,10 +163,9 @@
                     </div>
                 </div>
 
-                <!-- Crescimento e Comparativo -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-8 rounded-3xl border shadow-sm flex flex-col justify-center items-center text-center">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-8">Crescimento vs Período Anterior</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-8">Performance vs Período Anterior</h3>
                         <div class="relative flex items-center justify-center">
                             <svg class="w-40 h-40 transform -rotate-90">
                                 <circle cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
@@ -181,11 +179,11 @@
                     </div>
 
                     <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
-                        <h3 class="text-xs font-black uppercase text-slate-400">Volumes Comparados</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400">Metas de Faturamento</h3>
                         <div class="space-y-6">
                             <div class="space-y-2">
                                 <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                                    <span>Metade Anterior</span>
+                                    <span>Volume Anterior</span>
                                     <span id="vol-anterior">R$ 0,00</span>
                                 </div>
                                 <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -194,7 +192,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div class="flex justify-between text-[10px] font-black uppercase text-red-600">
-                                    <span>Metade Atual</span>
+                                    <span>Volume Atual</span>
                                     <span id="vol-atual">R$ 0,00</span>
                                 </div>
                                 <div class="h-3 bg-red-100 rounded-full overflow-hidden">
@@ -218,7 +216,6 @@
         let chEvol = null, chCat = null, chBand = null, chOri = null;
         let vendasCarregadas = [];
 
-        // ── SEGURANÇA ──
         function checkAuth() {
             const input = document.getElementById('password-input').value;
             if (input === SENHA_MESTRA) {
@@ -237,7 +234,6 @@
             window.location.reload();
         }
 
-        // ── NAVEGAÇÃO ──
         function switchTab(tab) {
             document.getElementById('view-geral').classList.toggle('hidden', tab !== 'geral');
             document.getElementById('view-avancada').classList.toggle('hidden', tab !== 'avancada');
@@ -251,7 +247,6 @@
             document.getElementById('data-fim').value = di;
         }
 
-        // ── PROCESSAMENTO ──
         function traduzirPagamento(id) {
             const map = {
                 'pix': { cat: 'Pix', label: 'Pix', color: '#00bfa5' },
@@ -271,7 +266,6 @@
         async function definirPeriodo(tipo) {
             let i = new Date(), f = new Date();
             i.setHours(0,0,0,0); f.setHours(23,59,59,999);
-
             document.querySelectorAll('.btn-periodo').forEach(b => b.classList.toggle('btn-filter-active', b.dataset.id === tipo));
 
             if(tipo === 'ontem'){ i.setDate(i.getDate()-1); f.setDate(f.getDate()-1); }
@@ -282,7 +276,8 @@
                 if(!di || !df) return; i = new Date(di+'T00:00:00'); f = new Date(df+'T23:59:59');
             }
             
-            document.getElementById('label-periodo').innerText = tipo.toUpperCase();
+            const labelEl = document.getElementById('label-periodo');
+            if (labelEl) labelEl.innerText = tipo.toUpperCase();
 
             const { data, error } = await sb.from('vendas_mercado_pago').select('*').gte('data_venda', i.toISOString()).lte('data_venda', f.toISOString()).order('data_venda', {ascending: true});
             if(!error) {
@@ -294,6 +289,8 @@
 
         function renderGeral(vendas) {
             const corpo = document.getElementById('tabela-corpo');
+            if (!corpo) return;
+
             corpo.innerHTML = '';
             let b = 0, t = 0, l = 0;
             let cats = {}, bands = {}, origens = {}, evol = {};
@@ -301,7 +298,6 @@
             vendas.forEach(v => {
                 b += v.valor_bruto; t += v.taxa_mp; l += v.valor_liquido;
                 const info = traduzirPagamento(v.metodo_pagamento);
-                
                 cats[info.cat] = (cats[info.cat] || 0) + v.valor_bruto;
                 bands[info.label] = (bands[info.label] || 0) + v.valor_bruto;
                 const ori = v.origem_venda || "Link / Online";
@@ -312,65 +308,87 @@
 
                 corpo.insertAdjacentHTML('afterbegin', `
                     <tr class="hover:bg-slate-50 transition border-b">
-                        <td class="px-6 py-4 text-slate-400 italic">${new Date(v.data_venda).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="px-6 py-4 text-slate-400 italic font-medium">${new Date(v.data_venda).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col">
-                                <span class="font-bold text-slate-800 truncate-name uppercase" title="${v.nome_pagador}">${v.nome_pagador || 'CLIENTE S/ NOME'}</span>
+                                <span class="font-bold text-slate-800 truncate-name uppercase text-xs" title="${v.nome_pagador}">${v.nome_pagador || 'CLIENTE S/ NOME'}</span>
                                 <span class="text-[8px] text-slate-300">ID ${v.id}</span>
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${ori.includes('Maquininha') ? 'bg-blue-100 text-blue-700' : ori.includes('Tap') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}">
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${ori.includes('Maquininha') ? 'bg-blue-100 text-blue-700 border border-blue-200' : ori.includes('Tap') ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-500 border'}">
                                 ${ori}
                             </span>
                         </td>
-                        <td class="px-6 py-4 font-black text-slate-400 uppercase text-[9px]">${v.metodo_pagamento.replace('_',' ')}</td>
+                        <td class="px-6 py-4 font-black text-slate-400 uppercase text-[9px]">${info.label}</td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-800 text-[11px]">R$ ${v.valor_bruto.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right font-bold text-red-500 text-[11px]">R$ ${v.taxa_mp.toFixed(2)}</td>
                         <td class="px-6 py-4 text-right font-black text-emerald-600 italic text-[11px]">R$ ${v.valor_liquido.toFixed(2)}</td>
                     </tr>`);
             });
 
             const fmt = (v) => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            document.getElementById('total-bruto').innerText = fmt(b);
-            document.getElementById('total-taxas').innerText = fmt(t);
-            document.getElementById('total-liquido').innerText = fmt(l);
-            document.getElementById('count-vendas').innerText = `${vendas.length} vendas`;
-            document.getElementById('ticket-medio').innerText = fmt(vendas.length ? b/vendas.length : 0);
+            
+            const elBruto = document.getElementById('total-bruto');
+            const elTaxas = document.getElementById('total-taxas');
+            const elLiquido = document.getElementById('total-liquido');
+            const elCount = document.getElementById('count-vendas');
+            const elTicket = document.getElementById('ticket-medio');
 
-            // ── GRÁFICOS GERAIS ──
-            if(chEvol) chEvol.destroy();
-            chEvol = new Chart(document.getElementById('chartEvolucao'), {
-                type:'line', data:{labels:Object.keys(evol), datasets:[{data:Object.values(evol), borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,0.1)', fill:true, tension:0.4, borderWidth:4, pointRadius:4}]},
-                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{beginAtZero:true}}}
-            });
+            if(elBruto) elBruto.innerText = fmt(b);
+            if(elTaxas) elTaxas.innerText = fmt(t);
+            if(elLiquido) elLiquido.innerText = fmt(l);
+            if(elCount) elCount.innerText = vendas.length;
+            if(elTicket) elTicket.innerText = fmt(vendas.length ? b/vendas.length : 0);
 
-            if(chCat) chCat.destroy();
-            chCat = new Chart(document.getElementById('chartCategorias'), {
-                type:'doughnut', data:{labels:Object.keys(cats), datasets:[{data:Object.values(cats), backgroundColor:['#dc2626','#3b82f6','#10b981','#f59e0b','#8b5cf6'], borderWidth:0}]},
-                options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels: {color:'#fff', font:{weight:'bold', size:10}, formatter: (v, c) => (v * 100 / c.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0) + "%", display: (c) => c.dataset.data[c.dataIndex] / c.dataset.data.reduce((a,b)=>a+b,0) > 0.05}}}
-            });
+            const canvasEvol = document.getElementById('chartEvolucao');
+            if(canvasEvol) {
+                if(chEvol) chEvol.destroy();
+                chEvol = new Chart(canvasEvol, {
+                    type:'line', data:{labels:Object.keys(evol), datasets:[{data:Object.values(evol), borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,0.1)', fill:true, tension:0.4, borderWidth:4, pointRadius:4}]},
+                    options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{beginAtZero:true}}}
+                });
+            }
 
-            if(chOri) chOri.destroy();
-            chOri = new Chart(document.getElementById('chartOrigem'), {
-                type:'bar', data:{labels:Object.keys(origens), datasets:[{data:Object.values(origens), backgroundColor:['#ef4444','#3b82f6','#8b5cf6'], borderRadius:8}]},
-                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels: {anchor:'end', align:'top', font:{size:9, weight:'bold'}, formatter: (v) => 'R$ '+v.toFixed(0)}} }
-            });
+            const canvasCat = document.getElementById('chartCategorias');
+            if(canvasCat) {
+                if(chCat) chCat.destroy();
+                chCat = new Chart(canvasCat, {
+                    type:'doughnut', data:{labels:Object.keys(cats), datasets:[{data:Object.values(cats), backgroundColor:['#dc2626','#3b82f6','#10b981','#f59e0b','#8b5cf6'], borderWidth:0}]},
+                    options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels: {color:'#fff', font:{weight:'bold', size:10}, formatter: (v, c) => (v * 100 / c.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0) + "%", display: (c) => c.dataset.data[c.dataIndex] / c.dataset.data.reduce((a,b)=>a+b,0) > 0.05}}}
+                });
+            }
 
-            if(chBand) chBand.destroy();
-            chBand = new Chart(document.getElementById('chartBandeiras'), {
-                type:'bar', data:{labels:Object.keys(bands), datasets:[{data:Object.values(bands), backgroundColor:['#94a3b8'], borderRadius:6}]},
-                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{x:{grid:{display:false}, ticks:{font:{size:8}}}, y:{display:false}}}
-            });
+            const canvasOri = document.getElementById('chartOrigem');
+            if(canvasOri) {
+                if(chOri) chOri.destroy();
+                chOri = new Chart(canvasOri, {
+                    type:'bar', data:{labels:Object.keys(origens), datasets:[{data:Object.values(origens), backgroundColor:['#dc2626','#3b82f6','#8b5cf6'], borderRadius:8}]},
+                    options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels: {anchor:'end', align:'top', font:{size:9, weight:'bold'}, formatter: (v) => 'R$ '+v.toFixed(0)}} }
+                });
+            }
+
+            const canvasBand = document.getElementById('chartBandeiras');
+            if(canvasBand) {
+                if(chBand) chBand.destroy();
+                chBand = new Chart(canvasBand, {
+                    type:'bar', data:{labels:Object.keys(bands), datasets:[{data:Object.values(bands), backgroundColor:['#94a3b8'], borderRadius:6}]},
+                    options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{x:{grid:{display:false}, ticks:{font:{size:8}}}, y:{display:false}}}
+                });
+            }
         }
 
         function renderAvancado(vendas) {
-            const h = document.getElementById('heatmap-header'), b = document.getElementById('heatmap-body');
+            const h = document.getElementById('heatmap-header');
+            const b = document.getElementById('heatmap-body');
+            if (!h || !b) return;
+
             h.innerHTML = '<div></div>' + Array.from({length: 24}).map((_, i) => `<div class="text-[9px] font-bold text-slate-400 text-center">${i}h</div>`).join('');
             b.innerHTML = '';
             const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             const m = Array.from({length: 7}, () => Array(24).fill(0));
             let maxVol = 0;
             vendas.forEach(v => { const dt = new Date(v.data_venda); m[dt.getDay()][dt.getHours()] += v.valor_bruto; if(m[dt.getDay()][dt.getHours()] > maxVol) maxVol = m[dt.getDay()][dt.getHours()]; });
-
             m.forEach((l, i) => {
                 let row = `<div class="grid grid-cols-[100px_repeat(24,1fr)] items-center"><div class="text-[9px] font-black uppercase text-slate-400 pr-2 border-r h-full flex items-center">${dias[i]}</div>`;
                 l.forEach(v => {
@@ -380,31 +398,43 @@
                 b.innerHTML += row + '</div>';
             });
 
-            // Crescimento
             const metade = Math.floor(vendas.length / 2);
             const pM = vendas.slice(0, metade).reduce((a,v)=>a+v.valor_bruto, 0);
             const sM = vendas.slice(metade).reduce((a,v)=>a+v.valor_bruto, 0);
             const cresc = pM ? ((sM - pM) / pM * 100) : 0;
             
-            document.getElementById('growth-percent').innerText = (cresc >= 0 ? '+' : '') + cresc.toFixed(1) + '%';
-            document.getElementById('growth-circle').style.strokeDashoffset = 452.39 - (Math.min(Math.max(cresc, 0), 100) / 100 * 452.39);
-            document.getElementById('vol-anterior').innerText = 'R$ ' + pM.toLocaleString();
-            document.getElementById('vol-atual').innerText = 'R$ ' + sM.toLocaleString();
+            const elGrowthPerc = document.getElementById('growth-percent');
+            const elGrowthCirc = document.getElementById('growth-circle');
+            const elVolAnt = document.getElementById('vol-anterior');
+            const elVolAtu = document.getElementById('vol-atual');
+            const elBarAnt = document.getElementById('bar-anterior');
+            const elBarAtu = document.getElementById('bar-atual');
+            const elInsight = document.getElementById('insight-crescimento');
+
+            if(elGrowthPerc) elGrowthPerc.innerText = (cresc >= 0 ? '+' : '') + cresc.toFixed(1) + '%';
+            if(elGrowthCirc) elGrowthCirc.style.strokeDashoffset = 452.39 - (Math.min(Math.max(cresc, 0), 100) / 100 * 452.39);
+            if(elVolAnt) elVolAnt.innerText = 'R$ ' + pM.toLocaleString();
+            if(elVolAtu) elVolAtu.innerText = 'R$ ' + sM.toLocaleString();
             const tot = pM + sM;
-            document.getElementById('bar-anterior').style.width = tot ? (pM/tot*100)+'%' : '50%';
-            document.getElementById('bar-atual').style.width = tot ? (sM/tot*100)+'%' : '50%';
+            if(elBarAnt) elBarAnt.style.width = tot ? (pM/tot*100)+'%' : '50%';
+            if(elBarAtu) elBarAtu.style.width = tot ? (sM/tot*100)+'%' : '50%';
             
-            document.getElementById('insight-crescimento').innerText = cresc >= 0 ? 'O volume está em alta!' : 'Alerta: Volume em queda.';
-            document.getElementById('insight-crescimento').className = `mt-8 text-sm font-bold ${cresc >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+            if(elInsight) {
+                elInsight.innerText = cresc >= 0 ? 'O volume está em alta!' : 'Alerta: Volume em queda.';
+                elInsight.className = `mt-8 text-sm font-bold ${cresc >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+            }
         }
 
         window.onload = () => {
             if (sessionStorage.getItem('auth_morangos') === 'true') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-content').style.display = 'block';
+                const screen = document.getElementById('login-screen');
+                const content = document.getElementById('main-content');
+                if(screen) screen.classList.add('hidden');
+                if(content) content.style.display = 'block';
                 definirPeriodo('hoje');
             }
-            document.getElementById('password-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
+            const pwdInput = document.getElementById('password-input');
+            if(pwdInput) pwdInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
         };
     </script>
 </body>
