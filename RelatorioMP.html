@@ -12,248 +12,98 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .chart-container { position: relative; height: 280px; width: 100%; }
-        .truncate-name { max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .heatmap-cell { transition: all 0.2s; cursor: crosshair; }
-        .heatmap-cell:hover { filter: brightness(0.9); transform: scale(1.1); z-index: 10; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
+        .truncate-name { max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tab-active { border-bottom: 3px solid #dc2626; color: #dc2626; }
-        .btn-filter-active { background-color: #dc2626 !important; color: white !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        /* Esconde o conteúdo antes do login */
+        .btn-filter-active { background-color: #dc2626 !important; color: white !important; }
         #main-content { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
-    <!-- ── TELA DE LOGIN ── -->
+    <!-- LOGIN -->
     <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
         <div class="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl text-center space-y-6">
             <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-20 mx-auto">
-            <div class="space-y-2">
-                <h2 class="text-xl font-black text-slate-900">Acesso Restrito</h2>
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Controle Financeiro</p>
-            </div>
-            <div class="space-y-4">
-                <input type="password" id="password-input" placeholder="Digite a senha de acesso" 
-                    class="w-full px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-center font-bold">
-                <button onclick="checkAuth()" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-500/20">
-                    Entrar no Painel
-                </button>
-            </div>
-            <p id="login-error" class="text-red-500 text-[10px] font-bold uppercase hidden">Senha incorreta. Tente novamente.</p>
+            <h2 class="text-xl font-black text-slate-900">Acesso Restrito</h2>
+            <input type="password" id="password-input" placeholder="Senha" class="w-full px-4 py-3 bg-slate-100 rounded-xl outline-none text-center font-bold">
+            <button onclick="checkAuth()" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold">Entrar</button>
+            <p id="login-error" class="text-red-500 text-[10px] font-bold hidden">SENHA INCORRETA</p>
         </div>
     </div>
 
-    <!-- ── CONTEÚDO DO DASHBOARD ── -->
     <div id="main-content">
-        <!-- Header -->
         <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="h-16 md:h-20 flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-10 md:h-14">
-                        <h1 class="hidden md:block text-xl font-extrabold text-red-600 uppercase tracking-tighter">Gestão Morangos Tatuí</h1>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <button onclick="logout()" class="text-[10px] font-bold text-slate-400 hover:text-red-600 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-lg">Sair</button>
-                        <div class="flex items-center gap-2 border-l pl-4">
-                            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Sync</span>
-                        </div>
-                    </div>
+            <div class="max-w-7xl mx-auto px-4 h-16 md:h-20 flex justify-between items-center">
+                <img src="https://ferramentas.morangostatui.com.br/logo.png" class="h-10 md:h-14">
+                <div class="flex gap-6">
+                    <button onclick="switchTab('geral')" id="tab-geral" class="tab-btn pb-2 text-sm font-bold tab-active">Visão Geral</button>
+                    <button onclick="switchTab('avancada')" id="tab-avancada" class="tab-btn pb-2 text-sm font-bold">Inteligência</button>
                 </div>
-                <!-- Navegação de Abas -->
-                <nav class="flex gap-8">
-                    <button onclick="switchTab('geral')" id="tab-geral" class="tab-btn pb-3 text-sm font-bold text-slate-500 tab-active transition-all">Visão Geral</button>
-                    <button onclick="switchTab('avancada')" id="tab-avancada" class="tab-btn pb-3 text-sm font-bold text-slate-500 transition-all">Análise Avançada</button>
-                </nav>
+                <button onclick="logout()" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">Sair</button>
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto p-4 md:p-8">
+        <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
             
-            <!-- ABA 1: VISÃO GERAL -->
+            <!-- ABA GERAL -->
             <section id="view-geral" class="space-y-6">
-                <!-- Filtros Específicos Geral -->
-                <div class="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border shadow-sm mb-6">
-                    <div class="flex flex-wrap gap-2" id="filtros-geral">
-                        <button onclick="definirPeriodo('hoje', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600 btn-filter-active" data-id="hoje">Hoje</button>
-                        <button onclick="definirPeriodo('ontem', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="ontem">Ontem</button>
-                        <button onclick="definirPeriodo('7dias', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="7dias">7 dias</button>
-                        <button onclick="definirPeriodo('mes', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold text-slate-600" data-id="mes">Este Mês</button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex flex-col px-2 border-r">
-                            <span class="text-[9px] text-slate-400 font-bold uppercase">Início</span>
-                            <input type="date" id="data-inicio-geral" onchange="sincronizarDataFim('geral')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
-                        </div>
-                        <div class="flex flex-col px-2">
-                            <span class="text-[9px] text-slate-400 font-bold uppercase">Fim</span>
-                            <input type="date" id="data-fim-geral" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0">
-                        </div>
-                        <button onclick="definirPeriodo('personalizado', 'geral')" class="p-2 bg-slate-900 text-white rounded-lg hover:bg-red-600 transition h-full px-4 font-bold text-xs uppercase">Filtrar</button>
+                <div class="flex flex-col lg:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="definirPeriodo('hoje', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold btn-filter-active" data-id="hoje">Hoje</button>
+                        <button onclick="definirPeriodo('ontem', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold" data-id="ontem">Ontem</button>
+                        <button onclick="definirPeriodo('mes', 'geral')" class="btn-periodo-geral px-4 py-2 bg-white border rounded-xl text-xs font-bold" data-id="mes">Este Mês</button>
                     </div>
                 </div>
 
-                <!-- Cards de Resumo -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                        <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Faturamento Bruto</p>
-                        <h2 id="total-bruto" class="text-2xl font-black text-slate-800">R$ 0,00</h2>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
-                        <p class="text-red-400 text-[10px] font-black uppercase mb-1 tracking-widest">Taxas MP</p>
-                        <h2 id="total-taxas" class="text-2xl font-black text-red-600">R$ 0,00</h2>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-4 border-l-emerald-500">
-                        <p class="text-emerald-400 text-[10px] font-black uppercase mb-1 tracking-widest">Líquido Real</p>
-                        <h2 id="total-liquido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-3xl border shadow-sm">
-                        <p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 tracking-widest text-white">Ticket Médio</p>
-                        <h2 id="ticket-medio" class="text-2xl font-black text-white">R$ 0,00</h2>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm"><p class="text-slate-400 text-[10px] font-black uppercase mb-1">Bruto</p><h2 id="total-bruto" class="text-2xl font-black">R$ 0,00</h2></div>
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-red-500 border-l-4"><p class="text-red-400 text-[10px] font-black uppercase mb-1">Taxas</p><h2 id="total-taxas" class="text-2xl font-black text-red-600">R$ 0,00</h2></div>
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm border-l-emerald-500 border-l-4"><p class="text-emerald-400 text-[10px] font-black uppercase mb-1">Líquido</p><h2 id="total-liquido" class="text-2xl font-black text-emerald-600">R$ 0,00</h2></div>
+                    <div class="bg-slate-900 p-5 rounded-3xl border shadow-sm"><p class="text-slate-400 text-[10px] font-black uppercase mb-1 opacity-70 text-white">Vendas</p><h2 id="count-vendas" class="text-2xl font-black text-white">0</h2></div>
                 </div>
 
-                <!-- Gráficos Visão Geral -->
+                <!-- Gráficos -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Evolução Diária</h3>
-                        <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 italic">Origem das Vendas (Onde vendemos?)</h3>
+                        <div class="chart-container"><canvas id="chartOrigem"></canvas></div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Modalidades</h3>
+                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Meios de Pagamento</h3>
                         <div class="chart-container"><canvas id="chartCategorias"></canvas></div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4 text-center">Bandeiras Detalhadas</h3>
-                        <div class="chart-container"><canvas id="chartBandeiras"></canvas></div>
-                    </div>
-                    <div class="lg:col-span-2 bg-white p-6 rounded-3xl border shadow-sm overflow-hidden">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-4">Eficiência das Taxas</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="text-[10px] uppercase text-slate-400 font-black">
-                                    <tr>
-                                        <th class="pb-2">Modalidade</th>
-                                        <th class="pb-2 text-right">Volume</th>
-                                        <th class="pb-2 text-right text-red-400">Taxa Média</th>
-                                        <th class="pb-2 text-right text-emerald-600">Margem</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-eficiencia" class="text-xs font-bold divide-y divide-slate-50"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabela Detalhada -->
                 <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
                     <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-700 text-sm">
-                            Histórico de Vendas: <span id="label-periodo-geral" class="text-red-600 uppercase font-black">HOJE</span>
-                        </h3>
-                        <span class="text-[10px] font-bold text-slate-400" id="count-vendas">0 vendas</span>
+                        <h3 class="font-bold text-slate-700 text-sm italic" id="label-periodo-geral">HOJE</h3>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left">
                             <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
                                 <tr>
-                                    <th class="px-6 py-4">Data/Hora</th>
-                                    <th class="px-6 py-4">Cliente / Pagador</th>
+                                    <th class="px-6 py-4">Hora</th>
+                                    <th class="px-6 py-4">Cliente</th>
+                                    <th class="px-6 py-4">Origem</th>
                                     <th class="px-6 py-4">Método</th>
-                                    <th class="px-6 py-4 text-right">Bruto</th>
-                                    <th class="px-6 py-4 text-right text-red-400">Taxa</th>
-                                    <th class="px-6 py-4 text-right text-emerald-600">Líquido</th>
+                                    <th class="px-6 py-4 text-right">Líquido</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabela-corpo" class="text-[11px] divide-y divide-slate-50 bg-white font-medium"></tbody>
+                            <tbody id="tabela-corpo" class="text-[11px] divide-y divide-slate-50 bg-white"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- ABA 2: ANÁLISE AVANÇADA -->
-            <section id="view-avancada" class="hidden space-y-6 animate-in fade-in duration-500">
-                <!-- Filtros Específicos Avançados -->
-                <div class="flex flex-col lg:flex-row justify-between gap-4 bg-slate-900 p-4 rounded-3xl border shadow-lg mb-6">
-                    <div class="flex flex-wrap gap-2" id="filtros-avancado">
-                        <button onclick="definirPeriodo('7dias', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400" data-id="7dias">Últimos 7 dias</button>
-                        <button onclick="definirPeriodo('mes', 'avancada')" class="btn-periodo-avancada px-4 py-2 bg-slate-800 border-none rounded-xl text-xs font-bold text-slate-400 btn-filter-active" data-id="mes">Este Mês</button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex flex-col px-2 border-r border-slate-700">
-                            <span class="text-[9px] text-slate-500 font-bold uppercase">Início</span>
-                            <input type="date" id="data-inicio-avancada" onchange="sincronizarDataFim('avancada')" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
-                        </div>
-                        <div class="flex flex-col px-2">
-                            <span class="text-[9px] text-slate-500 font-bold uppercase">Fim</span>
-                            <input type="date" id="data-fim-avancada" class="text-xs font-bold border-none bg-transparent p-0 focus:ring-0 text-white">
-                        </div>
-                        <button onclick="definirPeriodo('personalizado', 'avancada')" class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition h-full px-4 font-bold text-xs uppercase">Analisar Período</button>
-                    </div>
-                </div>
-
-                <!-- Heatmap de Horários -->
+            <!-- ABA AVANÇADA (HEATMAP) -->
+            <section id="view-avancada" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 class="text-xs font-black uppercase text-slate-400">Mapa de Calor (Hábitos de Compra)</h3>
-                            <p class="text-[10px] text-slate-400 italic" id="label-periodo-avancada">Mostrando dados deste mês.</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-50 border"></div><span class="text-[8px] font-bold uppercase text-slate-400">Baixo</span></div>
-                            <div class="flex items-center gap-1"><div class="w-2 h-2 bg-red-600"></div><span class="text-[8px] font-bold uppercase text-slate-400">Pico</span></div>
-                        </div>
-                    </div>
-                    
+                    <h3 class="text-xs font-black uppercase text-slate-400 mb-6">Mapa de Calor (Horários de Pico)</h3>
                     <div class="overflow-x-auto">
-                        <div class="min-w-[900px]">
+                        <div class="min-w-[800px]">
                             <div id="heatmap-header" class="grid grid-cols-[100px_repeat(24,1fr)] mb-2"></div>
                             <div id="heatmap-body" class="space-y-1"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Crescimento -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-3xl border shadow-sm flex flex-col justify-center items-center text-center">
-                        <h3 class="text-xs font-black uppercase text-slate-400 mb-8">Performance vs Período Anterior</h3>
-                        <div class="relative flex items-center justify-center">
-                            <svg class="w-40 h-40 transform -rotate-90">
-                                <circle cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
-                                <circle id="growth-circle" cx="80" cy="80" r="72" stroke="currentColor" stroke-width="12" fill="transparent" stroke-dasharray="452.39" stroke-dashoffset="452.39" class="text-emerald-500 transition-all duration-1000 rounded-full" />
-                            </svg>
-                            <div class="absolute">
-                                <span id="growth-percent" class="text-3xl font-black text-slate-800">+0%</span>
-                            </div>
-                        </div>
-                        <p id="insight-semanal" class="mt-8 text-sm font-bold"></p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
-                        <h3 class="text-xs font-black uppercase text-slate-400">Volumes Comparativos</h3>
-                        <div class="space-y-6">
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                                    <span>Período Anterior</span>
-                                    <span id="vol-sem-passada">R$ 0,00</span>
-                                </div>
-                                <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
-                                    <div id="bar-sem-passada" class="h-full bg-slate-300 transition-all duration-1000" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-[10px] font-black uppercase text-red-600">
-                                    <span>Período Seleccionado</span>
-                                    <span id="vol-sem-atual">R$ 0,00</span>
-                                </div>
-                                <div class="h-3 bg-red-100 rounded-full overflow-hidden">
-                                    <div id="bar-sem-atual" class="h-full bg-red-600 transition-all duration-1000" style="width: 0%"></div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -262,224 +112,108 @@
     </div>
 
     <script>
-        // === CONFIGURAÇÃO DE SEGURANÇA ===
-        const SENHA_MESTRA = "morango2026"; // <--- ALTERE A SENHA AQUI
-
-        function checkAuth() {
-            const input = document.getElementById('password-input').value;
-            const error = document.getElementById('login-error');
-            
-            if (input === SENHA_MESTRA) {
-                // Sucesso: Esconde login e mostra conteúdo
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-content').style.display = 'block';
-                // Salva na sessão para não pedir de novo enquanto a guia estiver aberta
-                sessionStorage.setItem('auth_morangos', 'true');
-                // Inicia o carregamento dos dados
-                definirPeriodo('hoje', 'geral');
-            } else {
-                error.classList.remove('hidden');
-                document.getElementById('password-input').value = "";
-            }
-        }
-
-        function logout() {
-            sessionStorage.removeItem('auth_morangos');
-            window.location.reload();
-        }
-
-        // Verifica se já está logado ao carregar
-        window.onload = () => {
-            if (sessionStorage.getItem('auth_morangos') === 'true') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-content').style.display = 'block';
-                definirPeriodo('hoje', 'geral');
-            }
-            
-            // Permite dar Enter no campo de senha
-            document.getElementById('password-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') checkAuth();
-            });
-        };
-
-        // === LÓGICA DO DASHBOARD ===
+        const SENHA_MESTRA = "morango2026";
         const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         Chart.register(ChartDataLabels);
-        let chEvol = null, chCat = null, chBand = null;
+        let chOri = null, chCat = null;
+
+        function checkAuth() {
+            if(document.getElementById('password-input').value === SENHA_MESTRA) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-content').style.display = 'block';
+                sessionStorage.setItem('auth_morangos', 'true');
+                definirPeriodo('hoje', 'geral');
+            } else { document.getElementById('login-error').classList.remove('hidden'); }
+        }
+
+        function logout() { sessionStorage.removeItem('auth_morangos'); window.location.reload(); }
 
         function switchTab(tab) {
             document.getElementById('view-geral').classList.toggle('hidden', tab !== 'geral');
             document.getElementById('view-avancada').classList.toggle('hidden', tab !== 'avancada');
             document.getElementById('tab-geral').classList.toggle('tab-active', tab === 'geral');
             document.getElementById('tab-avancada').classList.toggle('tab-active', tab === 'avancada');
-            
-            if(tab === 'geral') definirPeriodo('hoje', 'geral');
-            else definirPeriodo('mes', 'avancada');
-        }
-
-        function sincronizarDataFim(tab) {
-            const di = document.getElementById(`data-inicio-${tab}`).value;
-            document.getElementById(`data-fim-${tab}`).value = di;
-        }
-
-        function traduzirPagamento(id) {
-            const map = {
-                'pix': { cat: 'Pix', label: 'Pix', color: '#00bfa5' },
-                'account_money': { cat: 'Saldo MP', label: 'Saldo Mercado Pago', color: '#3b82f6' },
-                'consumer_credits': { cat: 'Crédito', label: 'Mercado Crédito', color: '#8b5cf6' },
-                'visa': { cat: 'Crédito', label: 'Visa Crédito', color: '#1a1f71' },
-                'master': { cat: 'Crédito', label: 'Master Crédito', color: '#eb001b' },
-                'elo': { cat: 'Crédito', label: 'Elo Crédito', color: '#ffcc00' },
-                'amex': { cat: 'Crédito', label: 'Amex Crédito', color: '#2e77bb' },
-                'debvisa': { cat: 'Débito', label: 'Visa Débito', color: '#1a1f71' },
-                'debmaster': { cat: 'Débito', label: 'Master Débito', color: '#eb001b' },
-                'debelo': { cat: 'Débito', label: 'Elo Débito', color: '#ffcc00' }
-            };
-            return map[id] || { cat: 'Outro', label: id.toUpperCase(), color: '#94a3b8' };
+            if(tab === 'avancada') definirPeriodo('mes', 'avancada');
         }
 
         async function definirPeriodo(tipo, tab) {
             let i = new Date(), f = new Date();
-            
-            if(tipo === 'hoje') { i.setHours(0,0,0,0); f.setHours(23,59,59,999); }
-            else if(tipo === 'ontem'){ i.setDate(i.getDate()-1); i.setHours(0,0,0,0); f.setDate(f.getDate()-1); f.setHours(23,59,59,999); }
-            else if(tipo === '7dias'){ i.setDate(i.getDate()-7); i.setHours(0,0,0,0); f.setHours(23,59,59,999); }
-            else if(tipo === 'mes'){ i.setDate(1); i.setHours(0,0,0,0); f.setHours(23,59,59,999); }
-            else if(tipo === 'personalizado'){
-                const di = document.getElementById(`data-inicio-${tab}`).value, df = document.getElementById(`data-fim-${tab}`).value;
-                if(!di || !df) return; i = new Date(di+'T00:00:00'); f = new Date(df+'T23:59:59');
-            }
-            
-            document.querySelectorAll(`.btn-periodo-${tab}`).forEach(b => {
-                b.classList.toggle('btn-filter-active', b.dataset.id === tipo);
-            });
+            i.setHours(0,0,0,0); f.setHours(23,59,59,999);
+            if(tipo === 'ontem'){ i.setDate(i.getDate()-1); f.setDate(f.getDate()-1); }
+            else if(tipo === 'mes'){ i.setDate(1); }
 
-            const labelStr = tipo === 'personalizado' ? `${i.toLocaleDateString()} a ${f.toLocaleDateString()}` : tipo.toUpperCase();
-            const labelEl = document.getElementById(`label-periodo-${tab}`);
-            if(labelEl) labelEl.innerText = labelStr;
-
-            const { data, error } = await sb.from('vendas_mercado_pago').select('*').gte('data_venda', i.toISOString()).lte('data_venda', f.toISOString()).order('data_venda', {ascending: true});
+            document.querySelectorAll(`.btn-periodo-${tab}`).forEach(b => b.classList.toggle('btn-filter-active', b.dataset.id === tipo));
             
-            if(!error) {
-                if(tab === 'geral') renderGeral(data);
-                else renderAvancado(data);
-            }
+            const { data } = await sb.from('vendas_mercado_pago').select('*').gte('data_venda', i.toISOString()).lte('data_venda', f.toISOString()).order('data_venda', {ascending: true});
+            if(data) tab === 'geral' ? renderGeral(data) : renderAvancado(data);
         }
 
         function renderGeral(vendas) {
             const corpo = document.getElementById('tabela-corpo');
-            const eficie = document.getElementById('tabela-eficiencia');
-            if(!corpo || !eficie) return;
-
-            corpo.innerHTML = ''; eficie.innerHTML = '';
-            let b = 0, t = 0, l = 0, catStats = {}, bandStats = {}, evol = {};
+            corpo.innerHTML = '';
+            let b = 0, t = 0, l = 0, cats = {}, origens = {};
 
             vendas.forEach(v => {
                 b += v.valor_bruto; t += v.taxa_mp; l += v.valor_liquido;
-                const info = traduzirPagamento(v.metodo_pagamento);
-                if(!catStats[info.cat]) catStats[info.cat] = { vol: 0, taxa: 0, color: info.color };
-                catStats[info.cat].vol += v.valor_bruto; catStats[info.cat].taxa += v.taxa_mp;
-                if(!bandStats[info.label]) bandStats[info.label] = { vol: 0, color: info.color };
-                bandStats[info.label].vol += v.valor_bruto;
-                const dia = new Date(v.data_venda).toLocaleDateString('pt-BR');
-                evol[dia] = (evol[dia] || 0) + v.valor_bruto;
+                cats[v.metodo_pagamento] = (cats[v.metodo_pagamento] || 0) + v.valor_bruto;
+                const ori = v.origem_venda || "Link / Online";
+                origens[ori] = (origens[ori] || 0) + v.valor_bruto;
 
                 corpo.insertAdjacentHTML('afterbegin', `
-                    <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-slate-400 italic text-[10px] font-medium">${new Date(v.data_venda).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
-                        <td class="px-6 py-4 font-bold text-slate-800 uppercase text-[10px] truncate-name">${v.nome_pagador || 'CLIENTE S/ NOME'}</td>
-                        <td class="px-6 py-4 font-black text-[9px] text-slate-500 uppercase">${info.label}</td>
-                        <td class="px-6 py-4 text-right font-bold text-slate-800 text-[11px]">R$ ${v.valor_bruto.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-bold text-red-500 text-[11px]">- R$ ${v.taxa_mp.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right font-black text-emerald-600 text-[11px]">R$ ${v.valor_liquido.toFixed(2)}</td>
+                    <tr class="hover:bg-slate-50 transition-colors border-b">
+                        <td class="px-6 py-4 text-slate-400 italic">${new Date(v.data_venda).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="px-6 py-4 font-bold uppercase truncate-name">${v.nome_pagador || 'N/A'}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${ori.includes('Maquininha') ? 'bg-blue-100 text-blue-700' : ori.includes('Tap') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'}">
+                                ${ori}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 font-black text-slate-400 uppercase text-[9px]">${v.metodo_pagamento.replace('_',' ')}</td>
+                        <td class="px-6 py-4 text-right font-black text-emerald-600 italic">R$ ${v.valor_liquido.toFixed(2)}</td>
                     </tr>`);
             });
 
-            for(let c in catStats) {
-                const s = catStats[c]; const pt = ((s.taxa / s.vol) * 100).toFixed(1);
-                eficie.innerHTML += `<tr><td class="py-3 uppercase text-slate-600 font-bold tracking-tight">${c}</td><td class="py-3 text-right">R$ ${s.vol.toFixed(2)}</td><td class="py-3 text-right text-red-500">${pt}%</td><td class="py-3 text-right text-emerald-600">${(100-pt).toFixed(1)}%</td></tr>`;
-            }
+            document.getElementById('total-bruto').innerText = b.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('total-taxas').innerText = t.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('total-liquido').innerText = l.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('count-vendas').innerText = vendas.length;
 
-            const f = (v) => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            document.getElementById('total-bruto').innerText = f(b);
-            document.getElementById('total-taxas').innerText = f(t);
-            document.getElementById('total-liquido').innerText = f(l);
-            document.getElementById('count-vendas').innerText = `${vendas.length} vendas`;
-            document.getElementById('ticket-medio').innerText = f(vendas.length ? b/vendas.length : 0);
-
-            if(chEvol) chEvol.destroy();
-            chEvol = new Chart(document.getElementById('chartEvolucao'), {
-                type:'line', data:{labels:Object.keys(evol), datasets:[{data:Object.values(evol), borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,0.1)', fill:true, tension:0.4, borderWidth:4, pointRadius:4}]},
-                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{display:false}}, scales:{y:{beginAtZero:true}}}
+            if(chOri) chOri.destroy();
+            chOri = new Chart(document.getElementById('chartOrigem'), {
+                type:'bar', data:{labels:Object.keys(origens), datasets:[{data:Object.values(origens), backgroundColor:['#3b82f6','#8b5cf6','#94a3b8'], borderRadius:10}]},
+                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{anchor:'end', align:'top', font:{weight:'bold'}, formatter: (v) => 'R$'+v.toFixed(0)}}}
             });
 
             if(chCat) chCat.destroy();
             chCat = new Chart(document.getElementById('chartCategorias'), {
-                type:'doughnut', data:{labels:Object.keys(catStats), datasets:[{data:Object.values(catStats).map(s=>s.vol), backgroundColor:Object.values(catStats).map(s=>s.color), borderWidth:0}]},
-                options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels: {color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v, c) => (v * 100 / c.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0) + "%", display: (c) => c.dataset.data[c.dataIndex] / c.dataset.data.reduce((a,b)=>a+b,0) > 0.05 }}}
-            });
-
-            if(chBand) chBand.destroy();
-            chBand = new Chart(document.getElementById('chartBandeiras'), {
-                type:'bar', data:{labels:Object.keys(bandStats), datasets:[{data:Object.values(bandStats).map(s=>s.vol), backgroundColor:Object.values(bandStats).map(s=>s.color), borderRadius:6}]},
-                options: {maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels: {anchor:'end', align:'top', font:{size:8, weight:'bold'}, formatter: (v) => 'R$'+v.toFixed(0)}}, scales:{x:{grid:{display:false}, ticks:{font:{size:8}}}, y:{display:false}}}
+                type:'doughnut', data:{labels:Object.keys(cats), datasets:[{data:Object.values(cats), backgroundColor:['#ef4444','#3b82f6','#10b981','#f59e0b'], borderWidth:0}]},
+                options: {maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{font:{size:9, weight:'bold'}}}, datalabels:{display:false}}}
             });
         }
 
         function renderAvancado(vendas) {
-            const header = document.getElementById('heatmap-header');
-            const body = document.getElementById('heatmap-body');
-            if(!header || !body) return;
+            const h = document.getElementById('heatmap-header'), b = document.getElementById('heatmap-body');
+            h.innerHTML = '<div></div>' + Array.from({length: 24}).map((_, i) => `<div class="text-[9px] font-bold text-slate-400 text-center">${i}h</div>`).join('');
+            b.innerHTML = '';
+            const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const m = Array.from({length: 7}, () => Array(24).fill(0));
+            let max = 0;
+            vendas.forEach(v => { const d = new Date(v.data_venda); m[d.getDay()][d.getHours()] += v.valor_bruto; if(m[d.getDay()][d.getHours()] > max) max = m[d.getDay()][d.getHours()]; });
 
-            header.innerHTML = '<div></div>' + Array.from({length: 24}).map((_, i) => `<div class="text-[9px] font-bold text-slate-400 text-center">${i}h</div>`).join('');
-            body.innerHTML = '';
-            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-            const matriz = Array.from({length: 7}, () => Array(24).fill(0));
-            let maxVol = 0;
-
-            vendas.forEach(v => {
-                const dt = new Date(v.data_venda);
-                const d = dt.getDay(); const h = dt.getHours();
-                matriz[d][h] += v.valor_bruto;
-                if(matriz[d][h] > maxVol) maxVol = matriz[d][h];
-            });
-
-            matriz.forEach((linha, i) => {
-                let htmlLinha = `<div class="grid grid-cols-[100px_repeat(24,1fr)] items-center">
-                    <div class="text-[9px] font-black uppercase text-slate-400 border-r pr-2 h-full flex items-center">${diasSemana[i]}</div>`;
-                linha.forEach(vol => {
-                    const op = maxVol ? (vol / maxVol) : 0;
-                    const color = op > 0 ? `rgba(220, 38, 38, ${0.1 + (op * 0.9)})` : '#f8fafc';
-                    const txtColor = op > 0.5 ? '#fff' : '#cbd5e1';
-                    htmlLinha += `<div class="heatmap-cell h-7 border-[0.5px] border-white text-[7px] flex items-center justify-center font-bold" 
-                        style="background-color: ${color}; color: ${txtColor}" 
-                        title="R$ ${vol.toFixed(2)}">${vol > 0 ? 'R$'+vol.toFixed(0) : ''}</div>`;
+            m.forEach((l, i) => {
+                let row = `<div class="grid grid-cols-[100px_repeat(24,1fr)] items-center"><div class="text-[9px] font-black uppercase text-slate-400 border-r pr-2 h-full flex items-center">${dias[i]}</div>`;
+                l.forEach(v => {
+                    const op = max ? (v/max) : 0;
+                    row += `<div class="heatmap-cell h-7 border-white border-[0.5px] text-[7px] flex items-center justify-center font-bold" style="background:${v > 0 ? `rgba(220, 38, 38, ${0.1 + (op * 0.9)})` : '#f8fafc'}; color:${op > 0.5 ? '#fff' : '#cbd5e1'}" title="R$ ${v.toFixed(2)}">${v > 0 ? 'R$'+v.toFixed(0) : ''}</div>`;
                 });
-                htmlLinha += `</div>`;
-                body.innerHTML += htmlLinha;
+                b.innerHTML += row + '</div>';
             });
-
-            const metade = Math.floor(vendas.length / 2);
-            const primeiraMetade = vendas.slice(0, metade).reduce((a,v)=>a+v.valor_bruto, 0);
-            const segundaMetade = vendas.slice(metade).reduce((a,v)=>a+v.valor_bruto, 0);
-            const cresc = primeiraMetade ? ((segundaMetade - primeiraMetade) / primeiraMetade * 100) : 0;
-            
-            document.getElementById('growth-percent').innerText = (cresc >= 0 ? '+' : '') + cresc.toFixed(1) + '%';
-            document.getElementById('growth-circle').style.strokeDashoffset = 452.39 - (Math.min(Math.max(cresc, 0), 100) / 100 * 452.39);
-            document.getElementById('vol-sem-passada').innerText = 'R$ ' + primeiraMetade.toLocaleString();
-            document.getElementById('vol-sem-atual').innerText = 'R$ ' + segundaMetade.toLocaleString();
-            
-            const totalComp = primeiraMetade + segundaMetade;
-            document.getElementById('bar-sem-passada').style.width = totalComp ? (primeiraMetade/totalComp*100)+'%' : '50%';
-            document.getElementById('bar-sem-atual').style.width = totalComp ? (segundaMetade/totalComp*100)+'%' : '50%';
-            
-            const insightEl = document.getElementById('insight-semanal');
-            insightEl.innerText = cresc >= 0 ? 'Excelente! O volume de vendas está a subir.' : 'Atenção! O volume está abaixo da metade anterior.';
-            insightEl.className = `mt-8 text-sm font-bold ${cresc >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
         }
+
+        window.onload = () => { if(sessionStorage.getItem('auth_morangos') === 'true') { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('main-content').style.display='block'; definirPeriodo('hoje','geral'); } };
     </script>
 </body>
 </html>
