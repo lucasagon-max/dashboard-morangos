@@ -314,8 +314,16 @@
             let resumoFechamento = {}; // Para o resumo de lançamento
 
             vendas.forEach(v => {
-                b += v.valor_bruto; t += v.taxa_mp; l += v.valor_liquido;
-                const info = traduzirPagamento(v.metodo_pagamento);
+                // FILTRO DE SEGURANÇA: 
+                // Se o método for saldo em conta (account_money) e não houver taxa, 
+                // provavelmente é rendimento ou transferência interna, então ignoramos no faturamento.
+                if (v.metodo_pagamento === 'account_money' && v.taxa_mp === 0) {
+                    return; // Pula esta "venda" e vai para a próxima
+                }
+                
+                b += v.valor_bruto; 
+                t += v.taxa_mp; 
+                l += v.valor_liquido;
                 
                 // Agrupamento para Gráficos
                 cats[info.cat] = (cats[info.cat] || 0) + v.valor_bruto;
