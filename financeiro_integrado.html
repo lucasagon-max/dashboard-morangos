@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morangos Tatuí · Portal Financeiro Unificado</title>
+<link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+
+<!-- BIBS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"DM Sans"', 'sans-serif'] },
+        colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
+      }
+    }
+  }
+</script>
+
+<style>
+  body { background-color: #f8fafc; color: #0f172a; overflow-x: hidden; }
+  .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+  .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .tab-btn { padding: 1rem 1.5rem; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.1em; display: flex; align-items: center; gap: 0.75rem; }
+  .tab-btn.active { color: #e11d48; border-color: #e11d48; background: #fff1f2; }
+  
+  .kpi-card { border: 1px solid #f1f5f9; background: white; transition: transform 0.2s; }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.05); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+  
+  #globalLoading { background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); }
+  .heatmap-cell { height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; transition: all 0.2s; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="globalLoading" class="fixed inset-0 z-[200] flex flex-col items-center justify-center hidden">
+  <div class="relative flex flex-col items-center">
+    <div class="w-20 h-20 border-4 border-slate-100 border-t-brand-600 rounded-full animate-spin mb-6"></div>
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" class="absolute top-6 w-8 h-8 opacity-30">
+    <p id="loadingMsg" class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Sincronizando Ecossistema...</p>
+  </div>
+</div>
+
+<!-- ── LOGIN SCREEN (GOOGLE ONLY) ── -->
+<div id="loginScreen" class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900 px-4">
+  <div class="w-full max-w-sm bg-white p-12 rounded-[3rem] shadow-2xl text-center space-y-10 border-t-8 border-brand-600">
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="h-24 mx-auto drop-shadow-xl">
+    <div class="space-y-3">
+      <h2 class="text-2xl font-black text-slate-900 leading-tight">Portal Financeiro <br><span class="text-brand-600 italic font-medium">Unificado</span></h2>
+      <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Morangos Tatuí · PRO v4.0</p>
+    </div>
+    
+    <div class="space-y-6 pt-4">
+      <p class="text-[11px] text-slate-500 font-medium leading-relaxed">Para acessar os painéis de BI, Mercado Pago e Fluxo de Caixa, faça login com sua conta Google autorizada.</p>
+      <button onclick="signInGoogle()" class="flex items-center justify-center gap-4 w-full py-5 bg-white border-2 border-slate-100 rounded-3xl font-black text-xs uppercase tracking-widest text-slate-700 hover:border-brand-500 hover:bg-slate-50 transition-all shadow-sm active:scale-95 group">
+        <img src="https://www.google.com/favicon.ico" class="w-5 h-5 group-hover:scale-110 transition-transform">
+        Entrar com Google
+      </button>
+    </div>
+    
+    <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest">Acesso Restrito à Administração</p>
+  </div>
+</div>
+
+<!-- ── MAIN APP SHELL ── -->
+<div id="appShell" class="hidden flex-col flex-1">
+  
+  <header class="glass-header sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-12 h-12 object-contain rounded-xl shadow-sm border border-slate-100">
+      <div class="flex flex-col">
+        <h1 class="font-sans text-xl font-black text-slate-900 leading-none tracking-tight">Morangos <span class="text-brand-600 uppercase italic text-lg">Financial</span></h1>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-1">SISTEMA INTEGRADO</span>
+      </div>
+    </div>
+
+    <!-- Filtros Periodo -->
+    <div class="hidden lg:flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+      <button onclick="setPeriod('today')" class="btn-period active px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all bg-white shadow-sm text-brand-600" data-p="today">Hoje</button>
+      <button onclick="setPeriod('7days')" class="btn-period px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400" data-p="7days">7 Dias</button>
+      <button onclick="setPeriod('month')" class="btn-period px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400" data-p="month">Mês</button>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <div id="userInfo" class="flex items-center gap-2 mr-2">
+            <span id="userName" class="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 hidden sm:block">Admin</span>
+            <div id="userAvatar" class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-inner overflow-hidden"></div>
+        </div>
+        <button onclick="refreshAll()" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-xl hover:border-brand-500 transition-all text-slate-300 hover:text-brand-600">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <button onclick="logout()" class="text-[10px] font-black text-slate-300 hover:text-brand-600 uppercase tracking-widest bg-slate-100 px-4 py-2.5 rounded-xl border border-slate-200 transition-all">Sair</button>
+    </div>
+  </header>
+
+  <nav class="bg-white border-b border-slate-200 px-6 flex overflow-x-auto sticky top-[81px] z-40 scrollbar-hide">
+    <button class="tab-btn active" onclick="switchTab('resumo', this)"><i data-lucide="layout-grid" class="w-4 h-4"></i> Resumo</button>
+    <button class="tab-btn" onclick="switchTab('bi', this)"><i data-lucide="bar-chart-3" class="w-4 h-4 text-orange-500"></i> Inteligência</button>
+    <button class="tab-btn" onclick="switchTab('mp', this)"><i data-lucide="shield-check" class="w-4 h-4 text-indigo-500"></i> Recebíveis</button>
+    <button class="tab-btn" onclick="switchTab('fluxo', this)"><i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i> Fluxo Caixa</button>
+    <button class="tab-btn" onclick="switchTab('compromissos', this)"><i data-lucide="calendar-check" class="w-4 h-4 text-amber-500"></i> Compromissos</button>
+  </nav>
+
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-8 pb-16">
+    
+    <!-- ABA: RESUMO -->
+    <div id="tab-resumo" class="tab-panel fade-in block space-y-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="kpi-card p-7 rounded-[2.5rem]">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center shadow-inner"><i data-lucide="trending-up" class="w-6 h-6"></i></div>
+            <span class="text-[9px] font-black text-brand-500 bg-brand-50 px-2 py-1 rounded-md uppercase tracking-tighter">Faturamento</span>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Bruto</div>
+          <div id="res-faturamento" class="text-3xl font-black text-slate-800 leading-tight">R$ 0,00</div>
+          <p id="res-pedidos" class="text-[11px] text-slate-400 font-bold mt-2 font-serif italic">Carregando...</p>
+        </div>
+        
+        <div class="kpi-card p-7 rounded-[2.5rem]">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner"><i data-lucide="percent" class="w-6 h-6"></i></div>
+            <div id="res-tag-taxa" class="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase">0.0% AVG</div>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Custo de Taxas</div>
+          <div id="res-taxas" class="text-3xl font-black text-rose-500 leading-tight">R$ 0,00</div>
+          <p class="text-[11px] text-slate-400 font-bold mt-2 italic font-serif">Média Mercado Pago</p>
+        </div>
+
+        <div class="kpi-card p-7 rounded-[2.5rem]">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center shadow-inner"><i data-lucide="arrow-down-circle" class="w-6 h-6"></i></div>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Despesas Lançadas</div>
+          <div id="res-despesas" class="text-3xl font-black text-slate-800 leading-tight">R$ 0,00</div>
+          <p class="text-[11px] text-slate-400 font-bold mt-2 italic font-serif">Google Sheets Live</p>
+        </div>
+
+        <div class="kpi-card bg-emerald-600 p-7 rounded-[2.5rem] border-none shadow-2xl shadow-emerald-100 text-white">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center overflow-hidden"><i data-lucide="zap" class="w-6 h-6"></i></div>
+            <div id="res-margem-pct" class="text-[9px] font-black text-emerald-100 bg-white/10 px-2 py-1 rounded-md uppercase tracking-tighter">0% Margem</div>
+          </div>
+          <div class="text-[10px] font-bold text-emerald-100/50 uppercase tracking-widest mb-1">Resultado Líquido</div>
+          <div id="res-margem" class="text-3xl font-black text-white leading-tight">R$ 0,00</div>
+          <p class="text-[11px] text-emerald-100/40 font-bold mt-2 italic font-serif">Lucro Real Estimado</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
+        <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-10 flex items-center gap-3"><i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> Evolução Diária (Híbrido)</h3>
+        <div class="h-96"><canvas id="resChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- DEMAIS CONTAINERS (Omitted for brevity - same IDs as previous integrated file) -->
+    <div id="tab-bi" class="tab-panel fade-in hidden space-y-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm"><h3 class="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-8">Top Produtos</h3><div id="bi-ranking" class="space-y-4 font-bold"></div></div>
+          <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm"><h3 class="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-8">Heatmap</h3><div id="bi-heatmap" class="overflow-x-auto pb-4"></div></div>
+        </div>
+    </div>
+    <div id="tab-mp" class="tab-panel fade-in hidden space-y-8">
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="h-64"><canvas id="mpChartBandeiras"></canvas></div>
+            <div id="mpConciliacaoList" class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </div>
+    <div id="tab-fluxo" class="tab-panel fade-in hidden space-y-8">
+        <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm"><div class="h-80"><canvas id="fluxoChartSaldo"></canvas></div></div>
+    </div>
+    <div id="tab-compromissos" class="tab-panel fade-in hidden space-y-8"><div id="boletosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div></div>
+
+  </main>
+</div>
+
+<script>
+// CONFIG
+const SB_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co';
+const SB_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
+const SHEET_ID = '1cyM1DI29ob_hF3BomDazojTo-nn3j8kJowpbqh7R8Tg';
+const CLIENT_ID = '781310015266-iff0bmklrbkv3mt6no32gel47tfs3jeu.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+let sb = null, tokenClient, accessToken = sessionStorage.getItem('mt_access_token');
+let currentTab = 'resumo', currentPeriod = 'today', charts = {}, dataSet = { bi:[], mp:[], sheet:{} };
+
+const parseR = v => (parseFloat(String(v).replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) || 0);
+const fmtR = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+window.onload = () => {
+    lucide.createIcons();
+    sb = supabase.createClient(SB_URL, SB_KEY);
+    loadGIS();
+    if(accessToken) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appShell').classList.remove('hidden');
+        refreshAll();
+    }
+};
+
+function loadGIS() {
+    const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => tokenClient = google.accounts.oauth2.initTokenClient({ 
+        client_id: CLIENT_ID, scope: SCOPES, callback: r => { 
+            accessToken = r.access_token; 
+            sessionStorage.setItem('mt_access_token', accessToken);
+            onAuthSuccess(); 
+        }
+    });
+    document.head.appendChild(s);
+}
+
+function signInGoogle() { tokenClient.requestAccessToken(); }
+
+function onAuthSuccess() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appShell').classList.remove('hidden');
+    refreshAll();
+}
+
+function logout() { sessionStorage.removeItem('mt_access_token'); location.reload(); }
+
+async function fetchSheet(name) {
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name)}`, { 
+        headers: { Authorization: `Bearer ${accessToken}` } 
+    });
+    const j = await r.json(); if (!j.values) return [];
+    const [h, ...rows] = j.values;
+    return rows.map(r => { const o = {}; h.forEach((k, i) => o[k] = r[i] ?? ''); return o; });
+}
+
+async function refreshAll() {
+    showLoading(true);
+    try {
+        const { start, end } = getRange();
+        const [biR, mpR, mov, fec, parc, cart, comp] = await Promise.all([
+            sb.from('pedidos').select('*').gte('created_at', start).lte('created_at', end),
+            sb.from('vendas_mercado_pago').select('*').gte('data_venda', start).lte('data_venda', end),
+            fetchSheet('Movimentacoes'), fetchSheet('Fechamento'), fetchSheet('Parcelas'), fetchSheet('Cartoes_Emprestimos'), fetchSheet('Compras_Cartao')
+        ]);
+        dataSet = { bi: biR.data||[], mp: mpR.data||[], sheet: { mov, fec, parc, cart, comp } };
+        renderTab(currentTab);
+        showLoading(false);
+    } catch(e) { console.error(e); showLoading(false); logout(); }
+}
+
+function showLoading(v) { document.getElementById('globalLoading').classList.toggle('hidden', !v); }
+
+function getRange() {
+    const now = new Date(); let start = new Date(now), end = new Date(now);
+    if(currentPeriod==='today'){ start.setHours(0,0,0,0); end.setHours(23,59,59,999); }
+    else if(currentPeriod==='7days'){ start.setDate(now.getDate()-6); start.setHours(0,0,0,0); }
+    else if(currentPeriod==='month'){ start = new Date(now.getFullYear(), now.getMonth(), 1); }
+    return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function switchTab(id, btn) {
+    currentTab = id;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-'+id).classList.remove('hidden');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTab(id);
+}
+
+function setPeriod(p) {
+    currentPeriod = p;
+    document.querySelectorAll('.btn-period').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+    refreshAll();
+}
+
+function renderTab(id) {
+    if(id==='resumo') renderResumo();
+    if(id==='bi') renderBI();
+    if(id==='mp') renderMP();
+    if(id==='fluxo') renderFluxo();
+    if(id==='compromissos') renderCompromissos();
+    lucide.createIcons();
+}
+
+// --- RENDERIZADORES REFORÇADOS ---
+function renderResumo() {
+    const peds = dataSet.bi.filter(p => p.status === 'Concluído');
+    const fat = peds.reduce((s,p) => s + parseR(p.total), 0);
+    const taxas = dataSet.mp.reduce((s,v) => s + (v.taxa_mp || 0), 0);
+    const despesas = dataSet.sheet.mov ? dataSet.sheet.mov.filter(r => {
+        const d = parseDateStr(r.Data);
+        const { start, end } = getRange();
+        return r.Tipo === 'Saída' && d >= new Date(start) && d <= new Date(end);
+    }).reduce((s,r) => s + parseR(r.Valor), 0) : 0;
+    const lucro = fat - taxas - despesas;
+    
+    document.getElementById('res-faturamento').innerText = fmtR(fat);
+    document.getElementById('res-pedidos').innerText = `${peds.length} pedidos finalizados`;
+    document.getElementById('res-taxas').innerText = fmtR(taxas);
+    document.getElementById('res-tag-taxa').innerText = fat > 0 ? ((taxas/fat)*100).toFixed(1) + '% AVG' : '0.0% AVG';
+    document.getElementById('res-despesas').innerText = fmtR(despesas);
+    document.getElementById('res-margem').innerText = fmtR(lucro);
+    document.getElementById('res-margem-pct').innerText = fat > 0 ? ((lucro/fat)*100).toFixed(0) + '% Margem Est.' : '0% Margem';
+
+    const ctx = document.getElementById('resChart').getContext('2d');
+    destroyChart('resChart');
+    const hData = Array(24).fill(0); peds.forEach(p => hData[new Date(p.created_at).getHours()] += parseR(p.total));
+    charts.res = new Chart(ctx, { type:'line', data:{ labels:hData.map((_,i)=>i+'h'), datasets:[{ data:hData, borderColor:'#e11d48', backgroundColor:'rgba(225,29,72,0.05)', fill:true, tension:0.4, borderWidth:5, pointRadius:0 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, grid:{color:'#f1f5f9'}}, x:{grid:{display:false}}} } });
+}
+
+function renderBI() {
+    const peds = dataSet.bi;
+    const prodQty = {}; peds.filter(p => p.status === 'Concluído').forEach(p => {
+        (p.itens || '').split('|').forEach(l => {
+            const m = l.match(/(\d+)x\s+(.+?)\[/);
+            if(m) { const q = parseInt(m[1]), n = m[2].trim(); prodQty[n] = (prodQty[n]||0)+q; }
+        });
+    });
+    const top = Object.entries(prodQty).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const maxQ = top[0]?.[1] || 1;
+    document.getElementById('bi-ranking').innerHTML = top.map(([n, q], i) => `<div class="flex items-center gap-4"><span class="text-xs text-slate-300 w-4 font-black">#${i+1}</span><div class="flex-1"><div class="flex justify-between text-[11px] mb-1.5"><span class="text-slate-700">${n}</span><span class="text-slate-400">${q} un.</span></div><div class="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden"><div class="h-full bg-brand-500 transition-all rounded-full" style="width:${(q/maxQ)*100}%"></div></div></div></div>`).join('');
+}
+
+function renderMP() {
+    const mp = dataSet.mp;
+    const bandMap = {}; mp.forEach(v => { const b = v.metodo_pagamento || 'Outro'; bandMap[b] = (bandMap[b]||0)+(v.taxa_mp||0); });
+    const ctxB = document.getElementById('mpChartBandeiras').getContext('2d');
+    destroyChart('mpChartBandeiras');
+    charts.mpB = new Chart(ctxB, { type:'bar', data:{ labels:Object.keys(bandMap), datasets:[{ data:Object.values(bandMap), backgroundColor:'#6366f1', borderRadius:6 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} } });
+}
+
+function renderFluxo() {
+    if(!dataSet.sheet.fec) return;
+    const fec = dataSet.sheet.fec.slice(-15);
+    const ctx = document.getElementById('fluxoChartSaldo').getContext('2d');
+    destroyChart('fluxoChartSaldo');
+    charts.fluxo = new Chart(ctx, { type:'line', data:{ labels:fec.map(x=>x.Data_Caixa), datasets:[{ label:'Saldo Real', data:fec.map(x=>parseR(x.Saldo_Real)), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.05)', fill:true, tension:0.4, borderWidth:4 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} } });
+}
+
+function renderCompromissos() {
+    if(!dataSet.sheet.parc) return;
+    const grid = document.getElementById('boletosGrid');
+    const parcelas = dataSet.sheet.parc.filter(p => (p.Status||'').toLowerCase().includes('pend')).slice(0, 15);
+    grid.innerHTML = parcelas.map(p => `<div class="kpi-card p-6 rounded-[2.5rem] border-l-4 ${parseDateStr(p.Data_Vencimento) < new Date() ? 'border-red-500 bg-red-50' : 'border-emerald-500'}"><div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2"><span>${p.Data_Vencimento}</span><span class="${parseDateStr(p.Data_Vencimento) < new Date() ? 'text-red-600' : 'text-emerald-600'}">${p.Status}</span></div><h4 class="text-xs font-black text-slate-800 mb-1">${p.Descricao_Parcela}</h4><p class="text-lg font-black text-slate-900">${fmtR(parseR(p.Valor_Parcela))}</p></div>`).join('');
+}
+
+function parseDateStr(v) {
+    if(!v) return null; const s = String(v).trim();
+    if(/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const[d,m,y] = s.split('/'); return new Date(y, m-1, d); }
+    return new Date(s);
+}
+function destroyChart(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
+</script>
+</body>
+</html>
