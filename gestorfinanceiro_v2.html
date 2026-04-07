@@ -706,32 +706,26 @@ function openReport(){
       </div>`;
   }).join('');
 
-  // Compromissos do mês atual
-  const mesStr = `${nomeMes} - ${anoAtual}`;
+  // Compromissos do mês atual — agrupados por fatura/cartão
   const compRows = [];
 
-  // Faturas de cartão do mês atual
+  // Uma linha por fatura de cartão (mês/cartão), não por lançamento
   d.cartoes.filter(c=>c.totalPendente>0).forEach(c=>{
     Object.entries(c.faturas).forEach(([mes, fat])=>{
       if(mes.includes(nomeMes) || mes.includes(String(anoAtual))){
-        fat.itens.forEach(i=>{
-          compRows.push({ tipo:'Cartão', fonte: c.Nome_Conta, desc: i.desc, valor: i.valor, vencimento: i.vencimento || mes });
-        });
+        // Dia de vencimento do cartão para montar data aproximada
+        const diaVenc = c.Dia_Vencimento ? `Dia ${c.Dia_Vencimento}` : mes;
+        compRows.push({ tipo:'Cartão', fonte: c.Nome_Conta, desc: `Fatura ${mes} (${fat.itens.length} lançamento${fat.itens.length>1?'s':''})`, valor: fat.total, vencimento: diaVenc });
       }
     });
   });
 
-  // Boletos do mês atual
+  // Boletos do mês atual (mantém linha individual pois já é resumido)
   d.boletos.forEach(b=>{
     const bd = parseDate(b.vencimento);
     if(bd && bd.getMonth()===mesAtual && bd.getFullYear()===anoAtual){
       compRows.push({ tipo:'Boleto', fonte: b.origem||'—', desc: b.desc, valor: b.valor, vencimento: b.vencimento });
     }
-  });
-
-  compRows.sort((a,b)=>{
-    const da=parseDate(a.vencimento), db=parseDate(b.vencimento);
-    if(!da)return 1; if(!db)return -1; return da-db;
   });
 
   const totalComp = compRows.reduce((a,r)=>a+r.valor,0);
@@ -745,9 +739,9 @@ function openReport(){
             <tr>
               <th class="px-4 py-3">Tipo</th>
               <th class="px-4 py-3">Conta</th>
-              <th class="px-4 py-3">Descrição</th>
+              <th class="px-4 py-3">Fatura / Descrição</th>
               <th class="px-4 py-3">Vencimento</th>
-              <th class="px-4 py-3 text-right">Valor</th>
+              <th class="px-4 py-3 text-right">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -756,10 +750,10 @@ function openReport(){
                 <td class="px-4 py-2.5">
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${r.tipo==='Boleto'?'bg-amber-50 text-amber-600':'bg-brand-50 text-brand-600'}">${r.tipo}</span>
                 </td>
-                <td class="px-4 py-2.5 text-xs text-slate-500">${r.fonte}</td>
-                <td class="px-4 py-2.5 text-xs font-medium text-slate-700 max-w-[180px] truncate">${r.desc}</td>
-                <td class="px-4 py-2.5 text-xs text-slate-500">${formatDateBR(r.vencimento)}</td>
-                <td class="px-4 py-2.5 font-black text-slate-900 text-right">${R(r.valor)}</td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">${r.fonte}</td>
+                <td class="px-4 py-2.5 text-xs font-medium text-slate-700">${r.desc}</td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">${r.tipo==='Boleto'?formatDateBR(r.vencimento):r.vencimento}</td>
+                <td class="px-4 py-2.5 font-black text-slate-900 text-right whitespace-nowrap">${R(r.valor)}</td>
               </tr>`).join('')}
           </tbody>
           <tfoot class="bg-slate-50">
@@ -789,7 +783,7 @@ function copyToAI(){
   d.cartoes.filter(c=>c.totalPendente>0).forEach(c=>{
     Object.entries(c.faturas).forEach(([mes,fat])=>{
       if(mes.includes(nomeMes)){
-        compRows.push(`  [Cartão - ${c.Nome_Conta}] ${mes}: ${R(fat.total)}`);
+        compRows.push(`  [Cartão - ${c.Nome_Conta}] Fatura ${mes} (${fat.itens.length} lançamento${fat.itens.length>1?'s':''}): ${R(fat.total)}`);
       }
     });
   });
