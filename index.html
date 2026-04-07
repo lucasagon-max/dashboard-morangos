@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hub de Ferramentas · Morangos Tatuí</title>
+<title>Morangos Tatuí · Central de Sistemas</title>
 <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
-<link rel="apple-touch-icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
-<!-- Tailwind / Lucide / Google Fonts -->
+<!-- Bibliotecas Externas -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,800&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet" />
 
 <script>
   tailwind.config = {
@@ -26,168 +26,197 @@
 </script>
 
 <style>
-  body { background-color: #f8fafc; color: #0f172a; }
-  .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  body { background-color: #fcfcfc; color: #0f172a; overflow-x: hidden; }
+  .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.8); }
+  .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .hub-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; position: relative; overflow: hidden; }
+  .hub-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -12px rgba(225, 29, 72, 0.08); border-color: #ffe4e6; }
+  .hub-card::after { content: ''; position: absolute; top: 0; right: 0; width: 40px; height: 40px; background: linear-gradient(135deg, transparent 50%, #fff1f2 50%); border-bottom-left-radius: 100%; opacity: 0; transition: opacity 0.3s; }
+  .hub-card:hover::after { opacity: 1; }
+
+  .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; }
+  
+  .hero-gradient { background: radial-gradient(circle at top right, #fff1f2 0%, transparent 40%), radial-gradient(circle at bottom left, #f8fafc 0%, transparent 40%); }
 </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans">
+<body class="min-h-screen flex flex-col font-sans hero-gradient">
 
-<!-- ── HEADER PRINCIPAL ── -->
-<header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
-    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-12 h-12 object-contain rounded-xl shadow-sm border border-slate-100">
-    <div>
-      <h1 class="font-sans text-2xl font-black text-slate-900 leading-none">Morangos Tatuí</h1>
-      <span class="text-[11px] font-bold text-brand-600 uppercase tracking-widest mt-1 block">Portal de Sistemas Integrados</span>
+<div class="fixed inset-0 bg-pattern pointer-events-none"></div>
+
+<!-- ── HEADER ── -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <div class="absolute -inset-1 bg-brand-600 rounded-2xl blur opacity-10"></div>
+        <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="relative w-12 h-12 object-contain rounded-xl shadow-sm border border-white">
+      </div>
+      <div>
+        <h1 class="font-serif text-2xl font-black text-slate-900 leading-none italic">Morangos <span class="text-brand-600">Tatuí</span></h1>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Sistema de Inteligência Integrada</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="hidden sm:flex items-center gap-6">
+       <div class="text-right">
+          <p id="greeting" class="text-[10px] font-black text-brand-600 uppercase tracking-widest">Bom dia!</p>
+          <p class="text-[11px] font-bold text-slate-400 italic">Bem-vindo ao Portal</p>
+       </div>
+       <div class="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300">
+          <i data-lucide="user" class="w-5 h-5"></i>
+       </div>
     </div>
   </div>
 </header>
 
-<!-- ── CONTEÚDO PRINCIPAL ── -->
-<main class="flex-1 max-w-5xl w-full mx-auto px-6 py-10 fade-in">
-  
-  <p class="text-slate-500 mb-10 text-sm">Selecione a ferramenta desejada abaixo. Os painéis abrirão em uma nova guia de forma segura.</p>
+<!-- ── CONTEÚDO ── -->
+<main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-16 fade-in relative z-10">
 
-  <!-- BLOCO 1: GESTÃO ESTRATÉGICA E FINANCEIRA -->
-  <section class="mb-12">
-    <div class="flex items-center gap-2 mb-6 border-b border-slate-200 pb-2">
-      <i data-lucide="briefcase" class="w-5 h-5 text-brand-600"></i>
-      <h2 class="font-sans text-xl font-bold text-slate-900">Gestão Estratégica & Financeira</h2>
+  <!-- SEÇÃO DESTAQUE: FINANCEIRO CENTRAL -->
+  <section>
+    <div class="flex items-center justify-between mb-8">
+      <div class="space-y-1">
+        <h2 class="text-[11px] font-black text-brand-600 uppercase tracking-[0.4em]">Visão Estratégica</h2>
+        <p class="font-serif text-3xl font-black text-slate-900 italic">Núcleo Financeiro</p>
+      </div>
+      <span class="px-4 py-1.5 bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100">Real-Time Data</span>
     </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       
-      <!-- NOVO: Performance & Taxas MP -->
-      <a href="https://ferramentas.morangostatui.com.br/RelatorioMP.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-brand-100 shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="trending-up" class="w-6 h-6"></i>
+      <!-- CARD: FINANCEIRO UNIFICADO (NOVO) -->
+      <a href="financeiro_integrado.html" class="hub-card lg:col-span-1 group bg-slate-900 p-8 rounded-[2.5rem] border-none shadow-2xl shadow-slate-200">
+        <div class="mb-6 flex justify-between items-start">
+          <div class="w-14 h-14 rounded-2xl bg-white/10 text-brand-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="zap" class="w-8 h-8"></i>
+          </div>
+          <span class="text-[8px] font-black text-brand-400 bg-white/5 px-2 py-1 rounded border border-white/5 uppercase tracking-widest">Vision Beta</span>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Performance & Taxas MP</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Análise de lucratividade, mapa de calor e auditoria de taxas do Mercado Pago.</p>
+        <h3 class="font-sans text-xl font-black text-white mb-2">Painel de Controle Unificado</h3>
+        <p class="text-xs text-white/50 leading-relaxed font-medium">A nova visão simplificada que integra BI, Mercado Pago e Fluxo de Caixa em um único dashboard executivo.</p>
+        <div class="mt-8 flex items-center gap-2 text-brand-500 font-black text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
+          Acessar Painel <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
       </a>
 
-      <!-- BI / Gestão de Vendas -->
-      <a href="https://ferramentas.morangostatui.com.br/bi.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+      <!-- CARD: BI OPERACIONAL -->
+      <a href="bi.html" class="hub-card bg-white p-8 rounded-[2.5rem] group">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all">
+          <i data-lucide="bar-chart-3" class="w-8 h-8"></i>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Gestão de Vendas</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Painel BI em tempo real, curva ABC e picos de atendimento.</p>
+        <h3 class="font-black text-slate-800 text-lg mb-2">BI & Gestão de Vendas</h3>
+        <p class="text-xs text-slate-400 leading-relaxed font-medium">Análise detalhada de performance, ticket-médio, curva ABC e picos operacionais em tempo real.</p>
+        <div class="mt-6 flex items-center gap-2 text-slate-300 group-hover:text-orange-500 transition-colors">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
         </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
       </a>
 
-      <!-- Gestor Financeiro -->
-      <a href="https://ferramentas.morangostatui.com.br/gestorfinanceiro.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="pie-chart" class="w-6 h-6"></i>
+      <!-- CARD: MERCADO PAGO -->
+      <a href="RelatorioMP.html" class="hub-card bg-white p-8 rounded-[2.5rem] group">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Dashboard Financeiro</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Indicadores de lucro líquido, despesas e parcelas de cartões.</p>
+        <h3 class="font-black text-slate-800 text-lg mb-2">Relatório Mercado Pago</h3>
+        <p class="text-xs text-slate-400 leading-relaxed font-medium">Auditagem completa de recebíveis, taxas por bandeira e conciliação bancária automática via Webhook.</p>
+        <div class="mt-6 flex items-center gap-2 text-slate-300 group-hover:text-indigo-500 transition-colors">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
         </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
-      </a>
-
-      <!-- AppSheet: Fluxo de Caixa -->
-      <a href="https://www.appsheet.com/start/7102f6bd-51fc-40d2-aa9d-1087be612724" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-          <i data-lucide="arrow-right-left" class="w-6 h-6"></i>
-        </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Lançar Fluxo de Caixa</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Alimentar planilhas, registrar saídas, entradas e fechamento (AppSheet).</p>
-        </div>
-        <i data-lucide="external-link" class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors"></i>
       </a>
 
     </div>
   </section>
 
-  <!-- BLOCO 2: OPERAÇÃO E ATENDIMENTO -->
+  <!-- SEÇÃO OPERACIONAL -->
   <section>
-    <div class="flex items-center gap-2 mb-6 border-b border-slate-200 pb-2">
-      <i data-lucide="store" class="w-5 h-5 text-brand-600"></i>
-      <h2 class="font-sans text-xl font-bold text-slate-900">Operação & Atendimento</h2>
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-slate-100 text-brand-600"><i data-lucide="layers" class="w-5 h-5"></i></div>
+      <div class="space-y-0.5">
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Workflow & Dia-a-dia</h2>
+        <p class="text-xl font-bold text-slate-800">Operação & Atendimento</p>
+      </div>
     </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       
-      <!-- Gestor de Comandas -->
-      <a href="https://ferramentas.morangostatui.com.br/gestor.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+      <!-- GESTOR FINANCEIRO V2 -->
+      <a href="gestorfinanceiro_v2.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all"><i data-lucide="landmark" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Fluxo Financeiro</h4>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Gestor de Comandas (Caixa)</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Painel principal do caixa, controle de status, entregas e fechamentos.</p>
-        </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Gestão de contas a pagar, faturas de cartões e saldo de caixa via Google Sheets.</p>
+        <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Acessar <i data-lucide="external-link" class="w-3 h-3"></i></div>
       </a>
 
-      <!-- Painel de Encomendas -->
-      <a href="https://ferramentas.morangostatui.com.br/encomendas.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-brand-200 shadow-[0_0_15px_rgba(225,29,72,0.1)] hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+      <!-- GESTOR DE COMANDAS -->
+      <a href="gestor.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col border-emerald-100 bg-emerald-50/5">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Gestor de Caixa</h4>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Encomendas & Produção</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Agenda de entregas, resumo da cozinha e cobrança de saldos pendentes.</p>
-        </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Painel principal da loja. Controle de pedidos em aberto, mesa e balcão.</p>
+        <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-brand-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Acessar <i data-lucide="chevron-right" class="w-3 h-3"></i></div>
       </a>
 
-      <!-- Cardápio Atendente -->
-      <a href="https://ferramentas.morangostatui.com.br/atendimento.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="tablet-smartphone" class="w-6 h-6"></i>
-        </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Sistema de Atendente</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Lançamento rápido de pedidos para garçons na mesa ou balcão.</p>
-        </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
+      <!-- ENCOMENDAS -->
+      <a href="encomendas.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all"><i data-lucide="calendar-clock" class="w-5 h-5"></i></div>
+            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Agenda Encomendas</h4>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Relatório de produção futura, controle de retiradas e pagamentos antecipados.</p>
+          <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity text-right">Ver Agenda</div>
       </a>
 
-      <!-- Cardápio Clientes -->
-      <a href="https://ferramentas.morangostatui.com.br/cadapiodigital.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="qr-code" class="w-6 h-6"></i>
-        </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Cardápio Digital (Clientes)</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Menu digital com carrinho para leitura via QR Code pelo cliente.</p>
-        </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
+      <!-- ATENDIMENTO -->
+      <a href="atendimento.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><i data-lucide="tablet-smartphone" class="w-5 h-5"></i></div>
+            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Atendente Mesa</h4>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Lançamento de pedidos otimizado para celulares e tablets da equipe.</p>
+          <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-blue-600 uppercase tracking-widest text-right">Lançar Pedidos</div>
       </a>
 
-      <!-- Gestor de Cardápio -->
-      <a href="https://ferramentas.morangostatui.com.br/gestorcardapio.html" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i data-lucide="settings-2" class="w-6 h-6"></i>
+      <!-- CARDAPIO DIGITAL -->
+      <a href="cadapiodigital.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Link Cardápio</h4>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Editar Cardápio (Banco)</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Controle de estoque, preços, ocultar produtos e editar fotos.</p>
-        </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-500 transition-colors"></i>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Visualização do cliente. Use este link para gerar QR Codes ou colocar no Instagram.</p>
       </a>
 
-      <!-- AppSheet: Fichas Técnicas -->
-      <a href="https://www.appsheet.com/start/9bf05c9c-5689-4ceb-8c89-abe0df86c904" target="_blank" class="group flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer">
-        <div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-          <i data-lucide="chef-hat" class="w-6 h-6"></i>
+      <!-- GESTOR CARDAPIO -->
+      <a href="gestorcardapio.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all"><i data-lucide="settings-2" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Estoque & Menu</h4>
         </div>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-900 text-sm">Fichas Técnicas</h3>
-          <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Gerir ingredientes, modo de preparo e custo de produção (AppSheet).</p>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Pausar produtos, alterar preços e atualizar fotos do cardápio digital.</p>
+      </a>
+
+      <!-- APPSHEET: FLUXO -->
+      <a href="https://www.appsheet.com/start/7102f6bd-51fc-40d2-aa9d-1087be612724" target="_blank" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all"><i data-lucide="database" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">AppSheet Flows</h4>
         </div>
-        <i data-lucide="external-link" class="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors"></i>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Lançamento bruto de movimentações diárias para a planilha master.</p>
+      </a>
+
+      <!-- APPSHEET: FICHAS -->
+      <a href="https://www.appsheet.com/start/9bf05c9c-5689-4ceb-8c89-abe0df86c904" target="_blank" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all"><i data-lucide="chef-hat" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Fichas Técnicas</h4>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Cálculo de custos de produção e gestão de insumos da cozinha.</p>
       </a>
 
     </div>
@@ -195,13 +224,22 @@
 
 </main>
 
-<footer class="py-6 text-center text-xs text-slate-400 mt-auto border-t border-slate-200 bg-white font-bold tracking-wider">
-  &copy; 2026 MORANGOS TATUÍ · SISTEMA PROPRIETÁRIO INTEGRADO
+<footer class="py-12 text-center bg-white/50 backdrop-blur-sm border-t border-slate-100">
+  <div class="flex flex-col items-center gap-4">
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-8 h-8 opacity-20 grayscale">
+    <p class="text-[10px] font-black tracking-[0.5em] text-slate-300 uppercase">MORANGOS TATUÍ · SISTEMA INTEGRADO DE GESTÃO · MMXXVI</p>
+  </div>
 </footer>
 
 <script>
-  // Inicializa os ícones do Lucide
   lucide.createIcons();
+  
+  // Saudação Dinâmica
+  const h = new Date().getHours();
+  const g = document.getElementById('greeting');
+  if (h < 12) g.innerText = "Bom dia!";
+  else if (h < 18) g.innerText = "Boa tarde!";
+  else g.innerText = "Boa noite!";
 </script>
 </body>
 </html>
