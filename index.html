@@ -27,17 +27,13 @@
 
 <style>
   body { background-color: #fcfcfc; color: #0f172a; overflow-x: hidden; }
-  .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.8); }
   .fade-in { animation: fadeIn 0.6s ease-out forwards; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
   
-  .hub-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; position: relative; overflow: hidden; }
+  .hub-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; background: white; border-radius: 2.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; }
   .hub-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -12px rgba(225, 29, 72, 0.08); border-color: #ffe4e6; }
-  .hub-card::after { content: ''; position: absolute; top: 0; right: 0; width: 40px; height: 40px; background: linear-gradient(135deg, transparent 50%, #fff1f2 50%); border-bottom-left-radius: 100%; opacity: 0; transition: opacity 0.3s; }
-  .hub-card:hover::after { opacity: 1; }
-
-  .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; }
   
+  .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; }
   .hero-gradient { background: radial-gradient(circle at top right, #fff1f2 0%, transparent 40%), radial-gradient(circle at bottom left, #f8fafc 0%, transparent 40%); }
 </style>
 </head>
@@ -49,10 +45,7 @@
 <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
   <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="relative">
-        <div class="absolute -inset-1 bg-brand-600 rounded-2xl blur opacity-10"></div>
-        <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="relative w-12 h-12 object-contain rounded-xl shadow-sm border border-white">
-      </div>
+      <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-12 h-12 object-contain rounded-xl shadow-sm border border-white">
       <div>
         <h1 class="font-serif text-2xl font-black text-slate-900 leading-none italic">Morangos <span class="text-brand-600">Tatuí</span></h1>
         <div class="flex items-center gap-2 mt-1">
@@ -65,10 +58,7 @@
     <div class="hidden sm:flex items-center gap-6">
        <div class="text-right">
           <p id="greeting" class="text-[10px] font-black text-brand-600 uppercase tracking-widest">Bom dia!</p>
-          <p class="text-[11px] font-bold text-slate-400 italic">Bem-vindo ao Portal</p>
-       </div>
-       <div class="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300">
-          <i data-lucide="user" class="w-5 h-5"></i>
+          <p class="text-[11px] font-bold text-slate-400 italic">Central de Comanda</p>
        </div>
     </div>
   </div>
@@ -77,54 +67,63 @@
 <!-- ── CONTEÚDO ── -->
 <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-16 fade-in relative z-10">
 
-  <!-- SEÇÃO DESTAQUE: FINANCEIRO CENTRAL -->
+  <!-- SEÇÃO: NÚCLEO FINANCEIRO -->
   <section>
     <div class="flex items-center justify-between mb-8">
       <div class="space-y-1">
         <h2 class="text-[11px] font-black text-brand-600 uppercase tracking-[0.4em]">Visão Estratégica</h2>
         <p class="font-serif text-3xl font-black text-slate-900 italic">Núcleo Financeiro</p>
       </div>
-      <span class="px-4 py-1.5 bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100">Real-Time Data</span>
+      <span class="px-4 py-1.5 bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100 italic">Dashboard Master</span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       
-      <!-- CARD: FINANCEIRO UNIFICADO (NOVO) -->
-      <a href="financeiro_integrado.html" class="hub-card lg:col-span-1 group bg-slate-900 p-8 rounded-[2.5rem] border-none shadow-2xl shadow-slate-200">
-        <div class="mb-6 flex justify-between items-start">
-          <div class="w-14 h-14 rounded-2xl bg-white/10 text-brand-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <i data-lucide="zap" class="w-8 h-8"></i>
-          </div>
-          <span class="text-[8px] font-black text-brand-400 bg-white/5 px-2 py-1 rounded border border-white/5 uppercase tracking-widest">Vision Beta</span>
-        </div>
-        <h3 class="font-sans text-xl font-black text-white mb-2">Painel de Controle Unificado</h3>
-        <p class="text-xs text-white/50 leading-relaxed font-medium">A nova visão simplificada que integra BI, Mercado Pago e Fluxo de Caixa em um único dashboard executivo.</p>
-        <div class="mt-8 flex items-center gap-2 text-brand-500 font-black text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
-          Acessar Painel <i data-lucide="arrow-right" class="w-4 h-4"></i>
-        </div>
-      </a>
-
-      <!-- CARD: BI OPERACIONAL -->
-      <a href="bi.html" class="hub-card bg-white p-8 rounded-[2.5rem] group">
+      <!-- BI & GESTÃO DE VENDAS -->
+      <a href="bi.html" class="hub-card p-8 group">
         <div class="mb-6 w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all">
-          <i data-lucide="bar-chart-3" class="w-8 h-8"></i>
+          <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
         </div>
-        <h3 class="font-black text-slate-800 text-lg mb-2">BI & Gestão de Vendas</h3>
-        <p class="text-xs text-slate-400 leading-relaxed font-medium">Análise detalhada de performance, ticket-médio, curva ABC e picos operacionais em tempo real.</p>
-        <div class="mt-6 flex items-center gap-2 text-slate-300 group-hover:text-orange-500 transition-colors">
-          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">BI & Gestão de Vendas</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Análise de volume, ticket-médio, curva ABC e picos operacionais.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-orange-500 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Acessar BI <i data-lucide="arrow-right" class="w-3 h-3"></i>
         </div>
       </a>
 
-      <!-- CARD: MERCADO PAGO -->
-      <a href="RelatorioMP.html" class="hub-card bg-white p-8 rounded-[2.5rem] group">
+      <!-- RELATÓRIO MERCADO PAGO -->
+      <a href="RelatorioMP.html" class="hub-card p-8 group">
         <div class="mb-6 w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all">
-          <i data-lucide="shield-check" class="w-8 h-8"></i>
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
         </div>
-        <h3 class="font-black text-slate-800 text-lg mb-2">Relatório Mercado Pago</h3>
-        <p class="text-xs text-slate-400 leading-relaxed font-medium">Auditagem completa de recebíveis, taxas por bandeira e conciliação bancária automática via Webhook.</p>
-        <div class="mt-6 flex items-center gap-2 text-slate-300 group-hover:text-indigo-500 transition-colors">
-            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Taxas & Recebíveis MP</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Auditagem de taxas, conciliação bancária e relatório de checkout.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-indigo-500 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Ver Relatório <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </div>
+      </a>
+
+      <!-- FLUXO FINANCEIRO -->
+      <a href="gestorfinanceiro_v2.html" class="hub-card p-8 group border-emerald-100 bg-emerald-50/5">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
+          <i data-lucide="landmark" class="w-7 h-7"></i>
+        </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Fluxo Financeiro PRO</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Gestão de contas a pagar, faturas de cartões e saldo real.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-emerald-600 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Abrir Gestão <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </div>
+      </a>
+
+      <!-- FLUXO DE CAIXA -->
+      <a href="https://www.appsheet.com/start/7102f6bd-51fc-40d2-aa9d-1087be612724" target="_blank" class="hub-card p-8 group border-brand-100 bg-brand-50/5">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-all">
+          <i data-lucide="arrow-up-right" class="w-7 h-7"></i>
+        </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Fluxo de Caixa</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Lançamento rápido de entradas, saídas e fechamento.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-brand-600 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Lançar Agora <i data-lucide="external-link" class="w-3 h-3"></i>
         </div>
       </a>
 
@@ -134,89 +133,67 @@
   <!-- SEÇÃO OPERACIONAL -->
   <section>
     <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-slate-100 text-brand-600"><i data-lucide="layers" class="w-5 h-5"></i></div>
+      <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-slate-100 text-brand-600"><i data-lucide="shopping-basket" class="w-5 h-5"></i></div>
       <div class="space-y-0.5">
-        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Workflow & Dia-a-dia</h2>
-        <p class="text-xl font-bold text-slate-800">Operação & Atendimento</p>
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operação Diária</h2>
+        <p class="text-xl font-bold text-slate-800">Serviço & Atendimento</p>
       </div>
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       
-      <!-- GESTOR FINANCEIRO V2 -->
-      <a href="gestorfinanceiro_v2.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
-        <div class="mb-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all"><i data-lucide="landmark" class="w-5 h-5"></i></div>
-          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Fluxo Financeiro</h4>
-        </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Gestão de contas a pagar, faturas de cartões e saldo de caixa via Google Sheets.</p>
-        <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Acessar <i data-lucide="external-link" class="w-3 h-3"></i></div>
-      </a>
-
       <!-- GESTOR DE COMANDAS -->
-      <a href="gestor.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col border-emerald-100 bg-emerald-50/5">
+      <a href="gestor.html" class="hub-card p-6 group">
         <div class="mb-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
           <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Gestor de Caixa</h4>
         </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Painel principal da loja. Controle de pedidos em aberto, mesa e balcão.</p>
-        <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-brand-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Acessar <i data-lucide="chevron-right" class="w-3 h-3"></i></div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Painel de pedidos ativos, mesas e controle de comandas da loja.</p>
       </a>
 
       <!-- ENCOMENDAS -->
-      <a href="encomendas.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+      <a href="encomendas.html" class="hub-card p-6 group">
           <div class="mb-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all"><i data-lucide="calendar-clock" class="w-5 h-5"></i></div>
-            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Agenda Encomendas</h4>
+            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Encomendas</h4>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Relatório de produção futura, controle de retiradas e pagamentos antecipados.</p>
-          <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity text-right">Ver Agenda</div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Agenda de retiradas, produção futura e controle de saldos.</p>
       </a>
 
       <!-- ATENDIMENTO -->
-      <a href="atendimento.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+      <a href="atendimento.html" class="hub-card p-6 group">
           <div class="mb-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><i data-lucide="tablet-smartphone" class="w-5 h-5"></i></div>
             <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Atendente Mesa</h4>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Lançamento de pedidos otimizado para celulares e tablets da equipe.</p>
-          <div class="mt-4 pt-4 border-t border-slate-50 text-[9px] font-black text-blue-600 uppercase tracking-widest text-right">Lançar Pedidos</div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Lançamento simplificado para equipe de garçons e balcão.</p>
       </a>
 
       <!-- CARDAPIO DIGITAL -->
-      <a href="cadapiodigital.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+      <a href="cadapiodigital.html" class="hub-card p-6 group">
         <div class="mb-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
-          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Link Cardápio</h4>
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Cardápio Cliente</h4>
         </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Visualização do cliente. Use este link para gerar QR Codes ou colocar no Instagram.</p>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Link direto para o cardápio digital (Visualização do Cliente).</p>
       </a>
 
       <!-- GESTOR CARDAPIO -->
-      <a href="gestorcardapio.html" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+      <a href="gestorcardapio.html" class="hub-card p-6 group">
         <div class="mb-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all"><i data-lucide="settings-2" class="w-5 h-5"></i></div>
-          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Estoque & Menu</h4>
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="settings-2" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Painel Cardápio</h4>
         </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Pausar produtos, alterar preços e atualizar fotos do cardápio digital.</p>
-      </a>
-
-      <!-- APPSHEET: FLUXO -->
-      <a href="https://www.appsheet.com/start/7102f6bd-51fc-40d2-aa9d-1087be612724" target="_blank" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
-        <div class="mb-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all"><i data-lucide="database" class="w-5 h-5"></i></div>
-          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">AppSheet Flows</h4>
-        </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Lançamento bruto de movimentações diárias para a planilha master.</p>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Atualizar preços, ocultar produtos e editar o Menu Digital.</p>
       </a>
 
       <!-- APPSHEET: FICHAS -->
-      <a href="https://www.appsheet.com/start/9bf05c9c-5689-4ceb-8c89-abe0df86c904" target="_blank" class="hub-card bg-white p-5 rounded-3xl group flex flex-col">
+      <a href="https://www.appsheet.com/start/9bf05c9c-5689-4ceb-8c89-abe0df86c904" target="_blank" class="hub-card p-6 group">
         <div class="mb-4 flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all"><i data-lucide="chef-hat" class="w-5 h-5"></i></div>
           <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Fichas Técnicas</h4>
         </div>
-        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1">Cálculo de custos de produção e gestão de insumos da cozinha.</p>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Insumos, modo de preparo e custos reais de produção da cozinha.</p>
       </a>
 
     </div>
@@ -224,17 +201,16 @@
 
 </main>
 
-<footer class="py-12 text-center bg-white/50 backdrop-blur-sm border-t border-slate-100">
+<footer class="py-12 text-center bg-white/50 backdrop-blur-sm border-t border-slate-100 mt-auto">
   <div class="flex flex-col items-center gap-4">
     <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-8 h-8 opacity-20 grayscale">
-    <p class="text-[10px] font-black tracking-[0.5em] text-slate-300 uppercase">MORANGOS TATUÍ · SISTEMA INTEGRADO DE GESTÃO · MMXXVI</p>
+    <p class="text-[9px] font-black tracking-[0.5em] text-slate-300 uppercase">MORANGOS TATUÍ · SISTEMA PROPRIETÁRIO · 2026</p>
   </div>
 </footer>
 
 <script>
   lucide.createIcons();
   
-  // Saudação Dinâmica
   const h = new Date().getHours();
   const g = document.getElementById('greeting');
   if (h < 12) g.innerText = "Bom dia!";
