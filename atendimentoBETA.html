@@ -24,21 +24,36 @@
     </script>
 
     <style>
-        body { background-color: #f8fafc; color: #0f172a; overflow-x: hidden; touch-action: manipulation; }
+        body { background-color: #f8fafc; color: #0f172a; touch-action: manipulation; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Lista Compacta */
         .list-item { border-bottom: 1px solid #f1f5f9; padding: 10px 16px; background: white; transition: background 0.1s; cursor: pointer; }
         .list-item:active { background: #f8fafc; }
         
         .category-btn.active { background-color: #e11d48; color: white; }
 
+        /* Ajustes de Scroll e Layout */
         @media (min-width: 1024px) {
-            .desktop-layout { display: grid; grid-template-columns: 240px 1fr 350px; height: 100vh; overflow: hidden; }
-            .scroll-area { overflow-y: auto; height: 100%; }
+            .desktop-layout { 
+                display: grid; 
+                grid-template-columns: 240px 1fr 350px; 
+                height: 100vh; 
+                overflow: hidden; 
+            }
+            .scroll-area { 
+                overflow-y: auto; 
+                height: 100%; 
+                -webkit-overflow-scrolling: touch; 
+            }
             .sidebar { border-right: 1px solid #e2e8f0; background: white; }
             .cart-pane { border-left: 1px solid #e2e8f0; background: white; display: flex; flex-direction: column; }
+        }
+
+        /* Garantia de scroll no mobile */
+        @media (max-width: 1023px) {
+            html, body { height: auto; overflow: visible; }
+            .mobile-content { height: auto; overflow: visible; }
         }
     </style>
 </head>
@@ -50,61 +65,60 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
 
-    <!-- ── LAYOUT ── -->
     <div class="desktop-layout">
         
-        <!-- SIDEBAR: SÓ DESKTOP -->
+        <!-- SIDEBAR: CATEGORIAS DESKTOP -->
         <aside class="sidebar hidden lg:flex flex-col">
-            <div class="p-4 border-b bg-slate-900 text-white flex items-center gap-2">
-                <img src="https://ferramentas.morangostatui.com.br/logo.png" class="w-6 h-6 rounded">
-                <span class="font-extrabold uppercase tracking-widest text-[10px]">Categorias</span>
+            <div class="p-4 border-b bg-slate-900 text-white flex items-center gap-2 flex-shrink-0">
+                <img src="https://ferramentas.morangostatui.com.br/favicon.jpg" class="w-6 h-6 rounded">
+                <span class="font-black uppercase tracking-widest text-[9px]">Menu</span>
             </div>
-            <nav id="sidebar-cats" class="flex-1 overflow-y-auto no-scrollbar py-2 px-2 space-y-1"></nav>
+            <nav id="sidebar-cats" class="scroll-area no-scrollbar py-2 px-2 space-y-1"></nav>
         </aside>
 
-        <!-- ÁREA CENTRAL: LISTA DE PRODUTOS -->
-        <main class="flex flex-col bg-white lg:bg-[#f8fafc]">
+        <!-- ÁREA CENTRAL: PRODUTOS -->
+        <main class="flex flex-col bg-white lg:bg-[#f8fafc] h-full overflow-hidden mobile-content">
             <!-- Header Compacto -->
-            <header class="bg-white border-b sticky top-0 z-50 px-4 py-2 flex items-center gap-3">
+            <header class="bg-white border-b flex-shrink-0 px-4 py-2.5 flex items-center gap-3">
                 <div class="relative flex-grow">
                     <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full bg-slate-50 border rounded-lg py-2 pl-9 pr-2 outline-none focus:border-brand-600 transition-all">
+                    <input type="text" id="search-input" placeholder="Buscar no cardápio..." class="w-full bg-slate-50 border rounded-lg py-2 pl-9 pr-2 outline-none focus:border-brand-600 transition-all font-medium">
                 </div>
-                <!-- Botão Carrinho Mobile -->
-                <button onclick="toggleMobileCart(true)" class="lg:hidden relative bg-brand-600 text-white p-2.5 rounded-lg shadow-lg active:scale-95 transition-all">
+                <button onclick="toggleMobileCart(true)" class="lg:hidden relative bg-brand-600 text-white p-2.5 rounded-lg active:scale-95 transition-transform">
                     <i data-lucide="shopping-basket" class="w-5 h-5"></i>
                     <span id="badge-mobile" class="absolute -top-1 -right-1 bg-white text-brand-600 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
                 </button>
             </header>
 
             <!-- Categorias Mobile -->
-            <nav id="mobile-cats" class="lg:hidden flex gap-2 overflow-x-auto no-scrollbar px-4 py-3 bg-white border-b"></nav>
+            <nav id="mobile-cats" class="lg:hidden flex gap-2 overflow-x-auto no-scrollbar px-4 py-3 bg-white border-b flex-shrink-0"></nav>
 
-            <div id="product-list" class="flex-1 overflow-y-auto no-scrollbar lg:bg-white lg:m-4 lg:rounded-xl lg:border lg:shadow-sm">
-                <div class="py-20 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">Sincronizando...</div>
+            <!-- LISTA DE PRODUTOS COM SCROLL INDEPENDENTE NO DESKTOP -->
+            <div id="product-list" class="scroll-area flex-1 lg:bg-white lg:m-4 lg:rounded-xl lg:border lg:shadow-sm">
+                <div class="py-20 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">Sincronizando Cardápio...</div>
             </div>
         </main>
 
-        <!-- CART PANE (DESKTOP) -->
+        <!-- PORTA-CARRINHO (DESKTOP) -->
         <aside class="cart-pane hidden lg:flex">
-            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-                <span class="font-extrabold text-[10px] uppercase tracking-widest">Carrinho</span>
-                <button onclick="clearCart()" class="text-[9px] opacity-50 hover:opacity-100 uppercase">Limpar</button>
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
+                <span class="font-extrabold text-[10px] uppercase tracking-widest">Resumo do Pedido</span>
+                <button onclick="clearCart()" class="text-[9px] opacity-50 hover:opacity-100 uppercase font-black">Limpar</button>
             </div>
             
-            <div id="cart-items-desktop" class="flex-1 overflow-y-auto p-3 space-y-1 bg-slate-50/50"></div>
+            <div id="cart-items-desktop" class="scroll-area p-3 space-y-1.5 bg-slate-50/50"></div>
 
-            <div class="p-4 border-t bg-white space-y-3">
+            <div class="p-4 border-t bg-white space-y-3 flex-shrink-0">
                 <div class="grid grid-cols-2 gap-2">
-                    <select id="table-desktop" class="bg-slate-50 border rounded-lg py-2 px-2 font-bold focus:border-brand-600 outline-none"></select>
-                    <input type="text" id="name-desktop" placeholder="Cliente" class="bg-slate-50 border rounded-lg py-2 px-2 focus:border-brand-600 outline-none">
+                    <select id="table-desktop" class="bg-slate-50 border rounded-lg py-2 px-2 font-bold focus:border-brand-600 outline-none hover:bg-white transition-colors"></select>
+                    <input type="text" id="name-desktop" placeholder="Nome do Cliente" class="bg-slate-50 border rounded-lg py-2 px-2 focus:border-brand-600 outline-none hover:bg-white transition-colors">
                 </div>
                 <div class="flex justify-between items-center py-2 border-t border-dashed">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">Total</span>
-                    <span id="total-desktop" class="text-xl font-black text-slate-900">R$ 0,00</span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Geral</span>
+                    <span id="total-desktop" class="text-2xl font-black text-slate-900">R$ 0,00</span>
                 </div>
-                <button onclick="sendOrder('desktop')" id="btn-send-desktop" class="w-full bg-brand-600 text-white font-black py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                    <i data-lucide="send" class="w-4 h-4"></i> ENVIAR
+                <button onclick="sendOrder('desktop')" id="btn-send-desktop" class="w-full bg-brand-600 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i> ENVIAR PEDIDO
                 </button>
             </div>
         </aside>
@@ -112,60 +126,70 @@
 
     <!-- ── MODAL OPÇÕES (MOBILE/DESKTOP) ── -->
     <div id="modal-opt" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 transition-opacity" onclick="closeModal()"></div>
-        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 p-5 space-y-5">
-            <div class="flex justify-between items-start border-b pb-3">
+        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 p-6 space-y-6">
+            <div class="flex justify-between items-start border-b pb-4">
                 <div>
-                   <h3 id="m-title" class="font-black text-lg text-slate-900 leading-none">Nome</h3>
-                   <p id="m-desc" class="text-[10px] text-slate-400 mt-1 font-medium italic">Desc</p>
+                   <h3 id="m-title" class="font-black text-xl text-slate-900 leading-none uppercase">Nome do Item</h3>
+                   <p id="m-desc" class="text-[10px] text-slate-400 mt-1 font-medium italic">Selecione as opções desejadas.</p>
                 </div>
-                <button onclick="closeModal()" class="text-slate-300 hover:text-slate-900"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="closeModal()" class="text-slate-200 hover:text-slate-900 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
 
-            <div id="m-sizes-container" class="hidden space-y-2">
+            <div id="m-sizes-container" class="hidden space-y-2.5">
                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Tamanho</span>
                 <div id="m-sizes" class="grid grid-cols-2 gap-2"></div>
             </div>
 
-            <div id="m-addons-container" class="hidden space-y-2">
+            <div id="m-addons-container" class="hidden space-y-2.5">
                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Adicionais</span>
-                <div id="m-addons" class="max-h-40 overflow-y-auto pr-1 no-scrollbar space-y-1"></div>
+                <div id="m-addons" class="max-h-48 overflow-y-auto pr-1 no-scrollbar space-y-1.5"></div>
             </div>
 
-            <textarea id="m-obs" class="w-full bg-slate-50 border rounded-xl p-3 text-xs outline-none focus:border-brand-600" rows="2" placeholder="Observações..."></textarea>
+            <textarea id="m-obs" class="w-full bg-slate-50 border rounded-xl p-3 text-xs outline-none focus:border-brand-600 font-medium" rows="2" placeholder="Observações (ex: sem talher, bem gelado...)"></textarea>
 
-            <div class="flex items-center justify-between pt-2">
-                <div class="flex items-center gap-3 bg-slate-50 p-1 rounded-lg border">
-                    <button onclick="mQty(-1)" class="w-8 h-8 font-black text-brand-600">-</button>
+            <div class="flex items-center justify-between pt-4 border-t">
+                <div class="flex items-center gap-4 bg-slate-100 p-1 rounded-xl">
+                    <button onclick="mQty(-1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">-</button>
                     <span id="m-qty" class="w-4 text-center font-black">1</span>
-                    <button onclick="mQty(1)" class="w-8 h-8 font-black text-brand-600">+</button>
+                    <button onclick="mQty(1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">+</button>
                 </div>
-                <button onclick="confirmItem()" class="bg-brand-600 text-white px-6 py-3 rounded-xl font-black text-xs active:scale-95 shadow-md">
-                    ADC. <span id="m-total" class="ml-1 opacity-70">R$ 0,00</span>
-                </button>
+                <div class="text-right">
+                    <span id="m-total-label" class="block text-[10px] font-black text-slate-400 uppercase mb-1">Subtotal</span>
+                    <button onclick="confirmItem()" class="bg-brand-600 text-white px-8 py-4 rounded-2xl font-black text-xs active:scale-95 shadow-md">
+                        ADC. <span id="m-total" class="ml-1 opacity-70">R$ 0,00</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- ── CARRINHO MOBILE (SLIDE-UP) ── -->
-    <div id="modal-cart-mobile" class="fixed inset-0 z-[150] hidden bg-slate-900/40 lg:hidden">
+    <div id="modal-cart-mobile" class="fixed inset-0 z-[150] hidden bg-slate-900/50 backdrop-blur-sm lg:hidden">
         <div class="absolute inset-0" onclick="toggleMobileCart(false)"></div>
-        <div class="absolute bottom-0 w-full bg-white rounded-t-2xl max-h-[85vh] flex flex-col shadow-2xl">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h2 class="font-black text-slate-900 uppercase text-[10px] tracking-widest">Carrinho</h2>
-                <button onclick="clearCart(); toggleMobileCart(false);" class="text-[9px] text-slate-300 font-bold uppercase">Limpar</button>
+        <div class="absolute bottom-0 w-full bg-white rounded-t-[2.5rem] max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4"></div>
+            <div class="px-6 py-2 border-b flex justify-between items-center">
+                <h2 class="font-black text-slate-900 uppercase text-xs tracking-widest">Resumo do Pedido</h2>
+                <button onclick="clearCart(); toggleMobileCart(false);" class="text-[9px] text-slate-300 font-black uppercase">Limpar</button>
             </div>
             <div id="cart-items-mobile" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50"></div>
-            <div class="p-4 border-t bg-white space-y-4 pb-8">
-                <div class="grid grid-cols-2 gap-2">
-                    <select id="table-mobile" class="bg-slate-50 border rounded-lg py-2 px-2 font-bold outline-none text-xs"></select>
-                    <input type="text" id="name-mobile" placeholder="Cliente" class="bg-slate-50 border rounded-lg py-2 px-2 text-xs outline-none">
+            <div class="p-6 border-t bg-white space-y-5 pb-10 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1">Mesa</label>
+                        <select id="table-mobile" class="bg-slate-50 border rounded-xl py-3 px-3 font-bold outline-none text-xs focus:ring-2 focus:ring-brand-500/10"></select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1">Cliente</label>
+                        <input type="text" id="name-mobile" placeholder="Nome..." class="bg-slate-50 border rounded-xl py-3 px-3 text-xs outline-none focus:ring-2 focus:ring-brand-500/10">
+                    </div>
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-slate-300 uppercase">Total</span>
-                    <span id="total-mobile" class="text-2xl font-black text-slate-900 leading-none">R$ 0,00</span>
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total</span>
+                    <span id="total-mobile" class="text-3xl font-black text-slate-900 leading-none tracking-tight">R$ 0,00</span>
                 </div>
-                <button onclick="sendOrder('mobile')" id="btn-send-mobile" class="w-full bg-brand-600 text-white font-black py-4 rounded-xl shadow-xl active:scale-95 transition-all text-sm">ENVIAR PEDIDO</button>
+                <button onclick="sendOrder('mobile')" id="btn-send-mobile" class="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest">ENVIAR AGORA</button>
             </div>
         </div>
     </div>
@@ -185,8 +209,8 @@
                 data.forEach((it, idx) => {
                     if (!(it.nome||'').trim()) return;
                     if (String(it.disponivel||'sim').toLowerCase().trim() === 'não') return;
-                    const catLower = (it.categoria || 'Geral').trim().toLowerCase();
-                    if (catLower.startsWith('adicionais')) {
+                    const catL = (it.categoria || 'Geral').trim().toLowerCase();
+                    if (catL.startsWith('adicionais')) {
                         let t = ['all']; if (it.categoria.includes(':')) t = it.categoria.split(':')[1].split(',').map(x => x.trim().toLowerCase());
                         addons.push({ Nome:it.nome, Categoria:it.categoria, Preco:it.preco, targetCats:t });
                     } else {
@@ -198,7 +222,7 @@
         }
 
         function renderTables() {
-            const html = `<option value="" disabled selected>Mesa / Balcão</option>` + 
+            const html = `<option value="" disabled selected>Selecionar...</option>` + 
                          `<option value="BALCAO">BALCÃO</option><option value="ESPERA">ESPERA</option>` +
                          [...Array(15)].map((_,i) => `<option value="${i+1}">Mesa ${i+1 < 10 ? '0'+(i+1) : i+1}</option>`).join('');
             document.getElementById('table-desktop').innerHTML = html;
@@ -207,8 +231,8 @@
 
         function renderCats() {
             const cats = ['Todos', ...new Set(allProds.map(p => p.Categoria.trim()))].sort((a,b)=>(CAT_ORDER.indexOf(a)===-1?99:CAT_ORDER.indexOf(a)) - (CAT_ORDER.indexOf(b)===-1?99:CAT_ORDER.indexOf(b)));
-            const sidebar = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${curCat===c?'bg-brand-600 text-white shadow-md':'text-slate-400 hover:bg-slate-50'}">${c}</button>`).join('');
-            const mobile = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn shrink-0 px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all ${curCat===c?'active border-brand-600':'bg-white text-slate-400'}">${c}</button>`).join('');
+            const sidebar = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn w-full text-left px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${curCat===c?'bg-brand-600 text-white shadow-lg':'text-slate-400 hover:bg-slate-50'}">${c}</button>`).join('');
+            const mobile = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn shrink-0 px-5 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.1em] transition-all shadow-sm ${curCat===c?'bg-brand-600 text-white border-brand-600':'bg-white text-slate-400'}">${c}</button>`).join('');
             document.getElementById('sidebar-cats').innerHTML = sidebar;
             document.getElementById('mobile-cats').innerHTML = mobile;
         }
@@ -216,19 +240,19 @@
         function renderProds() {
             const list = document.getElementById('product-list');
             const filt = allProds.filter(p => search ? p.Nome.toLowerCase().includes(search.toLowerCase()) : (curCat==='Todos' || p.Categoria===curCat));
-            if (filt.length===0) return list.innerHTML = `<div class="p-10 text-center text-slate-300 font-bold">Vazio</div>`;
+            if (filt.length===0) return list.innerHTML = `<div class="p-10 text-center text-slate-300 font-bold uppercase text-[9px]">Cardápio Vazio</div>`;
             list.innerHTML = filt.map(p => {
-                const hasV = p.Preco.toString().includes('|'), catL = p.Categoria.toLowerCase(), hasA = addons.some(a => a.targetCats.includes('all') || a.targetCats.some(t => catL.includes(t)));
+                const hasV = String(p.Preco).includes('|'), catL = p.Categoria.toLowerCase(), hasA = addons.some(a => a.targetCats.includes('all') || a.targetCats.some(t => catL.includes(t)));
                 const needsM = hasV || hasA, displayP = hasV ? p.Preco.split('|')[0].split(':')[1] || p.Preco.split('|')[0].split(':')[0] : p.Preco;
                 return `
                     <div class="list-item flex items-center justify-between gap-4" onclick="${needsM ? `openModal(${p.originalIndex})` : `quickAdd(${p.originalIndex})`}">
                         <div class="flex-1">
-                            <div class="font-bold text-slate-800 leading-none mb-1 uppercase text-[12px]">${p.Nome}</div>
+                            <div class="font-extrabold text-slate-800 leading-none mb-1 uppercase text-xs">${p.Nome}</div>
                             <div class="text-[9px] text-slate-400 line-clamp-1 italic">${p.Desc || ''}</div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-black text-slate-900 whitespace-nowrap text-[12px]">${fmtR(displayP)}</span>
-                            <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-active:bg-brand-600"><i data-lucide="${needsM?'plus':'shopping-cart'}" class="w-4 h-4"></i></div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-slate-900 whitespace-nowrap text-xs">${fmtR(displayP)}</span>
+                            <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-active:bg-brand-600"><i data-lucide="${needsM?'plus':'shopping-cart'}" class="w-4 h-4"></i></div>
                         </div>
                     </div>
                 `;
@@ -239,14 +263,13 @@
         function quickAdd(idx) {
             const p = allProds.find(x => x.originalIndex === idx);
             addToCart({ ...p, finalP: prsP(p.Preco), ads:[], obs:'', sizeL:'', qty:1 });
-            Toastify({ text: "+1 "+p.Nome, duration: 800, gravity: "bottom", style: { background: "#e11d48", fontSize: "10px", fontWeight: "900", borderRadius: "10px" } }).showToast();
+            Toastify({ text: "+ " + p.Nome, duration: 1000, gravity: "bottom", style: { background: "#e11d48", fontWeight: "900", borderRadius: "2rem", marginBottom: "30px" } }).showToast();
         }
 
         function openModal(idx) {
             const p = allProds.find(x => x.originalIndex === idx);
             curItem = { ...p, selAds: [], baseP: 0, selSize: null, qty: 1 };
             document.getElementById('m-title').innerText = p.Nome;
-            document.getElementById('m-desc').innerText = p.Desc || 'Item do cardápio Morangos Tatuí';
             document.getElementById('m-obs').value = '';
             document.getElementById('m-qty').innerText = '1';
 
@@ -256,18 +279,18 @@
                 szDiv.classList.remove('hidden');
                 const szs = rawP.split('|').map(s => { const pt = s.split(':'); return { l: pt[0].trim(), p: prsP(pt[1]||pt[0]) }; });
                 curItem.szs = szs;
-                document.getElementById('m-sizes').innerHTML = szs.map((s,i) => `<label class="cursor-pointer"><input type="radio" name="sz" class="peer sr-only" value="${i}" ${i===0?'checked':''} onchange="setSz(${i})"><div class="peer-checked:bg-slate-900 peer-checked:text-white border rounded-lg p-2 text-center text-[10px] font-bold bg-slate-50 text-slate-500">${s.l}<br>${fmtR(s.p)}</div></label>`).join('');
+                document.getElementById('m-sizes').innerHTML = szs.map((s,i) => `<label class="cursor-pointer"><input type="radio" name="sz" class="peer sr-only" value="${i}" ${i===0?'checked':''} onchange="setSz(${i})"><div class="peer-checked:bg-slate-900 peer-checked:text-white border-2 rounded-xl p-3 text-center text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 transition-all">${s.l}<br>${fmtR(s.p)}</div></label>`).join('');
                 setSz(0);
             } else { szDiv.classList.add('hidden'); curItem.baseP = prsP(rawP); upM(); }
 
             const compAds = addons.filter(a => a.targetCats.includes('all') || a.targetCats.some(t => p.Categoria.toLowerCase().includes(t)));
             const adDiv = document.getElementById('m-addons-container');
-            if(compAds.length) { adDiv.classList.remove('hidden'); document.getElementById('m-addons').innerHTML = compAds.map(a => `<label class="flex justify-between items-center p-2 border rounded-lg bg-white text-[11px] font-bold"><span>${a.Nome}</span><div class="flex items-center gap-2"><span class="text-emerald-500">+${fmtR(a.Preco)}</span><input type="checkbox" onchange="tglAd('${a.Nome.replace(/'/g, "\\'")}', ${prsP(a.Preco)}, this.checked)" class="w-4 h-4 rounded"></div></label>`).join(''); }
+            if(compAds.length) { adDiv.classList.remove('hidden'); document.getElementById('m-addons').innerHTML = compAds.map(a => `<label class="flex justify-between items-center p-3 border border-slate-50 rounded-xl bg-white text-[11px] font-black uppercase tracking-tight"><span>${a.Nome}</span><div class="flex items-center gap-3"><span class="text-emerald-500">+${fmtR(a.Preco)}</span><input type="checkbox" onchange="tglAd('${a.Nome.replace(/'/g, "\\'")}', ${prsP(a.Preco)}, this.checked)" class="w-5 h-5 rounded-lg border-slate-200"></div></label>`).join(''); }
             else adDiv.classList.add('hidden');
             document.getElementById('modal-opt').classList.remove('hidden');
         }
 
-        window.setSz = i => { curItem.baseP = curItem.szs[i].p; curItem.selSize = curItem.szs[i].l; upM(); };
+        window.setSz = i => { if(curItem.szs){ curItem.baseP = curItem.szs[i].p; curItem.selSize = curItem.szs[i].l; upM(); } };
         window.tglAd = (n,p,c) => { if(c) curItem.selAds.push({ n,p }); else curItem.selAds = curItem.selAds.filter(x => x.n !== n); upM(); };
         window.mQty = d => { const n = curItem.qty + d; if(n >= 1) { curItem.qty = n; document.getElementById('m-qty').innerText = n; upM(); } };
         function upM() { const u = curItem.baseP + curItem.selAds.reduce((a, b) => a + b.p, 0); document.getElementById('m-total').innerText = fmtR(u * curItem.qty); }
@@ -277,13 +300,13 @@
             const u = curItem.baseP + curItem.selAds.reduce((a, b) => a+b.p, 0);
             addToCart({ ...curItem, finalP: u, ads: [...curItem.selAds], obs: document.getElementById('m-obs').value.trim(), sizeL: curItem.selSize });
             closeModal();
+            Toastify({ text: "Item Adicionado! 🍓", duration: 1000, style: { background: "#16a34a", fontWeight: "900", borderRadius: "2rem" } }).showToast();
         }
 
         function addToCart(it) {
             const uid = `${it.Nome}-${it.sizeL || ''}-${(it.ads||[]).map(a=>a.n).sort().join('')}-${it.obs || ''}`;
             const ex = cart.find(x => x.uid === uid);
-            if(ex) ex.qty += it.qty;
-            else cart.push({ uid, Nome:it.Nome, qty:it.qty, unitP:it.finalP, sizeL:it.sizeL, ads:it.ads||[], obs:it.obs });
+            if(ex) ex.qty += it.qty; else cart.push({ uid, Nome:it.Nome, qty:it.qty, unitP:it.finalP, sizeL:it.sizeL, ads:it.ads||[], obs:it.obs });
             upCart();
         }
 
@@ -292,44 +315,47 @@
             ['desktop', 'mobile'].forEach(v => {
                 const list = document.getElementById(`cart-items-${v}`);
                 document.getElementById(`total-${v}`).innerText = fmtR(total);
-                if(cart.length===0) list.innerHTML = `<div class="p-10 text-center text-slate-300 font-bold uppercase text-[9px] tracking-widest">Carrinho Vazio</div>`;
+                if(cart.length===0) list.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-200"><i data-lucide="shopping-cart" class="w-12 h-12 mb-2"></i><p class="text-[9px] font-black uppercase tracking-widest">Carrinho Vazio</p></div>`;
                 else list.innerHTML = cart.map(i => `
-                    <div class="bg-white p-2 rounded-lg border-l-4 border-brand-600 shadow-sm relative">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="font-black text-[11px] text-slate-800 leading-tight uppercase flex-1">${i.qty}x ${i.Nome} ${i.sizeL ? `<span class="text-[9px] bg-slate-100 px-1 rounded ml-1">${i.sizeL}</span>` : ''}</span>
-                            <span class="font-black text-[11px] text-brand-600">${fmtR(i.unitP * i.qty)}</span>
+                    <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1 pr-2">
+                                <h4 class="font-black text-[11px] text-slate-800 leading-tight uppercase">${i.qty}x ${i.Nome} ${i.sizeL ? `<span class="bg-slate-100 px-1 rounded text-[8px] ml-1">${i.sizeL}</span>` : ''}</h4>
+                                ${i.ads.length ? `<p class="text-[8px] text-slate-400 font-bold uppercase mt-1">+ ${i.ads.map(a=>a.n).join(', ')}</p>` : ''}
+                                ${i.obs ? `<p class="text-[8px] text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md mt-2 inline-block font-black italic">"${i.obs}"</p>` : ''}
+                            </div>
+                            <span class="font-black text-[11px] text-slate-900">${fmtR(i.unitP * i.qty)}</span>
                         </div>
-                        ${i.ads.length ? `<div class="text-[8px] text-slate-400 font-bold uppercase">+ ${i.ads.map(a=>a.n).join(', ')}</div>` : ''}
-                        ${i.obs ? `<div class="text-[8px] text-brand-600 italic bg-brand-50 px-1 mt-1 inline-block">"${i.obs}"</div>` : ''}
-                        <div class="flex justify-end gap-1 mt-2">
-                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', -1)" class="w-6 h-6 bg-slate-50 text-slate-300 rounded font-bold">-</button>
-                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', 1)" class="w-6 h-6 bg-brand-50 text-brand-600 rounded font-bold">+</button>
+                        <div class="flex justify-end gap-2 pt-2 border-t border-slate-50">
+                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', -1)" class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-slate-100 transition-colors font-bold">-</button>
+                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', 1)" class="w-8 h-8 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 transition-colors font-bold">+</button>
                         </div>
                     </div>
                 `).join('');
             });
             document.getElementById('badge-mobile').innerText = cnt; document.getElementById('badge-mobile').classList.toggle('hidden', cnt===0);
+            lucide.createIcons();
         }
 
         window.chQty = (uid, d) => { const idx = cart.findIndex(x => x.uid === uid); if(idx === -1) return; cart[idx].qty += d; if(cart[idx].qty <= 0) cart.splice(idx, 1); upCart(); };
-        function clearCart() { if(confirm('Limpar?')) { cart = []; upCart(); } }
+        function clearCart() { if(confirm('Esvaziar o carrinho?')) { cart = []; upCart(); } }
         function toggleMobileCart(s) { document.getElementById('modal-cart-mobile').classList.toggle('hidden', !s); }
 
         async function sendOrder(v) {
             const tbl = document.getElementById(`table-${v}`).value, name = document.getElementById(`name-${v}`).value.trim();
-            if(!tbl) return alert("📢 Selecione a MESA!");
-            if(cart.length===0) return alert("🛒 Carrinho vazio!");
-            const btn = document.getElementById(`btn-send-${v}`), orig = btn.innerHTML;
+            if(!tbl) return alert("⚠️ Selecione a MESA para enviar!");
+            if(cart.length===0) return alert("🔎 Seu carrinho está vazio!");
+            const btn = document.getElementById(`btn-send-${v}`), org = btn.innerHTML;
             btn.innerHTML = 'Enviando...'; btn.disabled = true;
             try {
                 const its = cart.map(i => `${i.qty}x ${i.Nome}${i.sizeL ? ` (${i.sizeL})` : ''}${i.ads.length ? ` (+${i.ads.map(a => a.n).join(', ')})` : ''}${i.obs ? ` [Obs: ${i.obs}]` : ''} [${fmtR(i.unitP * i.qty)}]`).join(' | ');
                 const payload = { id: Date.now().toString().slice(-6), data: new Date().toLocaleString("pt-BR"), cliente: name ? `${name} (Mesa ${tbl})` : `Mesa ${tbl}`, tipo: `Mesa ${tbl}`, itens: its, total: fmtR(cart.reduce((a,i)=>a+(i.unitP*i.qty),0)), status: 'Novo', pagamento: 'A Pagar no Caixa', obs: 'Atendimento' };
                 const { error } = await supabaseClient.from('pedidos').insert([payload]);
                 if (error) throw error;
-                Toastify({ text: "Pedido Enviado!", duration: 2000, style: { background: "#16a34a" } }).showToast();
+                Toastify({ text: "Pedido Enviado p/ Cozinha! 🍓🚀", duration: 3000, style: { background: "#16a34a", fontWeight: "900" } }).showToast();
                 cart = []; upCart(); toggleMobileCart(false);
                 document.getElementById(`table-${v}`).value = ''; document.getElementById(`name-${v}`).value = '';
-            } catch (e) { alert("Erro de rede."); } finally { btn.innerHTML = orig; btn.disabled = false; }
+            } catch (e) { alert("Erro ao enviar. Tente novamente."); } finally { btn.innerHTML = org; btn.disabled = false; lucide.createIcons(); }
         }
 
         function setCat(c) { curCat = c; renderCats(); renderProds(); }
