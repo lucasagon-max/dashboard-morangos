@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#e11d48">
     <link rel="apple-touch-icon" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
@@ -191,46 +191,48 @@
     <!-- ── MODAL OPÇÕES (MOBILE/DESKTOP) ── -->
     <div id="modal-opt" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 p-6 space-y-6">
-            <div class="flex justify-between items-start border-b pb-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col max-h-[90vh] overflow-hidden shadow-2xl relative z-10">
+            <!-- Header Fixo -->
+            <div class="p-6 border-b flex justify-between items-start flex-shrink-0">
                 <div>
                     <h3 id="m-title" class="font-black text-xl text-slate-900 leading-none uppercase">Nome do Item</h3>
-                    <p id="m-desc" class="text-[10px] text-slate-400 mt-1 font-medium italic">Selecione as opções
-                        desejadas.</p>
+                    <p id="m-desc" class="text-[10px] text-slate-400 mt-1 font-medium italic">Selecione as opções desejadas.</p>
                 </div>
-                <button onclick="closeModal()" class="text-slate-200 hover:text-slate-900 transition-colors"><i
-                        data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="closeModal()" class="text-slate-200 hover:text-slate-900 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
 
-            <div id="m-sizes-container" class="hidden space-y-2.5">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Tamanho</span>
-                <div id="m-sizes" class="grid grid-cols-2 gap-2"></div>
-            </div>
-
-            <div id="m-addons-container" class="hidden space-y-2.5">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Adicionais</span>
-                <div id="m-addons" class="max-h-48 overflow-y-auto pr-1 no-scrollbar space-y-1.5"></div>
-            </div>
-
-            <textarea id="m-obs"
-                class="w-full bg-slate-50 border rounded-xl p-3 text-xs outline-none focus:border-brand-600 font-medium"
-                rows="2" placeholder="Observações (ex: sem talher, bem gelado...)"></textarea>
-
-            <div class="flex items-center justify-between pt-4 border-t">
-                <div class="flex items-center gap-4 bg-slate-100 p-1 rounded-xl">
-                    <button onclick="mQty(-1)"
-                        class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">-</button>
-                    <span id="m-qty" class="w-4 text-center font-black">1</span>
-                    <button onclick="mQty(1)"
-                        class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">+</button>
+            <!-- Conteúdo Rolável -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+                <div id="m-sizes-container" class="hidden space-y-2.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Tamanho</span>
+                    <div id="m-sizes" class="grid grid-cols-2 gap-2"></div>
                 </div>
-                <div class="text-right">
-                    <span id="m-total-label"
-                        class="block text-[10px] font-black text-slate-400 uppercase mb-1">Subtotal</span>
-                    <button onclick="confirmItem()"
-                        class="bg-brand-600 text-white px-8 py-4 rounded-2xl font-black text-xs active:scale-95 shadow-md">
-                        ADC. <span id="m-total" class="ml-1 opacity-70">R$ 0,00</span>
-                    </button>
+
+                <div id="m-addons-container" class="hidden space-y-2.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Adicionais</span>
+                    <div id="m-addons" class="space-y-1.5"></div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Observações</span>
+                    <textarea id="m-obs" class="w-full bg-slate-50 border rounded-xl p-3 text-xs outline-none focus:border-brand-600 font-medium" rows="2" placeholder="Ex: sem talher, bem gelado..."></textarea>
+                </div>
+            </div>
+
+            <!-- Footer Fixo -->
+            <div class="p-6 border-t flex-shrink-0 bg-slate-50 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4 bg-white p-1 rounded-xl border">
+                        <button onclick="mQty(-1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-slate-50 rounded-lg">-</button>
+                        <span id="m-qty" class="w-4 text-center font-black">1</span>
+                        <button onclick="mQty(1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-slate-50 rounded-lg">+</button>
+                    </div>
+                    <div class="text-right">
+                        <span id="m-total-label" class="block text-[10px] font-black text-slate-400 uppercase mb-1">Subtotal</span>
+                        <button onclick="confirmItem()" class="bg-brand-600 text-white px-8 py-4 rounded-2xl font-black text-xs active:scale-95 shadow-md uppercase tracking-widest">
+                            ADC. <span id="m-total" class="ml-1 opacity-70">R$ 0,00</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -492,7 +494,7 @@
 
         function setCat(c) { curCat = c; renderCats(); renderProds(); }
         document.getElementById('search-input').addEventListener('input', e => { search = e.target.value; renderProds(); });
-        
+
         // Registro do Service Worker para PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -503,7 +505,7 @@
                 });
             });
         }
-        
+
         init(); lucide.createIcons();
     </script>
 </body>
