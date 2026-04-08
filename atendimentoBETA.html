@@ -1,366 +1,221 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no text-size-adjust=none">
-    <title>Atendimento Rápido · Morangos Tatuí</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morangos Tatuí · Central de Sistemas</title>
+<link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Inter"', 'sans-serif'] },
-                    colors: { brand: { 50: '#fff1f2', 600: '#e11d48' } }
-                }
-            }
-        }
-    </script>
+<!-- Bibliotecas Externas -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        body { background-color: #f8fafc; color: #0f172a; touch-action: manipulation; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .list-item { border-bottom: 1px solid #f1f5f9; padding: 10px 16px; background: white; transition: background 0.1s; cursor: pointer; }
-        .list-item:active { background: #f8fafc; }
-        
-        .category-btn.active { background-color: #e11d48; color: white; }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,800&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet" />
 
-        /* Ajustes de Scroll e Layout */
-        @media (min-width: 1024px) {
-            .desktop-layout { 
-                display: grid; 
-                grid-template-columns: 240px 1fr 350px; 
-                height: 100vh; 
-                overflow: hidden; 
-            }
-            .scroll-area { 
-                overflow-y: auto; 
-                height: 100%; 
-                -webkit-overflow-scrolling: touch; 
-            }
-            .sidebar { border-right: 1px solid #e2e8f0; background: white; }
-            .cart-pane { border-left: 1px solid #e2e8f0; background: white; display: flex; flex-direction: column; }
-        }
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+        colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
+      }
+    }
+  }
+</script>
 
-        /* Garantia de scroll no mobile */
-        @media (max-width: 1023px) {
-            html, body { height: auto; overflow: visible; }
-            .mobile-content { height: auto; overflow: visible; }
-        }
-    </style>
+<style>
+  body { background-color: #fcfcfc; color: #0f172a; overflow-x: hidden; }
+  .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .hub-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; background: white; border-radius: 2.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .hub-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -12px rgba(225, 29, 72, 0.08); border-color: #ffe4e6; }
+  
+  .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; }
+  .hero-gradient { background: radial-gradient(circle at top right, #fff1f2 0%, transparent 40%), radial-gradient(circle at bottom left, #f8fafc 0%, transparent 40%); }
+</style>
 </head>
-<body class="font-sans antialiased text-sm">
+<body class="min-h-screen flex flex-col font-sans hero-gradient">
 
-    <script>
-        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
+<div class="fixed inset-0 bg-pattern pointer-events-none"></div>
 
-    <div class="desktop-layout">
-        
-        <!-- SIDEBAR: CATEGORIAS DESKTOP -->
-        <aside class="sidebar hidden lg:flex flex-col">
-            <div class="p-4 border-b bg-slate-900 text-white flex items-center gap-2 flex-shrink-0">
-                <img src="https://ferramentas.morangostatui.com.br/favicon.jpg" class="w-6 h-6 rounded">
-                <span class="font-black uppercase tracking-widest text-[9px]">Menu</span>
-            </div>
-            <nav id="sidebar-cats" class="scroll-area no-scrollbar py-2 px-2 space-y-1"></nav>
-        </aside>
-
-        <!-- ÁREA CENTRAL: PRODUTOS -->
-        <main class="flex flex-col bg-white lg:bg-[#f8fafc] h-full overflow-hidden mobile-content">
-            <!-- Header Compacto -->
-            <header class="bg-white border-b flex-shrink-0 px-4 py-2.5 flex items-center gap-3">
-                <div class="relative flex-grow">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                    <input type="text" id="search-input" placeholder="Buscar no cardápio..." class="w-full bg-slate-50 border rounded-lg py-2 pl-9 pr-2 outline-none focus:border-brand-600 transition-all font-medium">
-                </div>
-                <button onclick="toggleMobileCart(true)" class="lg:hidden relative bg-brand-600 text-white p-2.5 rounded-lg active:scale-95 transition-transform">
-                    <i data-lucide="shopping-basket" class="w-5 h-5"></i>
-                    <span id="badge-mobile" class="absolute -top-1 -right-1 bg-white text-brand-600 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
-                </button>
-            </header>
-
-            <!-- Categorias Mobile -->
-            <nav id="mobile-cats" class="lg:hidden flex gap-2 overflow-x-auto no-scrollbar px-4 py-3 bg-white border-b flex-shrink-0"></nav>
-
-            <!-- LISTA DE PRODUTOS COM SCROLL INDEPENDENTE NO DESKTOP -->
-            <div id="product-list" class="scroll-area flex-1 lg:bg-white lg:m-4 lg:rounded-xl lg:border lg:shadow-sm">
-                <div class="py-20 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">Sincronizando Cardápio...</div>
-            </div>
-        </main>
-
-        <!-- PORTA-CARRINHO (DESKTOP) -->
-        <aside class="cart-pane hidden lg:flex">
-            <div class="p-4 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
-                <span class="font-extrabold text-[10px] uppercase tracking-widest">Resumo do Pedido</span>
-                <button onclick="clearCart()" class="text-[9px] opacity-50 hover:opacity-100 uppercase font-black">Limpar</button>
-            </div>
-            
-            <div id="cart-items-desktop" class="scroll-area p-3 space-y-1.5 bg-slate-50/50"></div>
-
-            <div class="p-4 border-t bg-white space-y-3 flex-shrink-0">
-                <div class="grid grid-cols-2 gap-2">
-                    <select id="table-desktop" class="bg-slate-50 border rounded-lg py-2 px-2 font-bold focus:border-brand-600 outline-none hover:bg-white transition-colors"></select>
-                    <input type="text" id="name-desktop" placeholder="Nome do Cliente" class="bg-slate-50 border rounded-lg py-2 px-2 focus:border-brand-600 outline-none hover:bg-white transition-colors">
-                </div>
-                <div class="flex justify-between items-center py-2 border-t border-dashed">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Geral</span>
-                    <span id="total-desktop" class="text-2xl font-black text-slate-900">R$ 0,00</span>
-                </div>
-                <button onclick="sendOrder('desktop')" id="btn-send-desktop" class="w-full bg-brand-600 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                    <i data-lucide="send" class="w-4 h-4"></i> ENVIAR PEDIDO
-                </button>
-            </div>
-        </aside>
-    </div>
-
-    <!-- ── MODAL OPÇÕES (MOBILE/DESKTOP) ── -->
-    <div id="modal-opt" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 p-6 space-y-6">
-            <div class="flex justify-between items-start border-b pb-4">
-                <div>
-                   <h3 id="m-title" class="font-black text-xl text-slate-900 leading-none uppercase">Nome do Item</h3>
-                   <p id="m-desc" class="text-[10px] text-slate-400 mt-1 font-medium italic">Selecione as opções desejadas.</p>
-                </div>
-                <button onclick="closeModal()" class="text-slate-200 hover:text-slate-900 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-
-            <div id="m-sizes-container" class="hidden space-y-2.5">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Tamanho</span>
-                <div id="m-sizes" class="grid grid-cols-2 gap-2"></div>
-            </div>
-
-            <div id="m-addons-container" class="hidden space-y-2.5">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Adicionais</span>
-                <div id="m-addons" class="max-h-48 overflow-y-auto pr-1 no-scrollbar space-y-1.5"></div>
-            </div>
-
-            <textarea id="m-obs" class="w-full bg-slate-50 border rounded-xl p-3 text-xs outline-none focus:border-brand-600 font-medium" rows="2" placeholder="Observações (ex: sem talher, bem gelado...)"></textarea>
-
-            <div class="flex items-center justify-between pt-4 border-t">
-                <div class="flex items-center gap-4 bg-slate-100 p-1 rounded-xl">
-                    <button onclick="mQty(-1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">-</button>
-                    <span id="m-qty" class="w-4 text-center font-black">1</span>
-                    <button onclick="mQty(1)" class="w-10 h-10 font-black text-brand-600 transition-colors hover:bg-white rounded-lg">+</button>
-                </div>
-                <div class="text-right">
-                    <span id="m-total-label" class="block text-[10px] font-black text-slate-400 uppercase mb-1">Subtotal</span>
-                    <button onclick="confirmItem()" class="bg-brand-600 text-white px-8 py-4 rounded-2xl font-black text-xs active:scale-95 shadow-md">
-                        ADC. <span id="m-total" class="ml-1 opacity-70">R$ 0,00</span>
-                    </button>
-                </div>
-            </div>
+<!-- ── HEADER ── -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-12 h-12 object-contain rounded-xl shadow-sm border border-white">
+      <div>
+        <h1 class="font-serif text-2xl font-black text-slate-900 leading-none italic">Morangos <span class="text-brand-600">Tatuí</span></h1>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Sistema de Inteligência Integrada</span>
         </div>
+      </div>
+    </div>
+    
+    <div class="hidden sm:flex items-center gap-6">
+       <div class="text-right">
+          <p id="greeting" class="text-[10px] font-black text-brand-600 uppercase tracking-widest">Bom dia!</p>
+          <p class="text-[11px] font-bold text-slate-400 italic">Central de Comanda</p>
+       </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── CONTEÚDO ── -->
+<main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-16 fade-in relative z-10">
+
+  <!-- SEÇÃO: NÚCLEO FINANCEIRO -->
+  <section>
+    <div class="flex items-center justify-between mb-8">
+      <div class="space-y-1">
+        <h2 class="text-[11px] font-black text-brand-600 uppercase tracking-[0.4em]">Visão Estratégica</h2>
+        <p class="font-serif text-3xl font-black text-slate-900 italic">Núcleo Financeiro</p>
+      </div>
+      <span class="px-4 py-1.5 bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-brand-100 italic">Dashboard Master</span>
     </div>
 
-    <!-- ── CARRINHO MOBILE (SLIDE-UP) ── -->
-    <div id="modal-cart-mobile" class="fixed inset-0 z-[150] hidden bg-slate-900/50 backdrop-blur-sm lg:hidden">
-        <div class="absolute inset-0" onclick="toggleMobileCart(false)"></div>
-        <div class="absolute bottom-0 w-full bg-white rounded-t-[2.5rem] max-h-[90vh] flex flex-col shadow-2xl">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-4"></div>
-            <div class="px-6 py-2 border-b flex justify-between items-center">
-                <h2 class="font-black text-slate-900 uppercase text-xs tracking-widest">Resumo do Pedido</h2>
-                <button onclick="clearCart(); toggleMobileCart(false);" class="text-[9px] text-slate-300 font-black uppercase">Limpar</button>
-            </div>
-            <div id="cart-items-mobile" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50"></div>
-            <div class="p-6 border-t bg-white space-y-5 pb-10 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1">Mesa</label>
-                        <select id="table-mobile" class="bg-slate-50 border rounded-xl py-3 px-3 font-bold outline-none text-xs focus:ring-2 focus:ring-brand-500/10"></select>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1">Cliente</label>
-                        <input type="text" id="name-mobile" placeholder="Nome..." class="bg-slate-50 border rounded-xl py-3 px-3 text-xs outline-none focus:ring-2 focus:ring-brand-500/10">
-                    </div>
-                </div>
-                <div class="flex justify-between items-center px-1">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total</span>
-                    <span id="total-mobile" class="text-3xl font-black text-slate-900 leading-none tracking-tight">R$ 0,00</span>
-                </div>
-                <button onclick="sendOrder('mobile')" id="btn-send-mobile" class="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest">ENVIAR AGORA</button>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      <!-- BI & GESTÃO DE VENDAS -->
+      <a href="bi.html" class="hub-card p-8 group">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all">
+          <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
         </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">BI & Gestão de Vendas</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Análise de volume, ticket-médio, curva ABC e picos operacionais.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-orange-500 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Acessar BI <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </div>
+      </a>
+
+      <!-- RELATÓRIO MERCADO PAGO -->
+      <a href="RelatorioMP.html" class="hub-card p-8 group">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Taxas & Recebíveis MP</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Auditagem de taxas, conciliação bancária e relatório de checkout.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-indigo-500 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Ver Relatório <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </div>
+      </a>
+
+      <!-- FLUXO FINANCEIRO (GESTOR V2) -->
+      <a href="gestorfinanceiro_v2.html" class="hub-card p-8 group border-emerald-100 bg-emerald-50/5">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
+          <i data-lucide="landmark" class="w-7 h-7"></i>
+        </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Fluxo Financeiro PRO</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Gestão de contas a pagar, faturas de cartões e saldo real (Sheets).</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-emerald-600 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Abrir Gestão <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </div>
+      </a>
+
+      <!-- FLUXO DE CAIXA (APPSHEET) -->
+      <a href="https://www.appsheet.com/start/7102f6bd-51fc-40d2-aa9d-1087be612724" target="_blank" class="hub-card p-8 group border-brand-100 bg-brand-50/5">
+        <div class="mb-6 w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-all">
+          <i data-lucide="arrow-up-right" class="w-7 h-7"></i>
+        </div>
+        <h3 class="font-black text-slate-800 text-md mb-2 leading-tight">Fluxo de Caixa</h3>
+        <p class="text-[10px] text-slate-400 leading-relaxed font-medium flex-1 italic">Lançamento rápido de entradas, saídas e fechamento via Smartphone.</p>
+        <div class="mt-8 flex items-center gap-2 text-slate-300 group-hover:text-brand-600 transition-colors uppercase font-black text-[9px] tracking-widest">
+          Lançar Agora <i data-lucide="external-link" class="w-3 h-3"></i>
+        </div>
+      </a>
+
     </div>
+  </section>
 
-    <script>
-        const CAT_ORDER = ["Promoções","Salgados","Sucos Frescos","Sucos Especiais","Smoothies","Milk Shakes","Bebidas Geladas","Cafés","Cafés Especiais","Chás Gelados","Sobremesas","Doces","Morangos Frescos","Frutas Congeladas","Artesanatos"];
-        let allProds = [], addons = [], cart = [], curCat = 'Todos', search = '', curItem = null;
+  <!-- SEÇÃO OPERACIONAL -->
+  <section>
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-slate-100 text-brand-600"><i data-lucide="shopping-basket" class="w-5 h-5"></i></div>
+      <div class="space-y-0.5">
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operação Diária</h2>
+        <p class="text-xl font-bold text-slate-800">Serviço & Atendimento</p>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- GESTOR DE COMANDAS -->
+      <a href="gestor.html" class="hub-card p-6 group">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Gestor de Caixa</h4>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Painel de pedidos ativos, mesas e controle de comandas da loja.</p>
+      </a>
 
-        const fmtR = v => (typeof v === 'string' ? prsP(v) : v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const prsP = v => { let s = String(v).replace('R$', '').trim(); return parseFloat(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s) || 0; };
+      <!-- ENCOMENDAS -->
+      <a href="encomendas.html" class="hub-card p-6 group">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all"><i data-lucide="calendar-clock" class="w-5 h-5"></i></div>
+            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Encomendas</h4>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Agenda de retiradas, produção futura e controle de saldos.</p>
+      </a>
 
-        async function init() {
-            renderTables();
-            try {
-                const { data, error } = await supabaseClient.from('produtos').select('*');
-                if (error) throw error;
-                data.forEach((it, idx) => {
-                    if (!(it.nome||'').trim()) return;
-                    if (String(it.disponivel||'sim').toLowerCase().trim() === 'não') return;
-                    const catL = (it.categoria || 'Geral').trim().toLowerCase();
-                    if (catL.startsWith('adicionais')) {
-                        let t = ['all']; if (it.categoria.includes(':')) t = it.categoria.split(':')[1].split(',').map(x => x.trim().toLowerCase());
-                        addons.push({ Nome:it.nome, Categoria:it.categoria, Preco:it.preco, targetCats:t });
-                    } else {
-                        allProds.push({ Nome:it.nome, Categoria:it.categoria||'Geral', Preco:it.preco||'0', Desc:it.descricao||'', originalIndex:idx });
-                    }
-                });
-                renderCats(); renderProds();
-            } catch (e) { document.getElementById('product-list').innerHTML = '<div class="p-10 text-center text-red-500 font-bold">Erro de conexão!</div>'; }
-        }
+      <!-- ATENDIMENTO -->
+      <a href="atendimento.html" class="hub-card p-6 group">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><i data-lucide="tablet-smartphone" class="w-5 h-5"></i></div>
+            <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Atendente Mesa</h4>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Lançamento simplificado para equipe de garçons e balcão.</p>
+      </a>
 
-        function renderTables() {
-            const html = `<option value="" disabled selected>Selecionar...</option>` + 
-                         `<option value="BALCAO">BALCÃO</option><option value="ESPERA">ESPERA</option>` +
-                         [...Array(15)].map((_,i) => `<option value="${i+1}">Mesa ${i+1 < 10 ? '0'+(i+1) : i+1}</option>`).join('');
-            document.getElementById('table-desktop').innerHTML = html;
-            document.getElementById('table-mobile').innerHTML = html;
-        }
+      <!-- CARDAPIO DIGITAL -->
+      <a href="cadapiodigital.html" class="hub-card p-6 group">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Cardápio Cliente</h4>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Link direto para o cardápio digital (Visualização do Cliente).</p>
+      </a>
 
-        function renderCats() {
-            const cats = ['Todos', ...new Set(allProds.map(p => p.Categoria.trim()))].sort((a,b)=>(CAT_ORDER.indexOf(a)===-1?99:CAT_ORDER.indexOf(a)) - (CAT_ORDER.indexOf(b)===-1?99:CAT_ORDER.indexOf(b)));
-            const sidebar = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn w-full text-left px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${curCat===c?'bg-brand-600 text-white shadow-lg':'text-slate-400 hover:bg-slate-50'}">${c}</button>`).join('');
-            const mobile = cats.map(c => `<button onclick="setCat('${c}')" class="category-btn shrink-0 px-5 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.1em] transition-all shadow-sm ${curCat===c?'bg-brand-600 text-white border-brand-600':'bg-white text-slate-400'}">${c}</button>`).join('');
-            document.getElementById('sidebar-cats').innerHTML = sidebar;
-            document.getElementById('mobile-cats').innerHTML = mobile;
-        }
+      <!-- GESTOR CARDAPIO -->
+      <a href="gestorcardapio.html" class="hub-card p-6 group">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all"><i data-lucide="settings-2" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Painel Cardápio</h4>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Atualizar preços, ocultar produtos e editar o Menu Digital.</p>
+      </a>
 
-        function renderProds() {
-            const list = document.getElementById('product-list');
-            const filt = allProds.filter(p => search ? p.Nome.toLowerCase().includes(search.toLowerCase()) : (curCat==='Todos' || p.Categoria===curCat));
-            if (filt.length===0) return list.innerHTML = `<div class="p-10 text-center text-slate-300 font-bold uppercase text-[9px]">Cardápio Vazio</div>`;
-            list.innerHTML = filt.map(p => {
-                const hasV = String(p.Preco).includes('|'), catL = p.Categoria.toLowerCase(), hasA = addons.some(a => a.targetCats.includes('all') || a.targetCats.some(t => catL.includes(t)));
-                const needsM = hasV || hasA, displayP = hasV ? p.Preco.split('|')[0].split(':')[1] || p.Preco.split('|')[0].split(':')[0] : p.Preco;
-                return `
-                    <div class="list-item flex items-center justify-between gap-4" onclick="${needsM ? `openModal(${p.originalIndex})` : `quickAdd(${p.originalIndex})`}">
-                        <div class="flex-1">
-                            <div class="font-extrabold text-slate-800 leading-none mb-1 uppercase text-xs">${p.Nome}</div>
-                            <div class="text-[9px] text-slate-400 line-clamp-1 italic">${p.Desc || ''}</div>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="font-black text-slate-900 whitespace-nowrap text-xs">${fmtR(displayP)}</span>
-                            <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-active:bg-brand-600"><i data-lucide="${needsM?'plus':'shopping-cart'}" class="w-4 h-4"></i></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            lucide.createIcons();
-        }
+      <!-- APPSHEET: FICHAS -->
+      <a href="https://www.appsheet.com/start/9bf05c9c-5689-4ceb-8c89-abe0df86c904" target="_blank" class="hub-card p-6 group">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all"><i data-lucide="chef-hat" class="w-5 h-5"></i></div>
+          <h4 class="font-black text-slate-800 text-[13px] uppercase tracking-tight">Fichas Técnicas</h4>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium leading-relaxed flex-1 italic">Insumos, modo de preparo e custos reais de produção da cozinha.</p>
+      </a>
 
-        function quickAdd(idx) {
-            const p = allProds.find(x => x.originalIndex === idx);
-            addToCart({ ...p, finalP: prsP(p.Preco), ads:[], obs:'', sizeL:'', qty:1 });
-            Toastify({ text: "+ " + p.Nome, duration: 1000, gravity: "bottom", style: { background: "#e11d48", fontWeight: "900", borderRadius: "2rem", marginBottom: "30px" } }).showToast();
-        }
+    </div>
+  </section>
 
-        function openModal(idx) {
-            const p = allProds.find(x => x.originalIndex === idx);
-            curItem = { ...p, selAds: [], baseP: 0, selSize: null, qty: 1 };
-            document.getElementById('m-title').innerText = p.Nome;
-            document.getElementById('m-obs').value = '';
-            document.getElementById('m-qty').innerText = '1';
+</main>
 
-            const rawP = String(p.Preco);
-            const szDiv = document.getElementById('m-sizes-container');
-            if (rawP.includes('|')) {
-                szDiv.classList.remove('hidden');
-                const szs = rawP.split('|').map(s => { const pt = s.split(':'); return { l: pt[0].trim(), p: prsP(pt[1]||pt[0]) }; });
-                curItem.szs = szs;
-                document.getElementById('m-sizes').innerHTML = szs.map((s,i) => `<label class="cursor-pointer"><input type="radio" name="sz" class="peer sr-only" value="${i}" ${i===0?'checked':''} onchange="setSz(${i})"><div class="peer-checked:bg-slate-900 peer-checked:text-white border-2 rounded-xl p-3 text-center text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 transition-all">${s.l}<br>${fmtR(s.p)}</div></label>`).join('');
-                setSz(0);
-            } else { szDiv.classList.add('hidden'); curItem.baseP = prsP(rawP); upM(); }
+<footer class="py-12 text-center bg-white/50 backdrop-blur-sm border-t border-slate-100 mt-auto">
+  <div class="flex flex-col items-center gap-4">
+    <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-8 h-8 opacity-20 grayscale">
+    <p class="text-[9px] font-black tracking-[0.5em] text-slate-300 uppercase">MORANGOS TATUÍ · SISTEMA PROPRIETÁRIO · 2026</p>
+  </div>
+</footer>
 
-            const compAds = addons.filter(a => a.targetCats.includes('all') || a.targetCats.some(t => p.Categoria.toLowerCase().includes(t)));
-            const adDiv = document.getElementById('m-addons-container');
-            if(compAds.length) { adDiv.classList.remove('hidden'); document.getElementById('m-addons').innerHTML = compAds.map(a => `<label class="flex justify-between items-center p-3 border border-slate-50 rounded-xl bg-white text-[11px] font-black uppercase tracking-tight"><span>${a.Nome}</span><div class="flex items-center gap-3"><span class="text-emerald-500">+${fmtR(a.Preco)}</span><input type="checkbox" onchange="tglAd('${a.Nome.replace(/'/g, "\\'")}', ${prsP(a.Preco)}, this.checked)" class="w-5 h-5 rounded-lg border-slate-200"></div></label>`).join(''); }
-            else adDiv.classList.add('hidden');
-            document.getElementById('modal-opt').classList.remove('hidden');
-        }
-
-        window.setSz = i => { if(curItem.szs){ curItem.baseP = curItem.szs[i].p; curItem.selSize = curItem.szs[i].l; upM(); } };
-        window.tglAd = (n,p,c) => { if(c) curItem.selAds.push({ n,p }); else curItem.selAds = curItem.selAds.filter(x => x.n !== n); upM(); };
-        window.mQty = d => { const n = curItem.qty + d; if(n >= 1) { curItem.qty = n; document.getElementById('m-qty').innerText = n; upM(); } };
-        function upM() { const u = curItem.baseP + curItem.selAds.reduce((a, b) => a + b.p, 0); document.getElementById('m-total').innerText = fmtR(u * curItem.qty); }
-        function closeModal() { document.getElementById('modal-opt').classList.add('hidden'); }
-
-        function confirmItem() {
-            const u = curItem.baseP + curItem.selAds.reduce((a, b) => a+b.p, 0);
-            addToCart({ ...curItem, finalP: u, ads: [...curItem.selAds], obs: document.getElementById('m-obs').value.trim(), sizeL: curItem.selSize });
-            closeModal();
-            Toastify({ text: "Item Adicionado! 🍓", duration: 1000, style: { background: "#16a34a", fontWeight: "900", borderRadius: "2rem" } }).showToast();
-        }
-
-        function addToCart(it) {
-            const uid = `${it.Nome}-${it.sizeL || ''}-${(it.ads||[]).map(a=>a.n).sort().join('')}-${it.obs || ''}`;
-            const ex = cart.find(x => x.uid === uid);
-            if(ex) ex.qty += it.qty; else cart.push({ uid, Nome:it.Nome, qty:it.qty, unitP:it.finalP, sizeL:it.sizeL, ads:it.ads||[], obs:it.obs });
-            upCart();
-        }
-
-        function upCart() {
-            const total = cart.reduce((a, i) => a + (i.unitP * i.qty), 0), cnt = cart.reduce((a, i) => a + i.qty, 0);
-            ['desktop', 'mobile'].forEach(v => {
-                const list = document.getElementById(`cart-items-${v}`);
-                document.getElementById(`total-${v}`).innerText = fmtR(total);
-                if(cart.length===0) list.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-200"><i data-lucide="shopping-cart" class="w-12 h-12 mb-2"></i><p class="text-[9px] font-black uppercase tracking-widest">Carrinho Vazio</p></div>`;
-                else list.innerHTML = cart.map(i => `
-                    <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="flex-1 pr-2">
-                                <h4 class="font-black text-[11px] text-slate-800 leading-tight uppercase">${i.qty}x ${i.Nome} ${i.sizeL ? `<span class="bg-slate-100 px-1 rounded text-[8px] ml-1">${i.sizeL}</span>` : ''}</h4>
-                                ${i.ads.length ? `<p class="text-[8px] text-slate-400 font-bold uppercase mt-1">+ ${i.ads.map(a=>a.n).join(', ')}</p>` : ''}
-                                ${i.obs ? `<p class="text-[8px] text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md mt-2 inline-block font-black italic">"${i.obs}"</p>` : ''}
-                            </div>
-                            <span class="font-black text-[11px] text-slate-900">${fmtR(i.unitP * i.qty)}</span>
-                        </div>
-                        <div class="flex justify-end gap-2 pt-2 border-t border-slate-50">
-                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', -1)" class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-slate-100 transition-colors font-bold">-</button>
-                            <button onclick="chQty('${i.uid.replace(/'/g, "\\'")}', 1)" class="w-8 h-8 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 transition-colors font-bold">+</button>
-                        </div>
-                    </div>
-                `).join('');
-            });
-            document.getElementById('badge-mobile').innerText = cnt; document.getElementById('badge-mobile').classList.toggle('hidden', cnt===0);
-            lucide.createIcons();
-        }
-
-        window.chQty = (uid, d) => { const idx = cart.findIndex(x => x.uid === uid); if(idx === -1) return; cart[idx].qty += d; if(cart[idx].qty <= 0) cart.splice(idx, 1); upCart(); };
-        function clearCart() { if(confirm('Esvaziar o carrinho?')) { cart = []; upCart(); } }
-        function toggleMobileCart(s) { document.getElementById('modal-cart-mobile').classList.toggle('hidden', !s); }
-
-        async function sendOrder(v) {
-            const tbl = document.getElementById(`table-${v}`).value, name = document.getElementById(`name-${v}`).value.trim();
-            if(!tbl) return alert("⚠️ Selecione a MESA para enviar!");
-            if(cart.length===0) return alert("🔎 Seu carrinho está vazio!");
-            const btn = document.getElementById(`btn-send-${v}`), org = btn.innerHTML;
-            btn.innerHTML = 'Enviando...'; btn.disabled = true;
-            try {
-                const its = cart.map(i => `${i.qty}x ${i.Nome}${i.sizeL ? ` (${i.sizeL})` : ''}${i.ads.length ? ` (+${i.ads.map(a => a.n).join(', ')})` : ''}${i.obs ? ` [Obs: ${i.obs}]` : ''} [${fmtR(i.unitP * i.qty)}]`).join(' | ');
-                const payload = { id: Date.now().toString().slice(-6), data: new Date().toLocaleString("pt-BR"), cliente: name ? `${name} (Mesa ${tbl})` : `Mesa ${tbl}`, tipo: `Mesa ${tbl}`, itens: its, total: fmtR(cart.reduce((a,i)=>a+(i.unitP*i.qty),0)), status: 'Novo', pagamento: 'A Pagar no Caixa', obs: 'Atendimento' };
-                const { error } = await supabaseClient.from('pedidos').insert([payload]);
-                if (error) throw error;
-                Toastify({ text: "Pedido Enviado p/ Cozinha! 🍓🚀", duration: 3000, style: { background: "#16a34a", fontWeight: "900" } }).showToast();
-                cart = []; upCart(); toggleMobileCart(false);
-                document.getElementById(`table-${v}`).value = ''; document.getElementById(`name-${v}`).value = '';
-            } catch (e) { alert("Erro ao enviar. Tente novamente."); } finally { btn.innerHTML = org; btn.disabled = false; lucide.createIcons(); }
-        }
-
-        function setCat(c) { curCat = c; renderCats(); renderProds(); }
-        document.getElementById('search-input').addEventListener('input', e => { search = e.target.value; renderProds(); });
-        init(); lucide.createIcons();
-    </script>
+<script>
+  lucide.createIcons();
+  
+  const h = new Date().getHours();
+  const g = document.getElementById('greeting');
+  if (h < 12) g.innerText = "Bom dia!";
+  else if (h < 18) g.innerText = "Boa tarde!";
+  else g.innerText = "Boa noite!";
+</script>
 </body>
 </html>
