@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no text-size-adjust=none">
     <title>Atendimento Rápido · Morangos Tatuí</title>
 
-        <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+            <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg"><!DOCTYPE html>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -275,8 +275,19 @@
             Toastify({ text: "+ " + p.Nome, duration: 1000, gravity: "bottom", style: { background: "#e11d48", fontWeight: "900", borderRadius: "2rem", marginBottom: "30px" } }).showToast();
         }
 
+        // Gerenciamento de Histórico (Botão Voltar do Celular)
+        window.onpopstate = function(event) {
+            closeModal();
+            toggleMobileCart(false);
+        };
+
         function openModal(idx) {
             const p = allProds.find(x => x.originalIndex === idx);
+            if(!p) return;
+            
+            // Adiciona estado no histórico para o botão voltar fechar o modal
+            history.pushState({ modal: 'options' }, "");
+            
             curItem = { ...p, selAds: [], baseP: 0, selSize: null, qty: 1 };
             document.getElementById('m-title').innerText = p.Nome;
             document.getElementById('m-obs').value = '';
@@ -316,7 +327,13 @@
             const uid = `${it.Nome}-${it.sizeL || ''}-${(it.ads||[]).map(a=>a.n).sort().join('')}-${it.obs || ''}`;
             const ex = cart.find(x => x.uid === uid);
             if(ex) ex.qty += it.qty; else cart.push({ uid, Nome:it.Nome, qty:it.qty, unitP:it.finalP, sizeL:it.sizeL, ads:it.ads||[], obs:it.obs });
+            
+            saveCartLocal();
             upCart();
+        }
+
+        function saveCartLocal() {
+            localStorage.setItem('mt_cart_atendimento', JSON.stringify(cart));
         }
 
         function upCart() {
@@ -346,9 +363,33 @@
             lucide.createIcons();
         }
 
-        window.chQty = (uid, d) => { const idx = cart.findIndex(x => x.uid === uid); if(idx === -1) return; cart[idx].qty += d; if(cart[idx].qty <= 0) cart.splice(idx, 1); upCart(); };
-        function clearCart() { if(confirm('Esvaziar o carrinho?')) { cart = []; upCart(); } }
-        function toggleMobileCart(s) { document.getElementById('modal-cart-mobile').classList.toggle('hidden', !s); }
+        window.chQty = (uid, d) => { 
+            const idx = cart.findIndex(x => x.uid === uid); 
+            if(idx === -1) return; 
+            cart[idx].qty += d; 
+            if(cart[idx].qty <= 0) cart.splice(idx, 1); 
+            saveCartLocal();
+            upCart(); 
+        };
+
+        function clearCart() { 
+            if(confirm('Esvaziar o carrinho?')) { 
+                cart = []; 
+                localStorage.removeItem('mt_cart_atendimento');
+                upCart(); 
+            } 
+        }
+        
+        function toggleMobileCart(s) { 
+            const modal = document.getElementById('modal-cart-mobile');
+            if(s) {
+                history.pushState({ modal: 'cart' }, "");
+                modal.classList.remove('hidden'); 
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+        window.toggleMobileCart = toggleMobileCart;
 
         async function sendOrder(v) {
             const tbl = document.getElementById(`table-${v}`).value, name = document.getElementById(`name-${v}`).value.trim();
@@ -362,7 +403,12 @@
                 const { error } = await supabaseClient.from('pedidos').insert([payload]);
                 if (error) throw error;
                 Toastify({ text: "Pedido Enviado p/ Cozinha! 🍓🚀", duration: 3000, style: { background: "#16a34a", fontWeight: "900" } }).showToast();
-                cart = []; upCart(); toggleMobileCart(false);
+                
+                // Limpa TUDO após o sucesso
+                cart = []; 
+                localStorage.removeItem('mt_cart_atendimento');
+                
+                upCart(); toggleMobileCart(false);
                 document.getElementById(`table-${v}`).value = ''; document.getElementById(`name-${v}`).value = '';
             } catch (e) { alert("Erro ao enviar. Tente novamente."); } finally { btn.innerHTML = org; btn.disabled = false; lucide.createIcons(); }
         }
