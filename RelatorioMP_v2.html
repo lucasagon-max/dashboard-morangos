@@ -46,6 +46,27 @@
   .card-gradient-slate { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
   .card-gradient-amber { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
   .card-chip { width: 35px; height: 25px; background: linear-gradient(135deg, #ffd700 0%, #daa520 100%); border-radius: 4px; opacity: 0.8; }
+
+  /* ── MODAL ── */
+  #reportModal { display: none; position: fixed; inset: 0; z-index: 200; align-items: center; justify-content: center; }
+  #reportModal.open { display: flex; }
+  #reportBackdrop { position: absolute; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); }
+  #reportBox { position: relative; background: #fff; border-radius: 24px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.3); margin: 1rem; }
+
+  /* ── PRINT ── */
+  @media print {
+    body > *:not(#reportBox) { display: none !important; }
+    #reportModal { display: flex !important; position: static !important; background: none !important; }
+    #reportBackdrop { display: none !important; }
+    #reportBox { box-shadow: none !important; max-height: none !important; border-radius: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    .no-print { display: none !important; }
+  }
+
+  /* ── BOLETO BADGE ── */
+  .boleto-urgente { background: #fff1f2; border-left: 3px solid #e11d48; }
+  .boleto-proximo { background: #fffbeb; border-left: 3px solid #f59e0b; }
+  .boleto-normal { background: #f0fdf4; border-left: 3px solid #10b981; }
+  .boleto-vencido { background: #fef2f2; border-left: 3px solid #dc2626; }
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -60,6 +81,10 @@
   </div>
   <div class="flex items-center gap-3">
     <div id="periodLabel" class="text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-4 py-1.5 hidden md:block">—</div>
+    <!-- BOTÃO RELATÓRIO -->
+    <button id="btnRelatorio" onclick="openReport()" class="hidden items-center gap-2 bg-brand-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-brand-700 transition-colors">
+      <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Relatório
+    </button>
     <button id="btnRefresh" onclick="refreshData()" class="hidden items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold hover:border-brand-500 transition-colors">
       <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refreshIcon"></i> Atualizar
     </button>
@@ -103,6 +128,8 @@
     <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 whitespace-nowrap flex items-center gap-2" onclick="setTab('saidas',this)"><i data-lucide="trending-down" class="w-4 h-4"></i> Saídas</button>
     <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 whitespace-nowrap flex items-center gap-2" onclick="setTab('pagamentos',this)"><i data-lucide="credit-card" class="w-4 h-4"></i> Pagamentos</button>
     <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 whitespace-nowrap flex items-center gap-2" onclick="setTab('parcelas',this)"><i data-lucide="calendar-clock" class="w-4 h-4"></i> Parcelas & Cartões</button>
+    <!-- NOVA ABA BOLETOS -->
+    <button class="tab-btn px-4 py-3.5 text-sm font-medium text-slate-500 whitespace-nowrap flex items-center gap-2" onclick="setTab('boletos',this)"><i data-lucide="receipt" class="w-4 h-4"></i> Boletos</button>
   </nav>
 
   <main class="flex-1 p-6 max-w-7xl w-full mx-auto">
@@ -111,10 +138,74 @@
     <div id="tab-saidas" class="tab-panel fade-in hidden"></div>
     <div id="tab-pagamentos" class="tab-panel fade-in hidden"></div>
     <div id="tab-parcelas" class="tab-panel fade-in hidden"></div>
+    <div id="tab-boletos" class="tab-panel fade-in hidden"></div>
   </main>
 </div>
 
 <div id="toast-container" class="fixed bottom-6 right-6 z-[100] pointer-events-none"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL DE RELATÓRIO EXECUTIVO
+══════════════════════════════════════════════════════ -->
+<div id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+  <div id="reportBackdrop" onclick="closeReport()" class="no-print"></div>
+  <div id="reportBox" class="p-8">
+    <!-- Cabeçalho do Relatório -->
+    <div class="flex items-start justify-between mb-8">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-lg">
+          <div>
+            <h2 id="reportTitle" class="font-serif text-2xl font-black text-slate-900">Relatório Executivo</h2>
+            <p class="text-xs text-slate-400 font-medium">Morangos Tatuí · Gestão Financeira</p>
+          </div>
+        </div>
+        <p id="reportPeriod" class="text-xs text-brand-600 font-bold bg-brand-50 px-3 py-1 rounded-full inline-block"></p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <button onclick="copyToAI()" class="flex items-center gap-2 bg-slate-800 text-white rounded-xl px-4 py-2 text-xs font-bold hover:bg-slate-700 transition-colors">
+          <i data-lucide="bot" class="w-4 h-4"></i> Copiar para IA
+        </button>
+        <button onclick="window.print()" class="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 rounded-xl px-4 py-2 text-xs font-bold hover:border-brand-400 transition-colors">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimir PDF
+        </button>
+        <button onclick="closeReport()" class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
+          <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs Faturamento vs Lucro -->
+    <div class="mb-8">
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> KPIs · Faturamento vs. Resultado</h3>
+      <div id="reportKPIs" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+    </div>
+
+    <!-- Mix de Recebimentos -->
+    <div class="mb-8">
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4"></i> Mix de Recebimentos</h3>
+      <div id="reportMix" class="space-y-2"></div>
+    </div>
+
+    <!-- Compromissos e Totais (Visão Geral) -->
+    <div class="mb-8">
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i> Relatório de Compromissos · Visão Geral</h3>
+      <div id="reportOverview" class="space-y-6"></div>
+    </div>
+
+    <!-- Compromissos do Mês Atual (Detalhado) -->
+    <div class="no-print">
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4"></i> Detalhamento Mensal · <span id="reportMesNome"></span></h3>
+      <div id="reportCompromissos"></div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-300 font-medium">
+      <span>Gerado em <span id="reportData"></span></span>
+      <span>Morangos Tatuí · Sistema Financeiro Pro</span>
+    </div>
+  </div>
+</div>
 
 <script>
 const CLIENT_ID='781310015266-iff0bmklrbkv3mt6no32gel47tfs3jeu.apps.googleusercontent.com';
@@ -130,6 +221,8 @@ const num=v=>{if(!v)return 0; return parseFloat(String(v).replace(/[R$\s]/g,'').
 const COLORS={ brand:'#e11d48', dark:'#0f172a', gray:'#94a3b8', green:'#10b981', amber:'#f59e0b', blue:'#3b82f6' };
 const BF={family:'"DM Sans", sans-serif', weight:'500'};
 const AX={grid:{display:false}, ticks:{font:BF, color:'#94a3b8', size:10}};
+
+const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 function getGradient(ctx, color) {
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -239,25 +332,50 @@ function processData(mov, fec, parc, cart, comp){
   cart.forEach(c => { if(c.ID_Cartao) cartMap[c.ID_Cartao] = { ...c, faturas: {}, totalPendente: 0 }; });
   
   const ordenarMeses = (arr) => {
-    const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     return arr.sort((a, b) => {
         const [mA, aA] = a.split(' - '); const [mB, aB] = b.split(' - ');
         if(aA !== aB) return aA - aB;
-        return meses.findIndex(m => mA.includes(m)) - meses.findIndex(m => mB.includes(m));
+        return MESES_PT.findIndex(m => mA.includes(m)) - MESES_PT.findIndex(m => mB.includes(m));
     });
   };
 
+  // Processar boletos (parcelas sem cartão vinculado)
+  const boletos = [];
+
   parc.filter(p => (p.Status||'').toLowerCase().includes('pend')).forEach(p => {
     const cp = comp.find(c => c.ID_Compra === p.ID_Compra_Ref);
-    const idC = cp ? cp.Cartao : 'BOLETO';
-    const mes = p.Fatura_Mes || 'Sem Data';
-    if(cartMap[idC]){
+    const idC = cp ? cp.Cartao : null;
+
+    if(idC && cartMap[idC]){
+      const mes = p.Fatura_Mes || 'Sem Data';
       if(!cartMap[idC].faturas[mes]) cartMap[idC].faturas[mes] = { total: 0, itens: [] };
       const v = num(p.Valor_Parcela);
       cartMap[idC].faturas[mes].total += v;
       cartMap[idC].totalPendente += v;
-      cartMap[idC].faturas[mes].itens.push({ desc: cp?.Descricao || p.Descricao_Parcela, valor: v });
+      // Incluir data de vencimento individual da parcela
+      cartMap[idC].faturas[mes].itens.push({ 
+        desc: cp?.Descricao || p.Descricao_Parcela, 
+        valor: v,
+        vencimento: p.Data_Vencimento || p.Vencimento || ''
+      });
+    } else {
+      // Sem cartão → é boleto/promissória
+      boletos.push({
+        desc: cp?.Descricao || p.Descricao_Parcela || 'Boleto',
+        valor: num(p.Valor_Parcela),
+        vencimento: p.Data_Vencimento || p.Vencimento || p.Fatura_Mes || '',
+        origem: cp?.Fornecedor || cp?.Categoria || '',
+        idParcela: p.ID_Compra_Ref || ''
+      });
     }
+  });
+
+  // Ordenar boletos por data de vencimento
+  boletos.sort((a, b) => {
+    const da = parseDate(a.vencimento);
+    const db = parseDate(b.vencimento);
+    if(!da) return 1; if(!db) return -1;
+    return da - db;
   });
 
   const vendasD = Object.entries(vMap).sort((a,b)=>{
@@ -265,7 +383,7 @@ function processData(mov, fec, parc, cart, comp){
     return new Date(2026,mA-1,dA) - new Date(2026,mB-1,dB);
   }).map(([d,v])=>({d,v}));
 
-  return { k, vendasDia: vendasD, saidas, entFP, fec, cartoes: Object.values(cartMap), ordenarMeses };
+  return { k, vendasDia: vendasD, saidas, entFP, fec, cartoes: Object.values(cartMap), ordenarMeses, boletos };
 }
 
 // ── RENDER ──
@@ -280,6 +398,7 @@ function renderAll(){
   buildSaidas(d);
   buildPagamentos(d);
   buildParcelas(d);
+  buildBoletos(d);
   lucide.createIcons();
 }
 
@@ -389,6 +508,10 @@ function buildParcelas(d){
   const cartoesHtml = d.cartoes.filter(c => c.totalPendente > 0).map(c => {
     const grad = cartGradients[c.ID_Cartao] || 'bg-slate-500';
     const meses = d.ordenarMeses(Object.keys(c.faturas));
+
+    // Dia de vencimento do cartão (campo Dia_Vencimento na sheet Cartoes_Emprestimos)
+    const diaVenc = c.Dia_Vencimento ? `Vence todo dia <strong>${c.Dia_Vencimento}</strong>` : '';
+
     const faturasHtml = meses.map(m => {
       const fat = c.faturas[m];
       const uid = `fat_${c.ID_Cartao}_${m.replace(/\s/g,'')}`;
@@ -399,7 +522,14 @@ function buildParcelas(d){
             <div class="flex items-center gap-2 font-black text-slate-900">${R(fat.total)} <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i></div>
           </button>
           <div id="${uid}" class="hidden bg-slate-50 px-4 pb-3">
-            ${fat.itens.map(i => `<div class="flex justify-between py-1.5 text-xs border-b border-slate-200 last:border-0"><span class="text-slate-500 truncate pr-4">${i.desc}</span><span class="font-bold text-slate-700">${R(i.valor)}</span></div>`).join('')}
+            ${fat.itens.map(i => {
+              const vencLabel = i.vencimento ? `<span class="ml-auto pl-4 text-[10px] font-bold text-slate-400 whitespace-nowrap">${formatDateBR(i.vencimento)}</span>` : '';
+              return `<div class="flex items-center py-1.5 text-xs border-b border-slate-200 last:border-0">
+                <span class="text-slate-500 truncate pr-2">${i.desc}</span>
+                ${vencLabel}
+                <span class="font-bold text-slate-700 ml-2 whitespace-nowrap">${R(i.valor)}</span>
+              </div>`;
+            }).join('')}
           </div>
         </div>`;
     }).join('');
@@ -409,7 +539,11 @@ function buildParcelas(d){
          <div class="${grad} p-6 text-white relative">
           <div class="card-chip mb-8"></div>
           <div class="flex justify-between items-end mb-2">
-            <div><div class="text-[9px] opacity-70 uppercase tracking-widest font-bold mb-1">Titular/Banco</div><div class="text-lg font-black tracking-tight">${c.Nome_Conta}</div></div>
+            <div>
+              <div class="text-[9px] opacity-70 uppercase tracking-widest font-bold mb-1">Titular/Banco</div>
+              <div class="text-lg font-black tracking-tight">${c.Nome_Conta}</div>
+              ${diaVenc ? `<div class="text-[10px] opacity-80 mt-1">${diaVenc}</div>` : ''}
+            </div>
             <div class="text-right"><div class="text-[9px] opacity-70 uppercase tracking-widest font-bold mb-1">Limite Comprometido</div><div class="text-xl font-black">${R(c.totalPendente)}</div></div>
           </div>
           <div class="h-20 w-full bg-white/10 rounded-xl p-3 border border-white/10"><canvas id="chart_${c.ID_Cartao}"></canvas></div>
@@ -431,6 +565,321 @@ function buildParcelas(d){
       data: { labels: meses.map(m=>m.split(' ')[1]), datasets: [{ data: meses.map(m=>c.faturas[m].total), backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 4 }]},
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}}}
     });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// ABA BOLETOS
+// ══════════════════════════════════════════════════════
+function formatDateBR(v){
+  if(!v) return '—';
+  const d = parseDate(v);
+  if(!d || isNaN(d)) return String(v);
+  return d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function getBoletoBadge(vencimento){
+  if(!vencimento) return { cls:'boleto-normal', label:'Sem data', labelCls:'text-slate-400' };
+  const d = parseDate(vencimento);
+  if(!d || isNaN(d)) return { cls:'boleto-normal', label:'', labelCls:'' };
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const diff = Math.floor((d - hoje) / 86400000);
+  if(diff < 0)  return { cls:'boleto-vencido',  label:'VENCIDO',      labelCls:'text-rose-600 font-black' };
+  if(diff === 0) return { cls:'boleto-urgente',  label:'HOJE',         labelCls:'text-brand-600 font-black' };
+  if(diff <= 3)  return { cls:'boleto-urgente',  label:`${diff}d`,     labelCls:'text-brand-600 font-bold' };
+  if(diff <= 7)  return { cls:'boleto-proximo',  label:`${diff}d`,     labelCls:'text-amber-600 font-bold' };
+  return             { cls:'boleto-normal',  label:`${diff}d`,     labelCls:'text-emerald-600 font-semibold' };
+}
+
+function buildBoletos(d){
+  const boletos = d.boletos;
+  const totalPendente = boletos.reduce((a,b)=>a+b.valor, 0);
+  const vencidos = boletos.filter(b=>{ const bd=parseDate(b.vencimento); return bd && bd < new Date(new Date().setHours(0,0,0,0)); });
+  const proximos7 = boletos.filter(b=>{ const bd=parseDate(b.vencimento); const hoje=new Date(); hoje.setHours(0,0,0,0); if(!bd) return false; const diff=Math.floor((bd-hoje)/86400000); return diff>=0 && diff<=7; });
+
+  const boletoRows = boletos.length === 0
+    ? `<div class="text-center py-16 text-slate-400">
+        <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-4 text-emerald-300"></i>
+        <p class="font-bold">Nenhum boleto pendente</p>
+        <p class="text-xs mt-1">Todos os compromissos estão quitados.</p>
+       </div>`
+    : boletos.map(b => {
+        const badge = getBoletoBadge(b.vencimento);
+        return `
+          <div class="flex items-center gap-4 p-4 rounded-xl mb-2 ${badge.cls} transition-all hover:shadow-sm">
+            <div class="w-10 h-10 rounded-lg bg-white/60 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="receipt" class="w-5 h-5 text-slate-500"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm text-slate-800 truncate">${b.desc}</div>
+              ${b.origem ? `<div class="text-[11px] text-slate-400 truncate">${b.origem}</div>` : ''}
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="font-black text-slate-900">${R(b.valor)}</div>
+              <div class="text-[10px] text-slate-500">${formatDateBR(b.vencimento)}</div>
+            </div>
+            <div class="w-14 text-right flex-shrink-0">
+              <span class="text-xs ${badge.labelCls}">${badge.label}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+  document.getElementById('tab-boletos').innerHTML = `
+    ${secTitle('Boletos & Promissórias', 'receipt')}
+    <p class="text-slate-400 text-xs mb-8 -mt-4">Compromissos sem cartão — boletos, promissórias e pagamentos a vista parcelados.</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 stagger-in">
+      <div class="kpi-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pendente</div>
+        <div class="text-2xl font-black text-slate-900">${R(totalPendente)}</div>
+        <div class="text-xs text-slate-400 mt-1">${boletos.length} boleto(s)</div>
+      </div>
+      <div class="kpi-card bg-white p-5 rounded-2xl border border-rose-100 shadow-sm">
+        <div class="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-1">Vencidos</div>
+        <div class="text-2xl font-black text-rose-600">${R(vencidos.reduce((a,b)=>a+b.valor,0))}</div>
+        <div class="text-xs text-slate-400 mt-1">${vencidos.length} boleto(s)</div>
+      </div>
+      <div class="kpi-card bg-white p-5 rounded-2xl border border-amber-100 shadow-sm">
+        <div class="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">Próx. 7 dias</div>
+        <div class="text-2xl font-black text-amber-600">${R(proximos7.reduce((a,b)=>a+b.valor,0))}</div>
+        <div class="text-xs text-slate-400 mt-1">${proximos7.length} boleto(s)</div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-black text-slate-800">Lista Cronológica</h3>
+        <div class="flex gap-3 text-[10px] font-bold text-slate-400">
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Vencido</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Próximo</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> OK</span>
+        </div>
+      </div>
+      ${boletoRows}
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL DE RELATÓRIO EXECUTIVO
+// ══════════════════════════════════════════════════════
+function openReport(){
+  if(!currentData){ notify('Nenhum dado carregado.', 'error'); return; }
+  const d = currentData;
+  const now = new Date();
+  const mesAtual = now.getMonth();
+  const anoAtual = now.getFullYear();
+  const nomeMes = MESES_PT[mesAtual];
+
+  // Atualizar período e metadados
+  document.getElementById('reportPeriod').textContent = `Período: ${currentFilter.toUpperCase()} · Gerado em ${now.toLocaleDateString('pt-BR')}`;
+  document.getElementById('reportMesNome').textContent = `${nomeMes} / ${anoAtual}`;
+  document.getElementById('reportData').textContent = now.toLocaleString('pt-BR');
+
+  // 1. CÁLCULOS PARA VISÃO GERAL
+  const totalGeralCartoes = d.cartoes.reduce((a, c) => a + c.totalPendente, 0);
+  const totalGeralBoletos = d.boletos.reduce((a, b) => a + b.valor, 0);
+  const somaTotalCompromissos = totalGeralCartoes + totalGeralBoletos;
+
+  // 2. CONSTRUIR VISÃO GERAL (Tabela de Cartões + Boletos + Soma Total)
+  const cartoesRows = d.cartoes.filter(c => c.totalPendente > 0).map(c => {
+    const meses = d.ordenarMeses(Object.keys(c.faturas));
+    const subtotaisMes = meses.map(m => `<div class="flex justify-between text-[11px] mb-0.5"><span class="text-slate-500">${m}</span> <span class="font-bold text-slate-700">${R(c.faturas[m].total)}</span></div>`).join('');
+    
+    return `
+      <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+        <td class="py-4 px-2 align-top">
+          <div class="font-bold text-slate-900 text-sm leading-tight">${c.Nome_Conta}</div>
+          <div class="text-[10px] text-slate-400 mt-1 uppercase tracking-tight font-medium">${c.ID_Cartao}</div>
+        </td>
+        <td class="py-4 px-2 align-top">
+          <div class="min-w-[140px]">${subtotaisMes}</div>
+        </td>
+        <td class="py-4 px-2 text-right align-top">
+          <div class="font-black text-slate-900 text-sm">${R(c.totalPendente)}</div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('reportOverview').innerHTML = `
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <table class="w-full text-left">
+        <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <tr>
+            <th class="px-3 py-4 w-1/3">1. Cartão / Titular</th>
+            <th class="px-3 py-4 w-1/3">1.2 Subtotal Mensal</th>
+            <th class="px-3 py-4 text-right">Total Cartão</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">${cartoesRows}</tbody>
+        <tfoot class="bg-slate-50/50">
+          <tr class="font-black text-slate-900 bg-slate-100/30">
+            <td colspan="2" class="px-3 py-4 text-xs uppercase tracking-wider">3. Total Somando os Cartões</td>
+            <td class="px-3 py-4 text-right text-lg text-brand-600">${R(totalGeralCartoes)}</td>
+          </tr>
+          <tr class="font-bold text-slate-700">
+            <td colspan="2" class="px-3 py-4 text-xs uppercase tracking-wider">2. Total em Boletos / Negociações</td>
+            <td class="px-3 py-4 text-right">${R(totalGeralBoletos)}</td>
+          </tr>
+          <tr class="bg-slate-900 text-white">
+            <td colspan="2" class="px-3 py-6 text-xs uppercase tracking-widest">4. Soma Total dos Compromissos (Cartões + Boletos)</td>
+            <td class="px-3 py-6 text-right text-xl font-black">${R(somaTotalCompromissos)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  // 3. KPIs FINANCEIROS (MANTIDO)
+  const margClass = d.k.lucroEst < 0 ? 'text-rose-600' : 'text-emerald-600';
+  document.getElementById('reportKPIs').innerHTML = `
+    <div class="bg-slate-50 p-4 rounded-xl">
+      <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Faturamento Bruto</div>
+      <div class="text-xl font-black text-slate-900">${R(d.k.vBruto)}</div>
+    </div>
+    <div class="bg-slate-50 p-4 rounded-xl">
+      <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Lucro Estimado</div>
+      <div class="text-xl font-black ${margClass}">${R(d.k.lucroEst)}</div>
+    </div>
+    <div class="bg-slate-50 p-4 rounded-xl">
+      <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Despesas Totais</div>
+      <div class="text-xl font-black text-slate-900">${R(d.k.tSai)}</div>
+    </div>
+    <div class="bg-slate-50 p-4 rounded-xl">
+      <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Margem Estimada</div>
+      <div class="text-xl font-black text-slate-900">${d.k.margem.toFixed(1)}%</div>
+    </div>
+  `;
+
+  // 4. MIX DE RECEBIMENTOS (MANTIDO)
+  const totalBruto = d.entFP.reduce((a,x)=>a+x.bruto,0)||1;
+  document.getElementById('reportMix').innerHTML = d.entFP.map(x => {
+    const pct = ((x.bruto/totalBruto)*100).toFixed(1);
+    return `
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-bold text-slate-600 w-36 truncate">${x.fp}</span>
+        <div class="flex-1 bg-slate-100 rounded-full h-2">
+          <div class="bg-brand-600 h-2 rounded-full" style="width:${pct}%"></div>
+        </div>
+        <span class="text-xs font-black text-slate-700 w-28 text-right">${R(x.bruto)}</span>
+        <span class="text-[10px] text-slate-400 w-10 text-right">${pct}%</span>
+      </div>`;
+  }).join('');
+
+  // 5. DETALHAMENTO MENSAL (COMPROMISSOS DO MÊS)
+  const compRows = [];
+  d.cartoes.filter(c=>c.totalPendente>0).forEach(c=>{
+    Object.entries(c.faturas).forEach(([mes, fat])=>{
+      if(mes.includes(nomeMes) || mes.includes(String(anoAtual))){
+        const diaVenc = c.Dia_Vencimento ? `Dia ${c.Dia_Vencimento}` : mes;
+        compRows.push({ tipo:'Cartão', fonte: c.Nome_Conta, desc: `Fatura ${mes} (${fat.itens.length} lanç.)`, valor: fat.total, vencimento: diaVenc });
+      }
+    });
+  });
+  d.boletos.forEach(b=>{
+    const bd = parseDate(b.vencimento);
+    if(bd && bd.getMonth()===mesAtual && bd.getFullYear()===anoAtual){
+      compRows.push({ tipo:'Boleto', fonte: b.origem||'—', desc: b.desc, valor: b.valor, vencimento: b.vencimento });
+    }
+  });
+
+  const totalCompMensal = compRows.reduce((a,r)=>a+r.valor,0);
+
+  document.getElementById('reportCompromissos').innerHTML = compRows.length === 0
+    ? `<p class="text-slate-400 text-sm text-center py-6">Nenhum lançamento identificado para ${nomeMes}.</p>`
+    : `
+      <div class="overflow-hidden rounded-xl border border-slate-100">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <tr>
+              <th class="px-4 py-3">Tipo</th>
+              <th class="px-4 py-3">Conta</th>
+              <th class="px-4 py-3">Vencimento</th>
+              <th class="px-4 py-3 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${compRows.map(r=>`
+              <tr class="border-t border-slate-50">
+                <td class="px-4 py-2.5">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${r.tipo==='Boleto'?'bg-amber-50 text-amber-600':'bg-brand-50 text-brand-600'}">${r.tipo}</span>
+                </td>
+                <td class="px-4 py-2.5 text-[11px] text-slate-500">${r.fonte} <br/> <span class="text-slate-400">${r.desc}</span></td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">${r.tipo==='Boleto'?formatDateBR(r.vencimento):r.vencimento}</td>
+                <td class="px-4 py-2.5 font-black text-slate-900 text-right whitespace-nowrap">${R(r.valor)}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot class="bg-slate-50 font-black text-slate-800">
+             <tr>
+               <td colspan="3" class="px-4 py-3 text-xs uppercase">Total Mês Atual</td>
+               <td class="px-4 py-3 text-right">${R(totalCompMensal)}</td>
+             </tr>
+          </tfoot>
+        </table>
+      </div>`;
+
+  document.getElementById('reportModal').classList.add('open');
+  lucide.createIcons();
+}
+
+function closeReport(){
+  document.getElementById('reportModal').classList.remove('open');
+}
+
+function copyToAI(){
+  if(!currentData){ notify('Nenhum dado para copiar.', 'error'); return; }
+  const d = currentData;
+  const now = new Date();
+  const nomeMes = MESES_PT[now.getMonth()];
+
+  const totalGeralCartoes = d.cartoes.reduce((a, c) => a + c.totalPendente, 0);
+  const totalGeralBoletos = d.boletos.reduce((a, b) => a + b.valor, 0);
+
+  const texto = `
+=== RELATÓRIO FINANCEIRO — MORANGOS TATUÍ ===
+Data de geração: ${now.toLocaleString('pt-BR')}
+Filtro: ${currentFilter.toUpperCase()}
+
+── 1. TOTAIS POR CARTÃO (TODOS OS MESES) ──
+${d.cartoes.filter(c=>c.totalPendente>0).map(c=>`· ${c.Nome_Conta}: ${R(c.totalPendente)}`).join('\n')}
+
+── 2. BOLETOS E NEGOCIAÇÕES (TOTAL PENDENTE) ──
+Total: ${R(totalGeralBoletos)}
+
+── 3. TOTAL SOMANDO CARTÕES ──
+Total Cartões: ${R(totalGeralCartoes)}
+
+── 4. SOMA TOTAL DE COMPROMISSOS ──
+Total Geral (Cartões + Boletos): ${R(totalGeralCartoes + totalGeralBoletos)}
+
+── KPIs EXECUTIVOS ──
+Faturamento Bruto:  ${R(d.k.vBruto)}
+Lucro Estimado:     ${R(d.k.lucroEst)}
+Despesas Totais:    ${R(d.k.tSai)}
+Margem Estimada:    ${d.k.margem.toFixed(1)}%
+Saldo Disponível:   ${R(d.k.saldo)}
+
+── MIX DE RECEBIMENTOS ──
+${d.entFP.map(x=>`· ${x.fp}: ${R(x.bruto)} (Líq: ${R(x.liq)})`).join('\n')}
+
+── INSTRUÇÃO PARA IA ──
+Com base nos dados financeiros acima da empresa Morangos Tatuí:
+1. Avalie a situação de liquidez atual considerando o saldo disponível versus os compromissos pendentes.
+2. Identifique riscos de fluxo de caixa para os próximos meses.
+3. Sugira ações prioritárias para melhorar a margem ou reduzir exposição a dívidas vinculadas a cartões.
+4. Destaque qualquer anomalia nos dados de recebimento ou despesa.
+`.trim();
+
+  navigator.clipboard.writeText(texto).then(()=>{
+    notify('Relatório copiado para a área de transferência!', 'success');
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = texto; ta.style.position='fixed'; ta.style.top='-9999px';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    notify('Relatório copiado!', 'success');
   });
 }
 
@@ -462,7 +911,11 @@ function showLoading(msg){
 function showDashboard(){
   document.getElementById('loadingScreen').classList.add('hidden');
   document.getElementById('appShell').classList.remove('hidden');
+  document.getElementById('appShell').classList.add('flex');
   document.getElementById('btnRefresh').classList.remove('hidden');
+  document.getElementById('btnRefresh').classList.add('flex');
+  document.getElementById('btnRelatorio').classList.remove('hidden');
+  document.getElementById('btnRelatorio').classList.add('flex');
 }
 async function refreshData(){
   const icon = document.getElementById('refreshIcon');
@@ -470,6 +923,9 @@ async function refreshData(){
   await loadAllData();
   icon.classList.remove('animate-spin');
 }
+
+// Fechar modal com ESC
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeReport(); });
 
 window.onload = () => { lucide.createIcons(); };
 loadGIS();
