@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Aclonica&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
       tailwind.config = {
@@ -242,8 +243,19 @@
         });
 
         async function attemptLogin() {
-            const key = document.getElementById('admin-key-input').value;
-            if(!key) return;
+            console.log("Tentando login...");
+            const keyInput = document.getElementById('admin-key-input');
+            const key = keyInput.value.trim();
+            
+            if(!key) {
+                alert("Por favor, digite a chave de acesso.");
+                return;
+            }
+
+            if(!window.supabase) {
+                alert("Erro: SDK do Supabase não carregado. Verifique sua conexão.");
+                return;
+            }
 
             initSupabase(key);
             showLoader(true);
