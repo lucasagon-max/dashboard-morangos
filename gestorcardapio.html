@@ -7,15 +7,13 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Aclonica&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+            fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Aclonica"', 'sans-serif'] },
             colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
           }
         }
@@ -24,7 +22,7 @@
 
     <style>
         body { font-family: 'DM Sans', sans-serif; background-color: #f8fafc; color: #0f172a; }
-        .font-serif { font-family: 'Playfair Display', serif; }
+        .font-serif { font-family: 'Aclonica', sans-serif; }
         
         #loader { display: none; }
         #loader.active { display: flex; }
@@ -43,19 +41,40 @@
         const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
         const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
         
-        // Criamos o cliente injetando a Chave Mestra nos cabeçalhos para o RLS permitir as alterações
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            global: {
-                headers: { 'x-admin-key': 'morangos-admin-2024' }
-            }
-        });
+        let supabaseClient = null;
+
+        function initSupabase(adminKey) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                global: {
+                    headers: { 'x-admin-key': adminKey }
+                }
+            });
+        }
     </script>
+
+    <!-- Login Screen -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-brand-600 flex items-center justify-center p-6">
+        <div class="bg-white rounded-[40px] p-10 w-full max-w-md shadow-2xl text-center fade-in">
+            <img src="https://ferramentas.morangostatui.com.br/logo.png" class="w-24 mx-auto mb-6 rounded-2xl shadow-md">
+            <h2 class="font-serif text-3xl font-black text-slate-900 mb-2">Área Administrativa</h2>
+            <p class="text-slate-500 mb-8 font-medium italic">Morangos Tatuí · Gestor</p>
+            
+            <div class="text-left mb-6">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Chave de Acesso</label>
+                <input type="password" id="admin-key-input" placeholder="Digite sua senha..." class="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-500 focus:outline-none transition-all text-center text-lg font-bold tracking-widest bg-slate-50">
+            </div>
+            
+            <button onclick="attemptLogin()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-brand-700 transition-all active:scale-95">
+                Entrar no Painel
+            </button>
+        </div>
+    </div>
 
     <!-- Loading Screen -->
     <div id="loader" class="fixed inset-0 z-[60] bg-white/80 backdrop-blur-sm flex items-center justify-center">
         <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-            <p class="mt-4 text-slate-600 font-medium">Conectando ao Supabase...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
+            <p class="mt-4 text-slate-600 font-medium">Processando dados...</p>
         </div>
     </div>
 
@@ -212,10 +231,31 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            fetchProducts();
+            // fetchProducts agora é chamado apenas após o login
             document.getElementById('searchInput').addEventListener('input', renderProducts);
             document.getElementById('categoryFilter').addEventListener('change', renderProducts);
         });
+
+        async function attemptLogin() {
+            const key = document.getElementById('admin-key-input').value;
+            if(!key) return;
+
+            initSupabase(key);
+            showLoader(true);
+            
+            // Testa a conexão tentando buscar os produtos
+            const { data, error } = await supabaseClient.from('produtos').select('id').limit(1);
+            
+            if(error) {
+                alert("Chave inválida ou erro de conexão.");
+                showLoader(false);
+            } else {
+                document.getElementById('login-overlay').classList.add('hidden');
+                fetchProducts();
+            }
+        }
+        
+        document.getElementById('admin-key-input')?.addEventListener('keyup', (e) => { if(e.key === 'Enter') attemptLogin(); });
 
         function showLoader(show) { document.getElementById('loader').classList.toggle('active', show); }
 
@@ -421,8 +461,6 @@
                             <button onclick="deleteProduct('${p.id}')" class="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm border border-slate-100 bg-white"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                          </div>
                     </div>`;
-                container.appendChild(item);
-            });
                 container.appendChild(item);
             });
             lucide.createIcons();
