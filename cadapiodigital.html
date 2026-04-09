@@ -75,6 +75,24 @@
       <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Digite seu PIN (4 dígitos)</label>
       <input type="password" id="input-pin-login" maxlength="4" placeholder="****" class="w-full border border-slate-200 rounded-xl px-4 py-4 text-2xl tracking-widest text-center font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 transition-all mb-4 bg-slate-50">
       <button onclick="doLogin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-4 font-bold transition-all shadow-md">Entrar no Cardápio</button>
+      <button onclick="forgotPin()" class="w-full text-slate-400 text-[11px] font-bold mt-2 py-2 hover:text-brand-600 uppercase tracking-wider">Esqueci meu PIN / Ajuda</button>
+      <button onclick="resetAuth()" class="w-full text-brand-600 text-sm font-bold mt-2 py-2 hover:underline">Trocar número</button>
+    </div>
+
+    <!-- Passo 2C: Primeiro Acesso (Reset de PIN 0000) -->
+    <div id="auth-step-reset" class="hidden fade-in">
+      <div class="bg-blue-50 text-blue-700 p-4 rounded-2xl mb-6 text-sm font-medium flex gap-3 items-start border border-blue-100">
+        <i data-lucide="info" class="w-5 h-5 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block">Primeiro Acesso!</strong>
+          Vimos que você já é nosso cliente. Por segurança, crie um PIN de 4 dígitos para proteger sua conta e cashback.
+        </div>
+      </div>
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Crie seu novo PIN (4 dígitos)</label>
+      <input type="password" id="input-pin-new" maxlength="4" placeholder="****" class="w-full border-2 border-brand-200 rounded-xl px-4 py-4 text-2xl tracking-widest text-center font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 transition-all mb-4 bg-white">
+      <button onclick="saveNewPin()" id="btn-save-pin" class="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-4 font-bold transition-all shadow-md flex justify-center items-center gap-2">
+        Salvar PIN e Entrar
+      </button>
       <button onclick="resetAuth()" class="w-full text-brand-600 text-sm font-bold mt-4 py-2 hover:underline">Trocar número</button>
     </div>
 
@@ -473,7 +491,9 @@ function resetAuth() {
   document.getElementById('auth-step-1').classList.remove('hidden');
   document.getElementById('auth-step-login').classList.add('hidden');
   document.getElementById('auth-step-register').classList.add('hidden');
+  document.getElementById('auth-step-reset').classList.add('hidden');
   document.getElementById('input-pin-login').value = '';
+  document.getElementById('input-pin-new').value = '';
 }
 
 async function checkPhone() {
@@ -493,9 +513,16 @@ async function checkPhone() {
 
     if(data) {
       clienteLogado = data; 
-      document.getElementById('login-welcome-msg').innerText = `Bem-vindo de volta, ${data.nome.split(' ')[0]}!`;
-      document.getElementById('auth-step-login').classList.remove('hidden');
-      setTimeout(() => document.getElementById('input-pin-login').focus(), 100);
+      
+      // Caso de Primeiro Acesso (PIN importado como 0000)
+      if(data.pin_senha === '0000') {
+        document.getElementById('auth-step-reset').classList.remove('hidden');
+        setTimeout(() => document.getElementById('input-pin-new').focus(), 100);
+      } else {
+        document.getElementById('login-welcome-msg').innerText = `Bem-vindo de volta, ${data.nome.split(' ')[0]}!`;
+        document.getElementById('auth-step-login').classList.remove('hidden');
+        setTimeout(() => document.getElementById('input-pin-login').focus(), 100);
+      }
     } else {
       document.getElementById('auth-step-register').classList.remove('hidden');
     }
@@ -519,6 +546,35 @@ function doLogin() {
 }
 
 document.getElementById('input-pin-login').addEventListener('keyup', (e) => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('input-pin-new').addEventListener('keyup', (e) => { if (e.key === 'Enter') saveNewPin(); });
+
+async function saveNewPin() {
+  const pin = document.getElementById('input-pin-new').value;
+  if(pin.length < 4) { alert('O PIN deve ter 4 dígitos.'); return; }
+  if(pin === '0000') { alert('Por favor, escolha um PIN diferente de 0000.'); return; }
+
+  const btn = document.getElementById('btn-save-pin');
+  btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Salvando...';
+  btn.disabled = true; lucide.createIcons();
+
+  try {
+    const { data, error } = await db.from('clientes').update({ pin_senha: pin }).eq('id', clienteLogado.id).select().single();
+    if(error) throw error;
+    showToast('PIN definido com sucesso! 🛡️');
+    entrarNoApp(data);
+  } catch (err) {
+    alert('Erro ao salvar novo PIN. Tente novamente.');
+  } finally {
+    btn.innerHTML = 'Salvar PIN e Entrar';
+    btn.disabled = false; lucide.createIcons();
+  }
+}
+
+function forgotPin() {
+  if(!clienteLogado) return;
+  const msg = encodeURIComponent(`Olá! Sou o cliente ${clienteLogado.nome} (Tel: ${formatPhone(clienteLogado.telefone)}) e preciso de ajuda com meu PIN no cardápio digital.`);
+  window.open(`https://wa.me/${WHATSAPP_LOJA}?text=${msg}`, '_blank');
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. CADASTRO & VIA CEP
