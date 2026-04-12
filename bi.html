@@ -571,10 +571,21 @@ function parseItens(itensStr) {
 
 function parsePagamento(pagStr) {
     if (!pagStr || pagStr.includes('A Pagar')) return {};
+    
+    // Extrai apenas a parte real do pagamento (tudo que vier depois de "Pagto:" ou "->")
+    let rawStr = String(pagStr);
+    if (rawStr.includes('Pagto:')) {
+        rawStr = rawStr.split('Pagto:')[1];
+    } else if (rawStr.includes('->')) {
+        rawStr = rawStr.split('->')[1];
+    }
+
     const methods = {};
-    const parts = String(pagStr).split('|').map(s => s.trim()).filter(Boolean);
+    const parts = rawStr.split('|').map(s => s.trim()).filter(Boolean);
+    
     for (const part of parts) {
-        const m = part.match(/^(.+?):\s*R\$\s*([\d\.,]+)/);
+        // Exemplo da parte esperada: "Dinheiro: R$ 10,00" ou "C. Crédito: R$ 45,00"
+        const m = part.match(/^(.+?):\s*-?R\$\s*([\d\.,]+)/);
         if (m) {
             const method = m[1].trim();
             const val = parseMoney(m[2]);
