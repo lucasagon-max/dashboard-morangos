@@ -110,14 +110,16 @@
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Cliente</label>
                         <input type="text" id="enc-cliente" oninput="searchClients(this.value)" placeholder="Nome ou telefone..."
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-800 outline-none focus:border-rose-500">
+                        <div id="selected-client-address" class="hidden text-[10px] font-medium text-slate-500 mt-1.5 flex items-center px-1 w-full justify-between"></div>
                         <div id="client-results" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-xl rounded-xl max-h-48 overflow-y-auto z-[120] mt-1"></div>
 
                         <!-- BUG 3 CORRIGIDO: nc-numero e nc-bairro recolocados -->
                         <div id="new-client-form" class="hidden mt-3 p-4 bg-rose-50 border border-rose-100 rounded-xl space-y-3">
                             <div class="flex justify-between items-center">
-                                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Novo Cliente</p>
+                                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest" id="nc-form-title">Novo Cliente</p>
                                 <button onclick="hideNewClientForm()" class="text-rose-400 bg-white rounded-full p-1 shadow-sm"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
+                            <input type="hidden" id="nc-id">
                             <div class="grid grid-cols-2 gap-3">
                                 <input type="text" id="nc-nome" placeholder="Nome *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500">
                                 <input type="tel" id="nc-tel" placeholder="WhatsApp *" class="w-full p-2.5 rounded-lg text-sm border border-rose-200 outline-none focus:border-rose-500" oninput="this.value = formatPhone(this.value)">
@@ -584,31 +586,103 @@ function searchClients(q) {
     const res = document.getElementById('client-results');
     if (q.length < 2) { res.classList.add('hidden'); return; }
     const matches = allClients.filter(c => normalizeStr(c.nome).includes(normalizeStr(q)) || normalizeStr(c.telefone).includes(normalizeStr(q))).slice(0,5);
-    res.innerHTML = matches.map(c => `
-        <div onclick="selectClient('${c.nome.replace(/'/g,"\\'")}','${c.telefone}')" class="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0 flex justify-between items-center">
-            <span class="font-bold text-slate-700 text-sm">${c.nome}</span>
-            <span class="text-xs text-slate-400 font-mono">${formatPhone(c.telefone)}</span>
-        </div>`).join('') +
+    res.innerHTML = matches.map(c => {
+        let addr = [c.rua, c.numero, c.bairro].filter(Boolean).join(', ');
+        return `
+        <div class="flex justify-between items-center p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 group">
+            <div onclick="selectClient('${c.nome.replace(/'/g,"\\'")}','${c.telefone}')" class="flex-1 cursor-pointer">
+                <span class="font-bold text-slate-700 text-sm block">${c.nome}</span>
+                ${addr ? `<span class="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5"><i data-lucide="map-pin" class="w-3 h-3"></i> ${addr}</span>` : '<span class="text-[10px] text-slate-400 font-medium mt-0.5">Sem endereço cadastrado</span>'}
+            </div>
+            <div class="flex flex-col items-end gap-1">
+                <span class="text-xs text-slate-400 font-mono">${formatPhone(c.telefone)}</span>
+                <button onclick="editClient('${c.telefone}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded hidden group-hover:block transition-all shadow-sm font-bold">Editar</button>
+            </div>
+        </div>`;
+    }).join('') +
         `<div onclick="showNewClientForm('${q}')" class="p-3 bg-rose-50 text-rose-600 font-bold text-sm cursor-pointer hover:bg-rose-100 flex items-center gap-2">
             <i data-lucide="user-plus" class="w-4 h-4"></i> + Cadastrar "${q}"
         </div>`;
     res.classList.remove('hidden');
     lucide.createIcons();
 }
-function selectClient(n, t) { document.getElementById('enc-cliente').value = `${n} (${formatPhone(t)})`; document.getElementById('client-results').classList.add('hidden'); }
-function showNewClientForm(n) { document.getElementById('client-results').classList.add('hidden'); document.getElementById('new-client-form').classList.remove('hidden'); document.getElementById('nc-nome').value = n; document.getElementById('nc-tel').focus(); }
+
+function selectClient(n, t) { 
+    document.getElementById('enc-cliente').value = `${n} (${formatPhone(t)})`; 
+    document.getElementById('client-results').classList.add('hidden'); 
+    
+    // Preencher endereço selecionado
+    const cl = allClients.find(c => c.telefone === t.replace(/\D/g,''));
+    const addrCont = document.getElementById('selected-client-address');
+    if(cl && (cl.rua || cl.bairro)) {
+        let parts = [];
+        if(cl.rua) parts.push(cl.rua);
+        if(cl.numero) parts.push(cl.numero);
+        if(cl.bairro) parts.push(cl.bairro);
+        addrCont.innerHTML = `<span class="flex items-center gap-1 flex-1 text-slate-600 truncate"><i data-lucide="map-pin" class="w-3 h-3 text-rose-500 flex-shrink-0"></i> <span class="truncate block w-full whitespace-nowrap">${parts.join(', ')}</span></span> <button onclick="editClient('${cl.telefone}')" class="text-rose-500 hover:text-rose-700 underline font-bold ml-2">Editar</button>`;
+        addrCont.classList.remove('hidden');
+    } else {
+        addrCont.innerHTML = `<span class="flex items-center gap-1 flex-1 text-slate-400"><i data-lucide="map-pin-off" class="w-3 h-3"></i> Endereço não informado</span> <button onclick="editClient('${cl.telefone}')" class="text-rose-500 hover:text-rose-700 underline font-bold ml-2">Preencher</button>`;
+        addrCont.classList.remove('hidden');
+    }
+    lucide.createIcons();
+}
+
+function showNewClientForm(n) { 
+    document.getElementById('client-results').classList.add('hidden'); 
+    document.getElementById('new-client-form').classList.remove('hidden'); 
+    document.getElementById('nc-id').value = '';
+    document.getElementById('nc-form-title').innerText = "Novo Cliente";
+    ['nc-tel','nc-cep','nc-rua','nc-numero','nc-bairro'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('nc-nome').value = n; 
+    document.getElementById('nc-tel').focus(); 
+}
+
+function editClient(telefone) {
+    const c = allClients.find(x => x.telefone === telefone);
+    if (!c) return;
+    document.getElementById('client-results').classList.add('hidden');
+    document.getElementById('new-client-form').classList.remove('hidden');
+    
+    document.getElementById('nc-nome').value = c.nome || '';
+    document.getElementById('nc-tel').value = formatPhone(c.telefone || '');
+    document.getElementById('nc-cep').value = c.cep || '';
+    document.getElementById('nc-rua').value = c.rua || '';
+    document.getElementById('nc-numero').value = c.numero || '';
+    document.getElementById('nc-bairro').value = c.bairro || '';
+    
+    document.getElementById('nc-id').value = c.id || ''; 
+    document.getElementById('nc-form-title').innerText = "Editar Cliente";
+}
+
 function hideNewClientForm() { document.getElementById('new-client-form').classList.add('hidden'); }
+
 async function saveNewClient() {
+    const id = document.getElementById('nc-id').value;
     const nome = document.getElementById('nc-nome').value.trim();
     const tel  = document.getElementById('nc-tel').value.replace(/\D/g,'');
     if (!nome || tel.length < 10) return toast("Preencha Nome e Telefone válidos", "#f59e0b");
-    const payload = { nome, telefone: tel, cep: document.getElementById('nc-cep').value, rua: document.getElementById('nc-rua').value, numero: document.getElementById('nc-numero').value, bairro: document.getElementById('nc-bairro').value, pin_senha:'0000', saldo_cashback:0 };
-    await supabaseClient.from('clientes').insert([payload]);
-    allClients.push(payload);
+    const payload = { nome, telefone: tel, cep: document.getElementById('nc-cep').value, rua: document.getElementById('nc-rua').value, numero: document.getElementById('nc-numero').value, bairro: document.getElementById('nc-bairro').value };
+    
+    if (id) {
+        const { error } = await supabaseClient.from('clientes').update(payload).eq('id', id);
+        if (error) { return toast("Erro ao atualizar.", "#ef4444"); }
+        const idx = allClients.findIndex(c => String(c.id) === String(id));
+        if(idx >= 0) allClients[idx] = { ...allClients[idx], ...payload };
+        toast("Cliente atualizado!", "#10b981");
+    } else {
+        payload.pin_senha = '0000';
+        payload.saldo_cashback = 0;
+        const { data, error } = await supabaseClient.from('clientes').insert([payload]).select();
+        if (error) { return toast("Erro ao salvar.", "#ef4444"); }
+        if (data && data.length) payload.id = data[0].id;
+        allClients.push(payload);
+        toast("Cliente salvo!", "#10b981");
+    }
+    
     selectClient(nome, tel);
     hideNewClientForm();
-    toast("Cliente salvo!", "#10b981");
-    ['nc-nome','nc-tel','nc-cep','nc-rua','nc-numero','nc-bairro'].forEach(id => document.getElementById(id).value = '');
+    ['nc-id','nc-nome','nc-tel','nc-cep','nc-rua','nc-numero','nc-bairro'].forEach(id => document.getElementById(id).value = '');
 }
 async function buscarCEP(cepStr) {
     const cep = cepStr.replace(/\D/g,'');
@@ -663,6 +737,7 @@ function toggleAvulsoForm() { document.getElementById('form-avulso').classList.t
 function openNovaEncomendaModal() {
     ['enc-id','enc-cliente','enc-data','enc-obs'].forEach(id => document.getElementById(id).value = '');
     ['enc-entrega','enc-desconto','enc-sinal'].forEach(id => document.getElementById(id).value = '0,00');
+    document.getElementById('selected-client-address').classList.add('hidden');
     document.getElementById('enc-status').value = 'Agendado';
     document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="calendar-plus" class="text-rose-500"></i> Nova Encomenda';
     currentEncItems = []; renderEncItems();
@@ -681,6 +756,20 @@ function editEncomenda(id) {
     document.getElementById('enc-status').value = o.status;
     document.getElementById('enc-obs').value = o.obs || '';
     document.getElementById('modal-enc-title').innerHTML = '<i data-lucide="edit" class="text-blue-500"></i> Editar Encomenda';
+    
+    // Address UI updates
+    const end = getEnderecoCliente(o.cliente);
+    const pmMatch = o.cliente.match(/\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/);
+    const telRaw = pmMatch ? pmMatch[1] + pmMatch[2] + pmMatch[3] : '';
+    const addrCont = document.getElementById('selected-client-address');
+    if(end) {
+        addrCont.innerHTML = `<span class="flex items-center gap-1 flex-1 text-slate-600 truncate"><i data-lucide="map-pin" class="w-3 h-3 text-rose-500 flex-shrink-0"></i> <span class="truncate block w-full whitespace-nowrap">${end}</span></span> <button onclick="editClient('${telRaw}')" class="text-rose-500 hover:text-rose-700 underline font-bold ml-2">Editar</button>`;
+        addrCont.classList.remove('hidden');
+    } else {
+        addrCont.innerHTML = `<span class="flex items-center gap-1 flex-1 text-slate-400"><i data-lucide="map-pin-off" class="w-3 h-3"></i> Endereço não informado</span> ${telRaw ? `<button onclick="editClient('${telRaw}')" class="text-rose-500 hover:text-rose-700 underline font-bold ml-2">Preencher</button>` : ''}`;
+        addrCont.classList.remove('hidden');
+    }
+
     currentEncItems = [];
     if (o.itens) o.itens.split('|').forEach(p => { const m = p.trim().match(/^(\d+)x\s+(.+?)\s+\[R\$\s*([\d\.,]+)\]$/); if (m) { const qty=parseInt(m[1]),tot=parseMoney(m[3]); currentEncItems.push({id:Math.random().toString(36).substring(7),qty,name:m[2].trim(),unitPrice:tot/qty,total:tot}); } });
     renderEncItems();
