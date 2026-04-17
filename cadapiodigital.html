@@ -12,13 +12,13 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Aclonica&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
 <script>
   tailwind.config = {
     theme: {
       extend: {
-        fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+        fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Aclonica"', 'sans-serif'] },
         colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
       }
     }
@@ -437,8 +437,33 @@ let currentItem = null;
 lucide.createIcons();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UTILITÁRIOS
+// UTILITÁRIOS & MONITORAMENTO
 // ─────────────────────────────────────────────────────────────────────────────
+async function trackSession(etapaStr) {
+  try {
+    let sid = sessionStorage.getItem('mt_session_id');
+    if (!sid) {
+      sid = Date.now().toString(36) + Math.random().toString(36).substring(2);
+      sessionStorage.setItem('mt_session_id', sid);
+    }
+    const cartSum = typeof cart !== 'undefined' && cart.length > 0 
+      ? cart.reduce((acc, i) => acc + i.qty, 0) + ' item(s) (R$ ' + formatMoney(cart.reduce((s,i)=>s+(i.price*i.qty),0)).replace('R$','').trim() + ')'
+      : 'Vazio';
+
+    const payload = {
+      id: sid,
+      telefone: currentPhone || (clienteLogado ? clienteLogado.telefone : 'Visitante'),
+      nome: clienteLogado ? clienteLogado.nome : 'Anônimo',
+      etapa: etapaStr,
+      carrinho: cartSum,
+      last_active: new Date().toISOString()
+    };
+    
+    // Fire & Forget (se a tabela não existir ainda, apenas falha silenciosamente)
+    await db.from('sessoes_app').upsert([payload]);
+  } catch(e) { }
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -518,13 +543,16 @@ async function checkPhone() {
       if(data.pin_senha === '0000') {
         document.getElementById('auth-step-reset').classList.remove('hidden');
         setTimeout(() => document.getElementById('input-pin-new').focus(), 100);
+        trackSession('Login - Primeiro Acesso');
       } else {
         document.getElementById('login-welcome-msg').innerText = `Bem-vindo de volta, ${data.nome.split(' ')[0]}!`;
         document.getElementById('auth-step-login').classList.remove('hidden');
         setTimeout(() => document.getElementById('input-pin-login').focus(), 100);
+        trackSession('Login - Digitando PIN');
       }
     } else {
       document.getElementById('auth-step-register').classList.remove('hidden');
+      trackSession('Login - Fase de Cadastro');
     }
   } catch (err) {
     alert('Erro de conexão. Verifique sua internet.');
@@ -805,7 +833,16 @@ function doLogout() {
 // Auto-Login
 document.addEventListener("DOMContentLoaded", () => {
   const savedUser = localStorage.getItem('mt_user');
-  if (savedUser) { try { entrarNoApp(JSON.parse(savedUser)); } catch { localStorage.removeItem('mt_user'); } }
+  if (savedUser) { 
+      try { 
+          entrarNoApp(JSON.parse(savedUser)); 
+      } catch { 
+          localStorage.removeItem('mt_user'); 
+          trackSession('Tela de Login'); 
+      } 
+  } else {
+      trackSession('Tela de Login');
+  }
 });
 
 function switchTab(tabId) {
@@ -821,8 +858,9 @@ function switchTab(tabId) {
   activeBtn.classList.add('text-brand-600', 'active');
   activeBtn.classList.remove('text-slate-400');
   
-  if(tabId === 'menu') window.scrollTo(0,0);
-  if(tabId === 'cart') renderCart();
+  if(tabId === 'menu') { window.scrollTo(0,0); trackSession('Navegando no Cardápio'); }
+  if(tabId === 'cart') { renderCart(); trackSession('Visualizando Carrinho'); }
+  if(tabId === 'profile') { trackSession('No Perfil'); }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1092,6 +1130,7 @@ function updateQty(idx, delta) {
 function saveCart() {
   localStorage.setItem('mt_cart', JSON.stringify(cart));
   updateCartUI();
+  trackSession(document.getElementById('view-cart') && !document.getElementById('view-cart').classList.contains('hidden') ? 'Visualizando Carrinho' : 'Navegando no Cardápio (Add/Remove)');
 }
 
 function updateCartUI() {
