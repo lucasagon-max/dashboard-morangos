@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor do Cardápio - Morangos Tatuí</title>
+    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="p-6">
+
+    <script>
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+
+    <header class="bg-white shadow-sm rounded-2xl p-4 mb-6 border border-slate-200 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600 shadow-sm border border-rose-200">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-none">Radar do Cardápio</h1>
+                <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 pulse inline-block"></span> Ao vivo
+                </p>
+            </div>
+        </div>
+        <button onclick="loadSessions()" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md text-sm">
+            <i data-lucide="refresh-ccw" class="w-4 h-4"></i> Atualizar
+        </button>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Acessos Ativos</p>
+            <h3 class="text-3xl font-black text-slate-800" id="metric-active">0</h3>
+        </div>
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">No Cardápio</p>
+            <h3 class="text-3xl font-black text-blue-700" id="metric-menu">0</h3>
+        </div>
+        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">No Carrinho</p>
+            <h3 class="text-3xl font-black text-rose-700" id="metric-cart">0</h3>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Cadastrando</p>
+            <h3 class="text-3xl font-black text-emerald-700" id="metric-auth">0</h3>
+        </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5 text-brand-600"></i> Sessões Recentes (Últimos 30 min)
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        <th class="p-4">Cliente / Visitante</th>
+                        <th class="p-4">Etapa Atual</th>
+                        <th class="p-4">Carrinho</th>
+                        <th class="p-4 text-right">Última Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="session-list" class="text-sm font-medium text-slate-700">
+                    <tr><td colspan="4" class="p-8 text-center text-slate-400 font-bold">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal de Setup -->
+    <div id="setup-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl p-8 max-w-lg shadow-2xl relative">
+            <h2 class="text-xl font-black text-slate-800 mb-2">Atenção Necessária</h2>
+            <p class="text-sm text-slate-500 mb-6 font-medium">A tabela <b>sessoes_app</b> não foi encontrada no seu Supabase. Para que este monitor funcione, você precisa criar a tabela executando o SQL abaixo no painel "SQL Editor" do Supabase:</p>
+            
+            <div class="bg-slate-900 rounded-xl p-4 mb-6 relative">
+                <button onclick="copySql()" class="absolute top-2 right-2 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold px-2 py-1 rounded">COPIAR</button>
+                <pre class="text-emerald-400 text-xs font-mono overflow-x-auto" id="sql-code">CREATE TABLE sessoes_app (
+  id TEXT PRIMARY KEY,
+  telefone TEXT,
+  nome TEXT,
+  etapa TEXT,
+  carrinho TEXT,
+  last_active TIMESTAMP WITH TIME ZONE
+);</pre>
+            </div>
+            
+            <button onclick="closeSetup()" class="w-full bg-rose-600 text-white font-bold py-3 rounded-xl hover:bg-rose-700">Já criei, tentar novamente</button>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function timeAgo(dateString) {
+            const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+            if (seconds < 60) return `${seconds}s atrás`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} min atrás`;
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h atrás`;
+        }
+
+        async function loadSessions() {
+            try {
+                // Buscamos sessoes atualizadas nas ultimas 3 horas (para limpeza) 
+                // mas filtramos para mostrar ultimos 30 mins
+                const thirtyMinsAgo = new Date(Date.now() - 30 * 60000).toISOString();
+                
+                const { data, error } = await db
+                    .from('sessoes_app')
+                    .select('*')
+                    .gte('last_active', thirtyMinsAgo)
+                    .order('last_active', { ascending: false });
+
+                if (error) {
+                    if(error.code === '42P01') { // table does not exist
+                        document.getElementById('setup-modal').classList.remove('hidden');
+                        document.getElementById('setup-modal').classList.add('flex');
+                    }
+                    throw error;
+                }
+
+                document.getElementById('setup-modal').classList.add('hidden');
+                renderSessions(data);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderSessions(data) {
+            if(!data || data.length === 0) {
+                document.getElementById('session-list').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-400 font-bold">Nenhum acesso ativo nos últimos 30 minutos.</td></tr>`;
+                document.getElementById('metric-active').innerText = '0';
+                document.getElementById('metric-menu').innerText = '0';
+                document.getElementById('metric-cart').innerText = '0';
+                document.getElementById('metric-auth').innerText = '0';
+                return;
+            }
+
+            // Metricas
+            document.getElementById('metric-active').innerText = data.length;
+            document.getElementById('metric-menu').innerText = data.filter(s => s.etapa && s.etapa.includes('Cardápio')).length;
+            document.getElementById('metric-cart').innerText = data.filter(s => s.etapa && s.etapa.includes('Carrinho')).length;
+            document.getElementById('metric-auth').innerText = data.filter(s => s.etapa && s.etapa.includes('Login')).length;
+
+            const html = data.map(s => {
+                let statusColor = "bg-slate-100 text-slate-600";
+                if(s.etapa.includes('Carrinho')) statusColor = "bg-rose-100 text-rose-700 border border-rose-200";
+                if(s.etapa.includes('Cardápio')) statusColor = "bg-blue-100 text-blue-700";
+                if(s.etapa.includes('Pedido Enviado')) statusColor = "bg-emerald-100 text-emerald-700 font-black border border-emerald-200";
+                
+                const isOnline = new Date() - new Date(s.last_active) < 120000; // ultimos 2 min (ao vivo)
+
+                return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800 flex items-center gap-2">
+                            ${s.nome} 
+                            ${isOnline ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse"></span>' : ''}
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-0.5">${s.telefone !== 'Anonimo' ? s.telefone : 'Sessão Anônima'}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${statusColor}">${s.etapa}</span>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-xs ${s.carrinho.includes('0') || s.carrinho === 'Vazio' ? 'text-slate-400' : 'text-slate-800 font-bold'}">${s.carrinho}</div>
+                    </td>
+                    <td class="p-4 text-right text-xs text-slate-500">
+                        ${timeAgo(s.last_active)}
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            document.getElementById('session-list').innerHTML = html;
+        }
+
+        function copySql() {
+            navigator.clipboard.writeText(document.getElementById('sql-code').innerText);
+            alert("SQL Copiado!");
+        }
+
+        function closeSetup() {
+            document.getElementById('setup-modal').classList.add('hidden');
+            loadSessions();
+        }
+
+        loadSessions();
+        setInterval(loadSessions, 15000); // Atualiza a cada 15 segundos
+    </script>
+</body>
+</html>
