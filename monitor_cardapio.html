@@ -128,10 +128,9 @@
                     .order('last_active', { ascending: false });
 
                 if (error) {
-                    if(error.code === '42P01') { // table does not exist
-                        document.getElementById('setup-modal').classList.remove('hidden');
-                        document.getElementById('setup-modal').classList.add('flex');
-                    }
+                    document.getElementById('setup-modal').classList.remove('hidden');
+                    document.getElementById('setup-modal').classList.add('flex');
+                    console.error("Supabase error:", error);
                     throw error;
                 }
 
