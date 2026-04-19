@@ -262,6 +262,11 @@
                         <div id="cfgCarouselList" class="space-y-3"></div>
                         <button type="button" onclick="addCarouselItem()" class="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Imagem ao Carrossel</button>
                     </div>
+                    <div class="bg-indigo-50/50 p-4 border border-indigo-100 rounded-xl space-y-3">
+                        <label class="block text-sm font-bold text-indigo-900"><i data-lucide="list-ordered" class="inline w-4 h-4 mr-1 -mt-0.5 text-indigo-500"></i> Ordem das Categorias</label>
+                        <p class="text-[11px] font-medium text-indigo-600/80 mb-2 leading-tight">Mova as categorias para definir qual aparece primeiro lá no aplicativo do cliente. O que tiver mais lucro ou mais procura vai no topo!</p>
+                        <div id="cfgCategoryOrderList"></div>
+                    </div>
                 </div>
                 <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3 shrink-0">
                     <button type="button" onclick="closeConfigModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white font-medium transition-colors">Cancelar</button>
@@ -713,10 +718,58 @@
             if(imgs.length === 0) addCarouselItem();
             else imgs.forEach(img => addCarouselItem(img.url, img.produto_id, img.texto));
             
+            let savedOrder = data?.ordem_categorias || [];
+            if(typeof savedOrder === 'string') { try{ savedOrder = JSON.parse(savedOrder); }catch(e){ savedOrder=[]; } }
+            if(!Array.isArray(savedOrder)) savedOrder = [];
+            
+            const activeCats = [...new Set(products.map(p => p.categoria || 'Geral'))];
+            const validSaved = savedOrder.filter(c => activeCats.includes(c));
+            const newCats = activeCats.filter(c => !validSaved.includes(c)).sort();
+            cfgOrderArray = [...validSaved, ...newCats];
+            renderCategoryOrder();
+            
             document.getElementById('configModal').classList.remove('hidden');
         }
 
         function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
+
+        let cfgOrderArray = [];
+
+        function renderCategoryOrder() {
+            const list = document.getElementById('cfgCategoryOrderList');
+            if(!list) return;
+            list.innerHTML = '';
+            cfgOrderArray.forEach((cat, idx) => {
+                const isFirst = idx === 0;
+                const isLast = idx === cfgOrderArray.length - 1;
+                list.innerHTML += `
+                    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg tracking-tight px-3 py-2 shadow-sm mb-1.5 group cursor-default">
+                        <span class="font-bold text-slate-700 text-sm group-hover:text-brand-600 transition-colors">${cat}</span>
+                        <div class="flex gap-1">
+                            <button type="button" onclick="moveCatUp(${idx})" class="px-2 py-1 rounded-md text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all ${isFirst ? 'opacity-30 cursor-not-allowed' : 'shadow-sm border border-slate-100 bg-white'}" ${isFirst ? 'disabled' : ''}><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="moveCatDown(${idx})" class="px-2 py-1 rounded-md text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all ${isLast ? 'opacity-30 cursor-not-allowed' : 'shadow-sm border border-slate-100 bg-white'}" ${isLast ? 'disabled' : ''}><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function moveCatUp(idx) {
+            if(idx <= 0) return;
+            const temp = cfgOrderArray[idx];
+            cfgOrderArray[idx] = cfgOrderArray[idx - 1];
+            cfgOrderArray[idx - 1] = temp;
+            renderCategoryOrder();
+        }
+
+        function moveCatDown(idx) {
+            if(idx >= cfgOrderArray.length - 1) return;
+            const temp = cfgOrderArray[idx];
+            cfgOrderArray[idx] = cfgOrderArray[idx + 1];
+            cfgOrderArray[idx + 1] = temp;
+            renderCategoryOrder();
+        }
 
         function addCarouselItem(url = '', pid = '', texto = '') {
             const list = document.getElementById('cfgCarouselList');
@@ -780,7 +833,7 @@
                 if(url) imgs.push({ url: url, produto_id: pid, texto: txt });
             });
 
-            const payload = { id: 1, titulo: titulo, subtitulo: subtitulo, imagens: imgs };
+            const payload = { id: 1, titulo: titulo, subtitulo: subtitulo, imagens: imgs, ordem_categorias: cfgOrderArray };
 
             showLoader(true);
             const { error } = await supabaseClient.from('loja_config').upsert(payload, {onConflict: 'id'});
