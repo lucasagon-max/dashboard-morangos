@@ -417,19 +417,40 @@
     </div>
 </div>
 
-<!-- ── MODAL OPÇÕES DO PRODUTO (VARIAÇÕES & ADICIONAIS) ── -->
-<div id="options-modal" class="fixed inset-0 z-[700] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden" style="animation: slideUp 0.3s ease-out;">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-start bg-white shrink-0">
-            <div>
-                <h3 class="font-sans text-xl font-black text-slate-900 leading-tight" id="modal-title">Nome</h3>
-                <p class="text-sm text-slate-500 mt-1 line-clamp-2" id="modal-desc">Descrição</p>
-            </div>
-            <button onclick="closeOptionsModal()" class="text-slate-400 hover:text-red-500 bg-slate-50 p-2 rounded-full transition-colors shrink-0 ml-4"><i data-lucide="x" class="w-4 h-4"></i></button>
+<!-- ── MODAL OPÇÕES DO PRODUTO (REFINADO & DESTACADO COM FOTO GRANDE) ── -->
+<div id="options-modal" class="fixed inset-0 z-[700] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 sm:p-4 md:p-8">
+    <div class="bg-white sm:rounded-[2.5rem] shadow-2xl w-full max-w-5xl flex flex-col md:flex-row max-h-[95vh] sm:max-h-[85vh] overflow-hidden relative rounded-t-[2.5rem]" style="animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+        
+        <!-- Botões Funcionais (Absoluto) -->
+        <button onclick="shareProduct()" class="absolute top-4 right-[3.5rem] md:top-6 md:right-[4.2rem] z-[60] text-slate-400 hover:text-brand-600 bg-white/90 backdrop-blur shadow-sm p-2 rounded-full transition-colors shrink-0 border border-slate-100 flex items-center justify-center"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+        <button onclick="closeOptionsModal()" class="absolute top-4 right-4 md:top-6 md:right-6 z-[60] text-slate-400 hover:text-brand-600 bg-white/90 backdrop-blur shadow-sm p-2 rounded-full transition-colors shrink-0 border border-slate-100 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+        <!-- Coluna Esquerda: Imagem Destaque (Editorial Style) -->
+        <div class="w-full md:w-[55%] relative bg-slate-100 hidden md:block shrink-0" id="modal-img-container">
+            <img id="modal-img-desktop" src="" class="w-full h-full object-cover">
+            <!-- Overlay suave na foto grande -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
         </div>
 
-        <div class="p-6 overflow-y-auto flex-1 space-y-6 modal-scroll bg-slate-50">
-            <!-- Variações -->
+        <!-- Coluna Direita: Detalhes -->
+        <div class="w-full md:w-[45%] flex flex-col h-[85vh] sm:h-auto md:max-h-full bg-white relative z-10 rounded-t-[2.5rem] md:rounded-none">
+            
+            <!-- Imagem Destaque Mobile (visível apenas em telas pequenas) -->
+            <div id="modal-img-mobile-container" class="w-full h-56 relative md:hidden shrink-0 hidden bg-slate-100">
+                <img id="modal-img-mobile" src="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            </div>
+
+            <div class="p-6 md:p-8 border-b border-slate-100 bg-white shrink-0 relative -mt-6 md:mt-0 rounded-t-[2.5rem] md:rounded-none">
+                <div class="flex gap-2 mb-3 hidden" id="modal-tags">
+                   <span class="px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-[10px] font-black tracking-widest uppercase border border-brand-100 flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-brand-700 text-brand-700"></i> Destaque Especial</span>
+                </div>
+                <h3 class="font-sans text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-[1.05] tracking-tight mb-2" id="modal-title">Nome</h3>
+                <p class="text-sm md:text-base text-slate-500 leading-relaxed font-medium mt-3" id="modal-desc">Descrição</p>
+            </div>
+
+            <div class="p-6 md:p-8 overflow-y-auto flex-1 space-y-8 bg-slate-50 relative custom-scrollbar">
+                <!-- Variações -->
             <div id="variations-container" class="hidden">
                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Escolha o Tamanho/Opção</label>
                 <div id="variations-list" class="space-y-2"></div>
@@ -473,14 +494,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
-const WHATSAPP_LOJA = '5515991947140';
+const WHATSAPP_LOJA = '5515999999999';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Novas Constantes e Variáveis para Cálculo de Distância / Taxa
 const LOJA_COORD = { lat: -23.3541, lng: -47.8447 };
 const TAXA_BASE = 5.00;
-const VALOR_POR_KM = 0.50;
+const VALOR_POR_KM = 2.00;
 let taxaEntregaAtual = 0;
 
 // Variáveis Globais de Estado
@@ -943,6 +964,45 @@ function cancelLogin() {
 // ----------------------------------------------------------------
 // ENTRAR NO APP E SAIR
 // ----------------------------------------------------------------
+function checkSharedProduct() {
+  const params = new URLSearchParams(window.location.search);
+  const pid = params.get('produto');
+  if (pid) {
+    const alvo = allProducts.find(p => p.id == pid);
+    if (alvo) setTimeout(() => openProductModal(alvo.id), 300);
+  }
+}
+
+function isStoreOpen() {
+  const spTime = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const wday = spTime.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+  const hour = spTime.getHours();
+  // Aberto de Terça a Sábado das 14h às 18h (até 17h59)
+  if (wday >= 2 && wday <= 6) {
+    if (hour >= 14 && hour < 18) {
+      return true;
+    }
+  }
+  return false;
+}
+
+window.shareProduct = async function() {
+    if(!currentItem) return;
+    const url = window.location.origin + window.location.pathname + '?produto=' + currentItem.id;
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Morangos Tatuí - ' + currentItem.nome,
+                text: 'Dá uma olhada nessa delícia do Morangos Tatuí: ' + currentItem.nome,
+                url: url
+            });
+        } catch(e) {}
+    } else {
+        navigator.clipboard.writeText(url);
+        showToast('Link copiado para compartilhar!');
+    }
+};
+
 function entrarNoApp(user) {
   clienteLogado = user;
   localStorage.setItem('mt_user', JSON.stringify(user));
@@ -1120,6 +1180,7 @@ async function loadProducts() {
     filteredProds = [...allProducts];
     buildCategoryPills();
     renderProducts();
+    checkSharedProduct();
   } catch (e) {
     container.innerHTML = '<div class="text-center text-brand-600 py-10 font-bold">Erro ao carregar o cardápio.</div>';
   }
@@ -1177,6 +1238,7 @@ function renderProducts() {
       const prices = parsePrices(item.preco);
       const minPrice = Math.min(...prices.map(x => x.val));
       const hasVars = prices.length > 1;
+      const isDestaque = String(item.destaque).toLowerCase() === "sim" || item.destaque === true;
       const priceDisplay = hasVars ? `A partir de ${formatMoney(minPrice)}` : formatMoney(minPrice);
       
       const imgHtml = item.imagem 
@@ -1185,6 +1247,7 @@ function renderProducts() {
 
       html += `
         <div class="bg-white rounded-2xl p-4 flex gap-4 md:gap-6 shadow-sm border border-slate-200/60 group cursor-pointer hover:shadow-md hover:border-brand-200 transition-all relative overflow-hidden" onclick="openProductModal('${item.id}')">
+          ${isDestaque ? '<div class="absolute top-0 right-0 bg-brand-500 text-white text-[9px] font-bold px-2 py-1 rounded-bl-xl shadow-sm tracking-wider uppercase z-10">Destaque</div>' : ''}
           ${imgHtml}
           <div class="flex-1 min-w-0 py-1 flex flex-col justify-between">
             <div>
@@ -1229,6 +1292,30 @@ window.openProductModal = function(id) {
     document.getElementById('modal-desc').textContent = product.descricao || 'Personalize seu pedido abaixo.';
     document.getElementById('modal-obs').value = '';
     document.getElementById('modal-qty').textContent = '1';
+    
+    // Injeção de Imagem Destaque no Modal
+    const imgContainerDesktop = document.getElementById('modal-img-container');
+    const imgContainerMobile = document.getElementById('modal-img-mobile-container');
+    const tagsDiv = document.getElementById('modal-tags');
+    const isDestaque = String(product.destaque).toLowerCase() === "sim" || product.destaque === true;
+    
+    if (product.imagem) {
+        document.getElementById('modal-img-desktop').src = product.imagem;
+        document.getElementById('modal-img-mobile').src = product.imagem;
+        imgContainerDesktop.classList.remove('hidden');
+        imgContainerDesktop.classList.add('md:block');
+        imgContainerMobile.classList.remove('hidden');
+    } else {
+        imgContainerDesktop.classList.add('hidden');
+        imgContainerDesktop.classList.remove('md:block');
+        imgContainerMobile.classList.add('hidden');
+    }
+    
+    if (isDestaque) {
+        tagsDiv.classList.remove('hidden');
+    } else {
+        tagsDiv.classList.add('hidden');
+    }
 
     const prices = parsePrices(product.preco);
     const varContainer = document.getElementById('variations-container');
