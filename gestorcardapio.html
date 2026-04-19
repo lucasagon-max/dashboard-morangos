@@ -144,20 +144,24 @@
                         <input type="hidden" id="editProductId">
 
                         <div class="flex flex-col sm:flex-row gap-6">
-                            <!-- Imagem -->
-                            <div class="w-full sm:w-1/3 space-y-3">
-                                <label class="block text-sm font-medium text-slate-700">Imagem</label>
-                                <div class="aspect-square bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden group">
-                                    <img id="imagePreview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
-                                    <div class="text-center text-slate-400 p-2" id="imagePlaceholder">
-                                        <i data-lucide="image" class="w-8 h-8 mx-auto mb-1"></i>
-                                        <span class="text-xs">Preview</span>
+                                <!-- Imagem -->
+                                <div class="w-full sm:w-1/3 space-y-3">
+                                    <label class="block text-sm font-medium text-slate-700">Imagem</label>
+                                    <div class="aspect-square bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer" onclick="document.getElementById('pImageFile').click()">
+                                        <img id="imagePreview" src="" class="absolute inset-0 w-full h-full object-cover hidden" style="z-index: 10;">
+                                        <div class="text-center text-slate-400 p-2 relative z-0" id="imagePlaceholder">
+                                            <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto mb-1 group-hover:text-brand-500 transition-colors"></i>
+                                            <span class="text-xs group-hover:text-brand-600 font-medium">Clique para Enviar</span>
+                                        </div>
+                                        <div class="absolute inset-0 bg-black/40 hidden items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" id="imageOverlay" style="z-index: 20;">
+                                            <i data-lucide="edit-2" class="w-6 h-6 text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <input type="file" id="pImageFile" accept="image/*" class="hidden" onchange="handleImageFileSelected(event)">
+                                        <input type="text" id="pImage" oninput="updateImagePreview(this.value)" placeholder="Ou cole a URL direta aqui..." class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
                                     </div>
                                 </div>
-                                <div>
-                                    <input type="text" id="pImage" oninput="updateImagePreview(this.value)" placeholder="Cole a URL da imagem aqui" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
-                                </div>
-                            </div>
 
                             <!-- Dados -->
                             <div class="w-full sm:w-2/3 space-y-4">
@@ -172,11 +176,18 @@
                                         <datalist id="categoriesList"></datalist>
                                     </div>
                                     <div class="flex flex-col justify-end">
-                                        <label class="flex items-center cursor-pointer mb-2">
+                                        <label class="flex items-center cursor-pointer mb-3">
                                             <div class="relative">
                                                 <input type="checkbox" id="pAvailable" class="sr-only peer" checked>
                                                 <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                                                 <span class="ml-3 text-sm font-bold text-slate-700">Disponível</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <div class="relative">
+                                                <input type="checkbox" id="pDestaque" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-400"></div>
+                                                <span class="ml-3 text-sm font-bold text-slate-700">Em Destaque ✨</span>
                                             </div>
                                         </label>
                                     </div>
@@ -371,13 +382,37 @@
             const finalPrice = document.getElementById('pPriceFinal').value;
             if (!finalPrice) return alert("Por favor, insira um preço ou variação.");
 
+            let finalImageUrl = document.getElementById('pImage').value;
+            const fileInput = document.getElementById('pImageFile');
+            
+            // Lógica de Upload pro Supabase
+            if (fileInput.files.length > 0) {
+                showLoader(true);
+                const file = fileInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `${fileName}`;
+
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('produtos').upload(filePath, file);
+                
+                if (uploadError) {
+                    alert("Erro no upload da imagem: " + uploadError.message + "\n\nVerifique no Supabase se o Bucket 'produtos' é Público e se as políticas (Policies) de RLS permitem INSERT.");
+                    showLoader(false);
+                    return;
+                }
+
+                const { data: publicUrlData } = supabaseClient.storage.from('produtos').getPublicUrl(filePath);
+                finalImageUrl = publicUrlData.publicUrl;
+            }
+
             const payload = {
                 nome: document.getElementById('pName').value,
                 preco: finalPrice,
                 categoria: document.getElementById('pCategory').value || 'Geral',
-                imagem: document.getElementById('pImage').value,
+                imagem: finalImageUrl,
                 descricao: document.getElementById('pDesc').value,
-                disponivel: document.getElementById('pAvailable').checked ? "Sim" : "Não"
+                disponivel: document.getElementById('pAvailable').checked ? "Sim" : "Não",
+                destaque: document.getElementById('pDestaque').checked ? "Sim" : "Não"
             };
 
             showLoader(true);
@@ -470,6 +505,7 @@
 
                 const imgHtml = p.imagem ? `<img src="${p.imagem}" class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300">` : `<div class="h-full w-full flex items-center justify-center text-slate-300 bg-slate-50"><i data-lucide="image" class="w-6 h-6"></i></div>`;
                 
+                const isDestaque = String(p.destaque).toLowerCase() === "sim" || p.destaque === true;
                 const item = document.createElement('div');
                 item.className = `group bg-white rounded-3xl border border-slate-200 md:border-0 md:rounded-none p-5 md:px-6 md:py-5 flex flex-col md:grid md:grid-cols-12 gap-5 items-center hover:bg-brand-50/30 transition-all ${!isAv ? 'opacity-50 grayscale' : ''}`;
                 
@@ -480,7 +516,7 @@
                             ${!isAv ? '<div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center"><span class="text-[8px] font-black text-white uppercase tracking-tighter">Indisponível</span></div>' : ''}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-black text-slate-900 text-base truncate font-serif">${p.nome}</h4>
+                            <h4 class="font-black text-slate-900 text-base truncate font-serif flex items-center gap-2">${p.nome} ${isDestaque ? '<span title="Em Destaque" class="text-amber-400"><i data-lucide="star" class="w-4 h-4 fill-amber-400"></i></span>' : ''}</h4>
                             <p class="text-xs text-slate-500 truncate hidden md:block mt-0.5 font-medium">${descSegura}</p>
                             <span class="md:hidden inline-block px-3 py-1 mt-2 rounded-full text-[10px] font-bold bg-white text-brand-600 border border-brand-100 shadow-sm uppercase tracking-wider">${catSegura}</span>
                         </div>
@@ -506,8 +542,10 @@
             document.getElementById('productForm').reset();
             document.getElementById('editProductId').value = "";
             document.getElementById('modalTitle').textContent = "Novo Produto";
+            document.getElementById('pImageFile').value = "";
             updateImagePreview("");
             document.getElementById('pAvailable').checked = true;
+            document.getElementById('pDestaque').checked = false;
             document.getElementById('variationsList').innerHTML = '';
             togglePriceMode(false);
             document.getElementById('productModal').classList.remove('hidden');
@@ -518,9 +556,11 @@
             document.getElementById('editProductId').value = product.id;
             document.getElementById('pName').value = product.nome || '';
             document.getElementById('pCategory').value = product.categoria || '';
+            document.getElementById('pImageFile').value = "";
             document.getElementById('pImage').value = product.imagem || '';
             document.getElementById('pDesc').value = product.descricao || '';
             document.getElementById('pAvailable').checked = (String(product.disponivel).toLowerCase() === "sim" || product.disponivel === true);
+            document.getElementById('pDestaque').checked = (String(product.destaque).toLowerCase() === "sim" || product.destaque === true);
             updateImagePreview(product.imagem);
             
             document.getElementById('variationsList').innerHTML = '';
@@ -540,11 +580,24 @@
 
         function closeModal() { document.getElementById('productModal').classList.add('hidden'); }
         function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); idToDelete = null; }
+        function handleImageFileSelected(event) {
+            const file = event.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    updateImagePreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+                document.getElementById('pImage').value = ''; 
+            }
+        }
+
         function updateImagePreview(url) {
             const img = document.getElementById('imagePreview');
             const ph = document.getElementById('imagePlaceholder');
-            if(url) { img.src = url; img.classList.remove('hidden'); ph.classList.add('hidden'); } 
-            else { img.classList.add('hidden'); ph.classList.remove('hidden'); }
+            const ov = document.getElementById('imageOverlay');
+            if(url) { img.src = url; img.classList.remove('hidden'); ph.classList.add('hidden'); if(ov) ov.classList.remove('hidden'); } 
+            else { img.classList.add('hidden'); ph.classList.remove('hidden'); if(ov) ov.classList.add('hidden'); }
         }
     </script>
 </body>
