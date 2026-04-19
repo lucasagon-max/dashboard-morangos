@@ -990,12 +990,31 @@ window.shareProduct = async function() {
     if(!currentItem) return;
     const url = window.location.origin + window.location.pathname + '?produto=' + currentItem.id;
     if (navigator.share) {
+        const shareData = {
+            title: 'Morangos Tatuí - ' + currentItem.nome,
+            text: 'Dá uma olhada nessa delícia do Morangos Tatuí: ' + currentItem.nome,
+            url: url
+        };
         try {
-            await navigator.share({
-                title: 'Morangos Tatuí - ' + currentItem.nome,
-                text: 'Dá uma olhada nessa delícia do Morangos Tatuí: ' + currentItem.nome,
-                url: url
-            });
+            let fileShared = false;
+            if (currentItem.imagem && navigator.canShare) {
+                try {
+                    const response = await fetch(currentItem.imagem);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'produto.jpg', { type: blob.type });
+                    const shareWithFile = { ...shareData, files: [file] };
+                    
+                    if (navigator.canShare(shareWithFile)) {
+                        await navigator.share(shareWithFile);
+                        fileShared = true;
+                    }
+                } catch(e) {
+                    console.log("Fallback: não foi possivel baixar a img pro share", e);
+                }
+            }
+            if (!fileShared) {
+                await navigator.share(shareData);
+            }
         } catch(e) {}
     } else {
         navigator.clipboard.writeText(url);
@@ -1281,6 +1300,7 @@ window.openProductModal = function(id) {
     currentItem = {
         id: product.id,
         nome: product.nome,
+        imagem: product.imagem,
         basePrice: 0,
         selectedVariation: null,
         selectedAddons: [],
@@ -1302,13 +1322,11 @@ window.openProductModal = function(id) {
     if (product.imagem) {
         document.getElementById('modal-img-desktop').src = product.imagem;
         document.getElementById('modal-img-mobile').src = product.imagem;
-        imgContainerDesktop.classList.remove('hidden');
-        imgContainerDesktop.classList.add('md:block');
-        imgContainerMobile.classList.remove('hidden');
+        imgContainerDesktop.className = "w-full md:w-[55%] relative bg-slate-100 hidden md:block shrink-0";
+        imgContainerMobile.className = "w-full h-56 relative shrink-0 md:hidden bg-slate-100";
     } else {
-        imgContainerDesktop.classList.add('hidden');
-        imgContainerDesktop.classList.remove('md:block');
-        imgContainerMobile.classList.add('hidden');
+        imgContainerDesktop.className = "hidden";
+        imgContainerMobile.className = "hidden";
     }
     
     if (isDestaque) {
