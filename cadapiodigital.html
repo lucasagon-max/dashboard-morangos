@@ -198,17 +198,19 @@
     <!-- Hero Section (Desktop & Mobile) -->
     <section class="mb-10 md:mb-16 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 mt-4 md:mt-8">
       <div class="flex-1">
-        <h2 class="font-sans text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1] text-slate-900 mb-4 md:mb-6">
+        <h2 id="hero-title" class="font-sans text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1] text-slate-900 mb-4 md:mb-6">
           Frescor em<br/>cada detalhe.<br/><span class="text-brand-600 mt-2 block">Sua felicidade!</span>
         </h2>
-        <p class="font-sans text-base md:text-lg text-slate-500 max-w-lg md:max-w-xl mx-auto md:mx-0 leading-relaxed">
+        <p id="hero-desc" class="font-sans text-base md:text-lg text-slate-500 max-w-lg md:max-w-xl mx-auto md:mx-0 leading-relaxed">
           Do cultivo direto para a sua casa. Descubra nosso cardápio artesanal cheio de delícias preparadas com todo carinho para você.
         </p>
       </div>
-      <!-- Hero Desktop Image -->
-      <div class="hidden md:block w-72 h-72 lg:w-96 lg:h-96 shrink-0 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
-        <img src="https://ferramentas.morangostatui.com.br/logo.png" class="w-full h-full object-cover" alt="Morangos Tatuí">
-        <div class="absolute inset-0 border-[6px] border-white/20 rounded-[2.5rem]"></div>
+      <!-- Hero Desktop Image / Carousel -->
+      <div id="hero-carousel" class="hidden md:block w-72 h-72 lg:w-96 lg:h-96 shrink-0 rounded-[2.5rem] overflow-hidden shadow-2xl relative group">
+        <div class="absolute inset-0 transition-opacity duration-1000 ease-in-out opacity-100 z-10 hero-slide">
+            <img src="https://ferramentas.morangostatui.com.br/logo.png" class="w-full h-full object-cover" alt="Morangos Tatuí Capa">
+        </div>
+        <div class="absolute inset-0 border-[6px] border-white/20 rounded-[2.5rem] pointer-events-none z-20"></div>
       </div>
     </section>
 
@@ -417,10 +419,15 @@
     </div>
 </div>
 
-<!-- ── MODAL OPÇÕES DO PRODUTO (REFINADO & DESTACADO COM FOTO GRANDE) ── -->
+<!-- ── MODAL OPÇÕES DO PRODUTO (REFINADO & DESTACADO COM FOTO GRANDE E SWIPE) ── -->
 <div id="options-modal" class="fixed inset-0 z-[700] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 sm:p-4 md:p-8">
-    <div class="bg-white sm:rounded-[2.5rem] shadow-2xl w-full max-w-5xl flex flex-col md:flex-row max-h-[95vh] sm:max-h-[85vh] overflow-hidden relative rounded-t-[2.5rem]" style="animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div id="options-modal-panel" class="bg-white sm:rounded-[2.5rem] shadow-2xl w-full max-w-5xl flex flex-col md:flex-row max-h-[95vh] sm:max-h-[85vh] overflow-hidden relative rounded-t-[2.5rem]" style="animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
         
+        <!-- Puxador Mobile (Indicador Visual do Swipe) -->
+        <div class="w-full absolute top-2 left-0 flex justify-center z-[80] md:hidden">
+             <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+        </div>
+
         <!-- Botões Funcionais (Absoluto) -->
         <button onclick="shareProduct()" class="absolute top-4 right-[3.5rem] md:top-6 md:right-[4.2rem] z-[60] text-slate-400 hover:text-brand-600 bg-white/90 backdrop-blur shadow-sm p-2 rounded-full transition-colors shrink-0 border border-slate-100 flex items-center justify-center"><i data-lucide="share-2" class="w-5 h-5"></i></button>
         <button onclick="closeOptionsModal()" class="absolute top-4 right-4 md:top-6 md:right-6 z-[60] text-slate-400 hover:text-brand-600 bg-white/90 backdrop-blur shadow-sm p-2 rounded-full transition-colors shrink-0 border border-slate-100 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -497,6 +504,95 @@ const SUPABASE_ANON_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
 const WHATSAPP_LOJA = '5515999999999';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTES DINAMICOS DA LOJA E SWIPE
+// ─────────────────────────────────────────────────────────────────────────────
+let heroConfigData = null;
+
+function renderHero() {
+    if(!heroConfigData) return;
+    
+    if(heroConfigData.titulo) document.getElementById('hero-title').innerHTML = heroConfigData.titulo; 
+    if(heroConfigData.subtitulo) document.getElementById('hero-desc').innerText = heroConfigData.subtitulo;
+
+    let imgs = heroConfigData.imagens || [];
+    if(typeof imgs === 'string') { try{ imgs = JSON.parse(imgs); }catch(e){ imgs=[]; } }
+    if(!Array.isArray(imgs)) imgs = [];
+
+    const carousel = document.getElementById('hero-carousel');
+    if(imgs.length > 0) {
+        let slidesHtml = '';
+        imgs.forEach((img, idx) => {
+            const hasLink = img.produto_id ? `cursor-pointer" onclick="openProductModal('${img.produto_id}')"` : `"`;
+            slidesHtml += `
+                <div class="absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'} hero-slide">
+                    <img src="${img.url}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-[2000ms] ${hasLink} alt="Banner Loja">
+                </div>
+            `;
+        });
+        slidesHtml += `<div class="absolute inset-0 border-[6px] border-white/20 rounded-[2.5rem] pointer-events-none z-20"></div>`;
+        carousel.innerHTML = slidesHtml;
+
+        if(imgs.length > 1) {
+            let currentSlide = 0;
+            setInterval(() => {
+                const slides = carousel.querySelectorAll('.hero-slide');
+                if(slides.length === 0) return;
+                slides[currentSlide].classList.remove('opacity-100', 'z-10');
+                slides[currentSlide].classList.add('opacity-0', 'z-0');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.remove('opacity-0', 'z-0');
+                slides[currentSlide].classList.add('opacity-100', 'z-10');
+            }, 4000);
+        }
+    }
+}
+
+let modalStartY = -1;
+let modalCurrentY = 0;
+let isDraggingModal = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const pnl = document.getElementById('options-modal-panel');
+    if(!pnl) return;
+    
+    pnl.addEventListener('touchstart', (e) => {
+        const tgt = e.target.closest('.overflow-y-auto');
+        if(tgt && tgt.scrollTop > 0) { modalStartY = -1; return; }
+        
+        modalStartY = e.touches[0].clientY;
+        isDraggingModal = true;
+        pnl.style.transition = 'none';
+        pnl.style.animation = 'none'; 
+    }, {passive: true});
+
+    pnl.addEventListener('touchmove', (e) => {
+        if(!isDraggingModal || modalStartY < 0) return;
+        const deltaY = e.touches[0].clientY - modalStartY;
+        
+        if(deltaY > 0) {
+            modalCurrentY = deltaY;
+            pnl.style.transform = `translateY(${deltaY}px)`;
+            if(deltaY > 20 && e.cancelable) e.preventDefault(); 
+        }
+    }, {passive: false});
+
+    pnl.addEventListener('touchend', (e) => {
+        if(!isDraggingModal || modalStartY < 0) return;
+        isDraggingModal = false;
+        
+        pnl.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        
+        if(modalCurrentY > 150) {
+            closeOptionsModal();
+        } else {
+            pnl.style.transform = 'translateY(0px)';
+        }
+        modalCurrentY = 0;
+        modalStartY = -1;
+    });
+});
 
 // Novas Constantes e Variáveis para Cálculo de Distância / Taxa
 const LOJA_COORD = { lat: -23.3541, lng: -47.8447 };
@@ -1173,6 +1269,12 @@ function switchTab(tabId) {
 async function loadProducts() {
   const container = document.getElementById('menu-items');
   try {
+    const { data: cfg } = await db.from('loja_config').select('*').eq('id', 1).single();
+    if(cfg) {
+        heroConfigData = cfg;
+        renderHero();
+    }
+
     const { data, error } = await db.from('produtos').select('*').eq('disponivel', 'Sim').order('categoria').order('nome');
     if (error) throw error;
     if(!data || data.length === 0) { container.innerHTML = `<div class="text-center py-12 text-slate-400 font-medium">O cardápio está vazio.</div>`; return; }
@@ -1428,11 +1530,19 @@ function updateModalTotal() {
     const addonsTotal = currentItem.selectedAddons.reduce((acc, a) => acc + a.price, 0);
     const unitTotal = currentItem.basePrice + addonsTotal;
     const finalTotal = unitTotal * currentItem.quantity;
+    const pnl = document.getElementById('options-modal-panel');
+    if(pnl) pnl.style.transform = '';
+    
     document.getElementById('modal-total-btn').textContent = formatMoney(finalTotal);
+    document.getElementById('options-modal').classList.remove('hidden');
 }
 
 window.closeOptionsModal = function() {
+    const pnl = document.getElementById('options-modal-panel');
+    if(pnl) pnl.style.transform = '';
+    
     document.getElementById('options-modal').classList.add('hidden');
+    currentItem = null;
     document.getElementById('options-modal').classList.remove('flex');
 };
 
