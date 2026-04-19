@@ -278,7 +278,11 @@
             <span class="text-sm font-medium">Subtotal</span>
             <span id="cart-subtotal" class="font-bold text-slate-700">R$ 0,00</span>
           </div>
-          <div class="flex justify-between items-center bg-brand-50 p-3 text-brand-700 rounded-xl">
+          <div class="flex justify-between items-center text-slate-500">
+            <span class="text-sm font-medium">Taxa de Entrega</span>
+            <span id="cart-taxa" class="font-bold text-slate-700">Calculando...</span>
+          </div>
+          <div class="flex justify-between items-center bg-brand-50 p-3 text-brand-700 rounded-xl mt-3">
             <span class="text-sm font-black">Total Previsto</span>
             <span id="cart-total" class="text-2xl font-black">R$ 0,00</span>
           </div>
@@ -473,6 +477,12 @@ const WHATSAPP_LOJA = '5515999999999';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Novas Constantes e Variáveis para Cálculo de Distância / Taxa
+const LOJA_COORD = { lat: -23.3541, lng: -47.8447 };
+const TAXA_BASE = 5.00;
+const VALOR_POR_KM = 2.00;
+let taxaEntregaAtual = 0;
+
 // Variáveis Globais de Estado
 let clienteLogado = null;
 let currentPhone = '';
@@ -487,6 +497,51 @@ let orderType = 'delivery';
 let currentItem = null;
 
 lucide.createIcons();
+
+// ----------------------------------------------------------------
+// FUNÇÕES DE DISTÂNCIA E GEOLOCALIZAÇÃO
+// ----------------------------------------------------------------
+function calcularDistancia(lat2, lon2) {
+    const R = 6371; // Raio da Terra em km
+    const dLat = (lat2 - LOJA_COORD.lat) * Math.PI / 180;
+    const dLon = (lon2 - LOJA_COORD.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(LOJA_COORD.lat * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+async function obterCoordenadasEAtualizarTaxa(cliente) {
+    if (!cliente || !cliente.rua || !cliente.bairro) {
+        taxaEntregaAtual = 0;
+        if(typeof renderCart === 'function') renderCart();
+        return;
+    }
+    
+    if(document.getElementById('cart-taxa')) document.getElementById('cart-taxa').textContent = "Calculando...";
+
+    try {
+        const address = `${cliente.rua}, ${cliente.numero}, ${cliente.bairro}, Tatuí, SP`;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+        const data = await res.json();
+        
+        let distance = 3.5; // Distância fixa média de fallback para testes
+        
+        if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            distance = calcularDistancia(lat, lon);
+        }
+        
+        taxaEntregaAtual = TAXA_BASE + (distance * VALOR_POR_KM);
+    } catch(e) {
+        console.error("Erro na geocodificação:", e);
+        taxaEntregaAtual = TAXA_BASE + (3.5 * VALOR_POR_KM); // Fallback
+    }
+    
+    if (typeof renderCart === 'function') renderCart();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITÁRIOS & MONITORAMENTO
@@ -777,6 +832,9 @@ async function saveAddress() {
     end += ` - ${data.bairro}`;
     document.getElementById('profile-address').innerText = end;
     
+    // Recalcula a nova taxa baseada no endereço
+    obterCoordenadasEAtualizarTaxa(data);
+    
     showToast('Endereço atualizado! 🏠');
     closeEditAddress();
   } catch (err) {
@@ -908,6 +966,8 @@ function entrarNoApp(user) {
   if(user.complemento) end += ` (${user.complemento})`;
   end += ` - ${user.bairro}`;
   document.getElementById('profile-address').innerText = end;
+  
+  obterCoordenadasEAtualizarTaxa(user);
   
   loadProducts();
   updateCartUI();
@@ -1364,8 +1424,14 @@ function renderCart() {
   `).join('');
 
   const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+  const taxaExibicao = orderType === 'delivery' ? taxaEntregaAtual : 0;
+  
+  if (document.getElementById('cart-taxa')) {
+      document.getElementById('cart-taxa').textContent = taxaExibicao === 0 && orderType === 'retirada' ? "Grátis" : formatMoney(taxaExibicao);
+  }
+  
   document.getElementById('cart-subtotal').textContent = formatMoney(subtotal);
-  document.getElementById('cart-total').textContent = formatMoney(subtotal);
+  document.getElementById('cart-total').textContent = formatMoney(subtotal + taxaExibicao);
 }
 
 document.getElementById('btn-clear-cart').onclick = () => { if(confirm('Limpar pedido?')) { cart = []; saveCart(); } };
@@ -1381,6 +1447,7 @@ function setOrderType(type) {
     p.className = "flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-brand-600 shadow-sm border border-slate-200 transition-all";
     d.className = "flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 transition-all hover:text-slate-700";
   }
+  renderCart();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1402,16 +1469,20 @@ async function sendOrderToSupabase() {
   const tipoStr = orderType === 'delivery' ? 'Delivery' : 'Retirada';
   const obs = document.getElementById('cart-obs').value.trim();
   const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+  const taxaFinal = orderType === 'delivery' ? taxaEntregaAtual : 0;
+  const valorTotal = subtotal + taxaFinal;
   
   let endereco = '';
+  let taxaAviso = '';
   if(orderType === 'delivery') {
     endereco = `Endereço: ${clienteLogado.rua}, ${clienteLogado.numero}`;
     if(clienteLogado.complemento) endereco += ` (${clienteLogado.complemento})`;
     endereco += ` - ${clienteLogado.bairro}`;
+    taxaAviso = "Valor de entrega estimado via app e sujeito a alterações";
   }
 
-  // Junta a morada e as observações no campo de Obs da comanda
-  const finalObs = [endereco, obs].filter(Boolean).join(' | ');
+  // Junta a morada, as observações e o aviso de taxa no campo de Obs da comanda
+  const finalObs = [endereco, obs, taxaAviso].filter(Boolean).join(' | ');
 
   // Formata os itens exatamente como o seu PDV e Impressora exigem
   const itemsFormatted = cart.map(item => {
@@ -1432,7 +1503,7 @@ async function sendOrderToSupabase() {
       cliente: `${clienteLogado.nome} (${formatPhone(clienteLogado.telefone)})`,
       tipo: tipoStr,
       itens: itemsFormatted,
-      total: formatMoney(subtotal),
+      total: formatMoney(valorTotal),
       status: 'Novo', // 'Novo' faz a campainha tocar no Gestor de Comandas
       pagamento: 'A Pagar',
       obs: finalObs || 'App Cliente'
