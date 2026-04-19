@@ -182,8 +182,8 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Categoria</label>
-                                        <input type="text" id="pCategory" list="categoriesList" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:outline-none bg-slate-50 font-medium">
-                                        <datalist id="categoriesList"></datalist>
+                                        <select id="pCategory" required class="w-full px-4 py-[11px] rounded-xl border border-slate-200 focus:border-brand-500 focus:outline-none bg-slate-50 font-medium cursor-pointer" onchange="if(this.value==='_new') { const n = prompt('Nome da Nova Categoria:'); if(n && n.trim()){ const opt = document.createElement('option'); opt.value = n.trim(); opt.text = n.trim(); this.add(opt, this.options[1]); this.value = n.trim(); } else { this.value = ''; } }">
+                                        </select>
                                     </div>
                                     <div class="flex flex-col justify-end">
                                         <label class="flex items-center cursor-pointer mb-3">
@@ -536,10 +536,13 @@
 
         // --- RENDERIZAÇÃO SEGURA ---
         function populateCategories() {
-            // Usa encadeamento opcional para evitar erros se categoria for nula
             const categories = [...new Set(products.map(p => p.categoria || 'Geral'))].sort();
             document.getElementById('categoryFilter').innerHTML = '<option value="">Todas as Categorias</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('categoriesList').innerHTML = categories.map(c => `<option value="${c}">`).join('');
+            
+            const sel = document.getElementById('pCategory');
+            sel.innerHTML = '<option value="" disabled selected>Selecione...</option>' 
+                          + categories.map(c => `<option value="${c}">${c}</option>`).join('')
+                          + '<option value="_new" class="font-bold text-brand-600">➕ Criar Nova Categoria</option>';
         }
 
         function renderProducts() {
@@ -640,7 +643,13 @@
             document.getElementById('modalTitle').textContent = "Editar Produto";
             document.getElementById('editProductId').value = product.id;
             document.getElementById('pName').value = product.nome || '';
-            document.getElementById('pCategory').value = product.categoria || '';
+            const catSelect = document.getElementById('pCategory');
+            const catVal = product.categoria || 'Geral';
+            if(![...catSelect.options].some(o => o.value === catVal)) {
+                const opt = document.createElement('option'); opt.value = catVal; opt.text = catVal;
+                catSelect.add(opt, catSelect.options[1]);
+            }
+            catSelect.value = catVal;
             document.getElementById('pImageFile').value = "";
             document.getElementById('pImage').value = product.imagem || '';
             document.getElementById('pDesc').value = product.descricao || '';
