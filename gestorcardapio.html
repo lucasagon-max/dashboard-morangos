@@ -243,9 +243,15 @@
                     <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
                 <div class="p-6 overflow-y-auto modal-scroll space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Título da Capa</label>
-                        <input type="text" id="cfgTitulo" placeholder="Ex: Frescor em cada detalhe." class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none font-serif font-black">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Título Principal (Preto)</label>
+                            <input type="text" id="cfgTitulo1" placeholder="Ex: Frescor em cada detalhe." class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none font-serif font-black">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-red-600 mb-1">Destaque Colorido <span class="text-[10px] text-slate-500 font-normal">(Ficará na linha de baixo)</span></label>
+                            <input type="text" id="cfgTitulo2" placeholder="Ex: Sua felicidade!" class="w-full px-3 py-2 rounded-lg border border-red-200 bg-red-50 focus:ring-2 focus:ring-red-400 outline-none font-serif font-bold text-red-700">
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Subtítulo (Abaixo do título)</label>
@@ -683,7 +689,10 @@
             const { data, error } = await supabaseClient.from('loja_config').select('*').eq('id', 1).single();
             showLoader(false);
             
-            document.getElementById('cfgTitulo').value = data?.titulo || '';
+            const parts = (data?.titulo || "").split("|||");
+            document.getElementById('cfgTitulo1').value = parts[0] || '';
+            document.getElementById('cfgTitulo2').value = parts[1] || '';
+            
             document.getElementById('cfgSubtitulo').value = data?.subtitulo || '';
             document.getElementById('cfgCarouselList').innerHTML = '';
             
@@ -692,17 +701,17 @@
             if(!Array.isArray(imgs)) imgs = [];
             
             if(imgs.length === 0) addCarouselItem();
-            else imgs.forEach(img => addCarouselItem(img.url, img.produto_id));
+            else imgs.forEach(img => addCarouselItem(img.url, img.produto_id, img.texto));
             
             document.getElementById('configModal').classList.remove('hidden');
         }
 
         function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
 
-        function addCarouselItem(url = '', pid = '') {
+        function addCarouselItem(url = '', pid = '', texto = '') {
             const list = document.getElementById('cfgCarouselList');
             const div = document.createElement('div');
-            div.className = "flex flex-col sm:flex-row gap-2 items-end sm:items-center p-3 border border-slate-100 bg-white rounded-lg shadow-sm relative group";
+            div.className = "flex flex-col gap-2 items-start justify-center p-4 border border-slate-100 bg-white rounded-lg shadow-sm relative group";
             
             let options = '<option value="">(Nenhum link. Só mostrar foto)</option>';
             products.forEach(p => {
@@ -710,19 +719,25 @@
             });
 
             div.innerHTML = `
-                <div class="w-full sm:w-1/2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase">Imagem (URL/Upload)</label>
-                    <div class="flex gap-2">
-                        <input type="file" accept="image/*" class="hidden file-cfg" onchange="handleCfgUpload(this)">
-                        <button type="button" onclick="this.previousElementSibling.click()" class="bg-slate-100 p-2 rounded text-brand-600 hover:bg-brand-50"><i data-lucide="upload-cloud" class="w-4 h-4"></i></button>
-                        <input type="text" placeholder="URL direta" value="${url}" class="url-cfg flex-1 border border-slate-200 rounded px-2 py-1 text-sm outline-none w-full">
+                <div class="flex flex-col sm:flex-row gap-2 w-full">
+                    <div class="w-full sm:w-1/2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Imagem (URL/Upload)</label>
+                        <div class="flex gap-2">
+                            <input type="file" accept="image/*" class="hidden file-cfg" onchange="handleCfgUpload(this)">
+                            <button type="button" onclick="this.previousElementSibling.click()" class="bg-slate-100 p-2 rounded border border-slate-200 text-brand-600 hover:bg-brand-50"><i data-lucide="upload-cloud" class="w-4 h-4"></i></button>
+                            <input type="text" placeholder="URL direta" value="${url}" class="url-cfg flex-1 border border-slate-200 rounded px-2 py-1 text-sm outline-none w-full">
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-1/2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ação / Atalho de Link</label>
+                        <select class="prod-cfg w-full border border-slate-200 rounded px-2 py-[7px] text-sm outline-none bg-slate-50">${options}</select>
                     </div>
                 </div>
-                <div class="w-full sm:w-1/2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase">Link de Atalho (Opcional)</label>
-                    <select class="prod-cfg w-full border border-slate-200 rounded px-2 py-[7px] text-sm outline-none bg-slate-50">${options}</select>
+                <div class="w-full">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Texto Sobre a Imagem (Opcional)</label>
+                    <input type="text" placeholder="Ex: Promoção - 1kg de Morango por R$20" value="${texto || ''}" class="txt-cfg w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none bg-slate-50 focus:bg-white focus:border-brand-300">
                 </div>
-                <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>
+                <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 border border-red-200 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-sm"><i data-lucide="x" class="w-3 h-3"></i></button>
             `;
             list.appendChild(div);
             lucide.createIcons();
@@ -742,14 +757,17 @@
         }
 
         async function saveConfig() {
-            const titulo = document.getElementById('cfgTitulo').value;
+            const tit1 = document.getElementById('cfgTitulo1').value.trim();
+            const tit2 = document.getElementById('cfgTitulo2').value.trim();
+            const titulo = tit1 + "|||" + tit2;
             const subtitulo = document.getElementById('cfgSubtitulo').value;
             const imgs = [];
             
             document.querySelectorAll('#cfgCarouselList > div').forEach(row => {
                 const url = row.querySelector('.url-cfg').value.trim();
                 const pid = row.querySelector('.prod-cfg').value;
-                if(url) imgs.push({ url: url, produto_id: pid });
+                const txt = row.querySelector('.txt-cfg').value.trim();
+                if(url) imgs.push({ url: url, produto_id: pid, texto: txt });
             });
 
             const payload = { id: 1, titulo: titulo, subtitulo: subtitulo, imagens: imgs };
