@@ -49,7 +49,7 @@
 <div id="toast"></div>
 
 <!-- ── TELA 1: LOGIN E CADASTRO ── -->
-<main id="screen-auth" class="flex-1 flex flex-col items-center justify-center p-6 fade-in max-w-md mx-auto w-full">
+<main id="screen-auth" class="hidden flex-1 flex flex-col items-center justify-center p-6 fade-in max-w-md mx-auto w-full">
   <div class="bg-white border border-slate-200 rounded-3xl p-8 w-full shadow-sm">
     <div class="text-center mb-8">
       <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-20 mx-auto rounded-xl shadow-sm mb-4" onerror="this.style.display='none'">
@@ -64,6 +64,7 @@
       <button id="btn-check-phone" onclick="checkPhone()" class="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl py-4 font-bold transition-all shadow-md shadow-brand-200 flex justify-center items-center gap-2">
         Continuar <i data-lucide="arrow-right" class="w-4 h-4"></i>
       </button>
+      <button onclick="cancelLogin()" class="w-full text-slate-500 text-sm font-bold mt-4 py-2 hover:underline flex justify-center items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Cardápio</button>
     </div>
 
     <!-- Passo 2A: Login (PIN) -->
@@ -151,8 +152,8 @@
   </div>
 </main>
 
-<!-- ── APP SHELL (Oculto até login) ── -->
-<div id="app-container" class="hidden flex-col flex-1 max-w-lg mx-auto w-full relative bg-white min-h-screen shadow-xl">
+<!-- ── APP SHELL (Principal) ── -->
+<div id="app-container" class="flex flex-col flex-1 max-w-lg mx-auto w-full relative bg-white min-h-screen shadow-xl">
   
   <!-- HEADER -->
   <header class="bg-white px-6 py-5 flex items-center justify-between sticky top-0 z-40 shadow-sm border-b border-slate-100">
@@ -784,6 +785,23 @@ async function carregarHistoricoPedidos() {
   }
 }
 
+let pendingAction = null;
+
+function requireLogin(action) {
+  pendingAction = action;
+  document.getElementById('app-container').classList.remove('flex');
+  document.getElementById('app-container').classList.add('hidden');
+  document.getElementById('screen-auth').classList.remove('hidden');
+  resetAuth();
+}
+
+function cancelLogin() {
+  pendingAction = null;
+  document.getElementById('screen-auth').classList.add('hidden');
+  document.getElementById('app-container').classList.remove('hidden');
+  document.getElementById('app-container').classList.add('flex');
+}
+
 // ----------------------------------------------------------------
 // ENTRAR NO APP E SAIR
 // ----------------------------------------------------------------
@@ -815,6 +833,22 @@ function entrarNoApp(user) {
   updateCartUI();
   
   carregarHistoricoPedidos(); 
+  
+  if (pendingAction === 'sendOrder') {
+    pendingAction = null;
+    switchTab('cart');
+    sendOrderToSupabase();
+  } else if (pendingAction === 'profile') {
+    pendingAction = null;
+    switchTab('profile');
+  }
+}
+
+function visitanteNoApp() {
+  document.getElementById('user-greeting').innerText = `Seja bem-vindo(a)!`;
+  document.getElementById('user-cashback').innerText = "0,00";
+  loadProducts();
+  updateCartUI();
 }
 
 function doLogout() {
@@ -822,12 +856,11 @@ function doLogout() {
   clienteLogado = null; cart = []; saveCart();
   localStorage.removeItem('mt_user');
   
-  document.getElementById('app-container').classList.add('hidden');
-  document.getElementById('app-container').classList.remove('flex');
-  document.getElementById('screen-auth').classList.remove('hidden');
   document.getElementById('input-phone').value = '';
   
-  resetAuth(); switchTab('menu');
+  resetAuth(); 
+  switchTab('menu');
+  visitanteNoApp();
 }
 
 // Auto-Login
@@ -838,14 +871,21 @@ document.addEventListener("DOMContentLoaded", () => {
           entrarNoApp(JSON.parse(savedUser)); 
       } catch { 
           localStorage.removeItem('mt_user'); 
-          trackSession('Tela de Login'); 
+          trackSession('Acesso Visitante'); 
+          visitanteNoApp();
       } 
   } else {
-      trackSession('Tela de Login');
+      trackSession('Acesso Visitante');
+      visitanteNoApp();
   }
 });
 
 function switchTab(tabId) {
+  if (tabId === 'profile' && !clienteLogado) {
+    requireLogin('profile');
+    return;
+  }
+
   ['menu', 'cart', 'profile'].forEach(id => {
     document.getElementById('view-' + id).classList.add('hidden');
     const tabBtn = document.getElementById('tab-' + id);
@@ -1199,7 +1239,11 @@ function setOrderType(type) {
 // 8. CHECKOUT PARA O GESTOR DE COMANDAS (SUPABASE)
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendOrderToSupabase() {
-  if (!cart.length || !clienteLogado) return;
+  if (!cart.length) return;
+  if (!clienteLogado) {
+    requireLogin('sendOrder');
+    return;
+  }
 
   const btn = document.getElementById('btn-send-order');
   const originalHTML = btn.innerHTML;
