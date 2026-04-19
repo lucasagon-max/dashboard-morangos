@@ -501,7 +501,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://fepvxdmssoqfktqmbyzn.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG';
-const WHATSAPP_LOJA = '5515999999999';
+const WHATSAPP_LOJA = '5515991947140';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -509,6 +509,22 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // COMPONENTES DINAMICOS DA LOJA E SWIPE
 // ─────────────────────────────────────────────────────────────────────────────
 let heroConfigData = null;
+let categoryOrderGlobal = [];
+
+function sortCategories(a, b) {
+    const idxA = categoryOrderGlobal.indexOf(a);
+    const idxB = categoryOrderGlobal.indexOf(b);
+    const posA = idxA !== -1 ? idxA : 9999;
+    const posB = idxB !== -1 ? idxB : 9999;
+    
+    if (posA !== posB) return posA - posB;
+    
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+    if (aLower.includes("combo") && !bLower.includes("combo")) return -1;
+    if (bLower.includes("combo") && !aLower.includes("combo")) return 1;
+    return a.localeCompare(b);
+}
 
 function renderHero() {
     if(!heroConfigData) return;
@@ -1290,6 +1306,11 @@ async function loadProducts() {
     if(cfg) {
         heroConfigData = cfg;
         renderHero();
+        if(cfg.ordem_categorias) {
+            let parsed = cfg.ordem_categorias;
+            if(typeof parsed === 'string') { try{ parsed = JSON.parse(parsed); }catch(e){ parsed=[]; } }
+            if(Array.isArray(parsed)) categoryOrderGlobal = parsed;
+        }
     }
 
     const { data, error } = await db.from('produtos').select('*').eq('disponivel', 'Sim').order('categoria').order('nome');
@@ -1326,13 +1347,7 @@ async function loadProducts() {
 
 function buildCategoryPills() {
   let cats = [...new Set(allProducts.map(p => p.categoria || 'Delícias'))];
-  cats.sort((a, b) => {
-      const aLower = a.toLowerCase();
-      const bLower = b.toLowerCase();
-      if (aLower.includes("combo") && !bLower.includes("combo")) return -1;
-      if (bLower.includes("combo") && !aLower.includes("combo")) return 1;
-      return a.localeCompare(b);
-  });
+  cats.sort(sortCategories);
   cats = ['Todos', ...cats];
   const container = document.getElementById('category-pills');
   container.innerHTML = '';
@@ -1373,13 +1388,7 @@ function renderProducts() {
 
   let html = '';
   const keys = Object.keys(groups);
-  keys.sort((a, b) => {
-      const aLower = a.toLowerCase();
-      const bLower = b.toLowerCase();
-      if (aLower.includes("combo") && !bLower.includes("combo")) return -1;
-      if (bLower.includes("combo") && !aLower.includes("combo")) return 1;
-      return a.localeCompare(b);
-  });
+  keys.sort(sortCategories);
 
   for (const categoria of keys) {
     const produtos = groups[categoria];
