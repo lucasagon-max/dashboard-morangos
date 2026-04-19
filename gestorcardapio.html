@@ -91,11 +91,21 @@
                 <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Logo" class="h-10 w-auto rounded-lg shadow-sm" onerror="this.style.display='none'">
                 <h1 class="text-xl font-black text-slate-900 font-serif hidden sm:block">Gestão de Cardápio</h1>
             </div>
-            <button onclick="openModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-brand-100 transition-all active:scale-95 flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                <span class="hidden sm:inline">Novo Produto</span>
-                <span class="sm:hidden">Novo</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="openConfigModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 sm:px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2" title="Configurar Vitrine (Capa)">
+                    <i data-lucide="layout" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Vitrine</span>
+                </button>
+                <button onclick="openComboModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-3 sm:px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2" title="Criar Combo Especial">
+                    <i data-lucide="package-plus" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Criar Combo</span>
+                </button>
+                <button onclick="openModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm shadow-brand-100 transition-all active:scale-95 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Novo Produto</span>
+                    <span class="md:hidden">Novo</span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -223,19 +233,87 @@
         </div>
     </div>
 
-    <!-- Modal Exclusão -->
-    <div id="deleteModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full relative">
-                <div class="text-center">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"><i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i></div>
-                    <h3 class="text-lg font-medium text-slate-900">Excluir Produto?</h3>
-                    <p class="text-sm text-slate-500 mt-2">Esta ação não pode ser desfeita.</p>
+    <!-- Modal Vitrine/Capa -->
+    <div id="configModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()"></div>
+        <div class="flex items-start justify-center min-h-screen pt-4 sm:pt-10 px-4 pb-4 overflow-y-auto">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl relative flex flex-col max-h-[90vh]">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl shrink-0">
+                    <h3 class="text-lg font-semibold text-slate-800"><i data-lucide="layout" class="inline w-5 h-5 mr-2 -mt-1 text-slate-500"></i>Aparência e Vitrine</h3>
+                    <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
-                <div class="mt-6 flex gap-3">
-                    <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">Cancelar</button>
-                    <button onclick="confirmDelete()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Excluir</button>
+                <div class="p-6 overflow-y-auto modal-scroll space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Título da Capa</label>
+                        <input type="text" id="cfgTitulo" placeholder="Ex: Frescor em cada detalhe." class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none font-serif font-black">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Subtítulo (Abaixo do título)</label>
+                        <textarea id="cfgSubtitulo" rows="2" placeholder="Descreva as maravilhas da sua doceria..." class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none resize-none text-sm"></textarea>
+                    </div>
+                    <div class="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-3">
+                        <label class="block text-sm font-bold text-slate-700"><i data-lucide="images" class="inline w-4 h-4 mr-1 -mt-0.5 text-slate-500"></i> Carrossel de Imagens</label>
+                        <div id="cfgCarouselList" class="space-y-3"></div>
+                        <button type="button" onclick="addCarouselItem()" class="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Imagem ao Carrossel</button>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3 shrink-0">
+                    <button type="button" onclick="closeConfigModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white font-medium transition-colors">Cancelar</button>
+                    <button type="button" onclick="saveConfig()" class="flex-1 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-medium shadow-sm transition-colors">Salvar Vitrine</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Combos -->
+    <div id="comboModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeComboModal()"></div>
+        <div class="flex items-start justify-center min-h-screen pt-4 sm:pt-10 px-4 pb-4 overflow-y-auto">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[90vh]">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-amber-50 rounded-t-2xl shrink-0">
+                    <h3 class="text-lg font-semibold text-amber-900"><i data-lucide="package-plus" class="inline w-5 h-5 mr-2 -mt-1 text-amber-600"></i>Criador de Combo / Kit</h3>
+                    <button onclick="closeComboModal()" class="text-amber-400 hover:text-amber-600 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto modal-scroll space-y-5">
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <div class="w-full sm:w-1/3 space-y-3">
+                            <label class="block text-sm font-medium text-slate-700">Capa do Combo</label>
+                            <div class="aspect-square bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer" onclick="document.getElementById('cImageFile').click()">
+                                <img id="cImagePreview" src="" class="absolute inset-0 w-full h-full object-cover hidden" style="z-index: 10;">
+                                <div class="text-center text-slate-400 p-2 relative z-0" id="cImagePlaceholder">
+                                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto mb-1 group-hover:text-amber-500 transition-colors"></i>
+                                    <span class="text-xs group-hover:text-amber-600 font-medium">Foto do Combo</span>
+                                </div>
+                            </div>
+                            <input type="file" id="cImageFile" accept="image/*" class="hidden" onchange="handleComboImageFile(event)">
+                        </div>
+                        <div class="w-full sm:w-2/3 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nome do Kit Promocional</label>
+                                <input type="text" id="cNome" placeholder="Ex: Combo Família Premium" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none">
+                            </div>
+                            <div class="bg-amber-50/50 p-4 border border-amber-100 rounded-xl">
+                                <label class="block text-xs font-bold text-amber-700 uppercase tracking-widest mb-3">Selecione os Produtos Inclusos</label>
+                                <div id="comboProductsChecklist" class="max-h-40 overflow-y-auto space-y-2 border border-slate-200 bg-white rounded-lg p-3 custom-scrollbar text-sm">
+                                    <!-- preenchido dinamicamente -->
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="flex-1 opacity-60">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Soma Original</label>
+                                    <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">R$</span><input type="text" id="cTotalOriginal" class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-slate-100 font-bold" readonly value="0.00"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-xs font-bold text-amber-600 uppercase tracking-widest mb-1">Preço do Combo</label>
+                                    <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500">R$</span><input type="text" id="cPrecoAtivo" placeholder="0.00" class="w-full pl-9 pr-3 py-2 rounded-lg border-2 border-amber-300 focus:ring-2 focus:ring-amber-500 outline-none font-bold text-amber-800"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3 shrink-0">
+                    <button type="button" onclick="closeComboModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white font-medium transition-colors">Cancelar</button>
+                    <button type="button" onclick="saveCombo()" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-bold shadow-sm transition-colors">Salvar Combo</button>
                 </div>
             </div>
         </div>
@@ -598,6 +676,182 @@
             const ov = document.getElementById('imageOverlay');
             if(url) { img.src = url; img.classList.remove('hidden'); ph.classList.add('hidden'); if(ov) ov.classList.remove('hidden'); } 
             else { img.classList.add('hidden'); ph.classList.remove('hidden'); if(ov) ov.classList.add('hidden'); }
+        }
+        // --- VITRINE / CONFIGURAÇÕES ---
+        async function openConfigModal() {
+            showLoader(true);
+            const { data, error } = await supabaseClient.from('loja_config').select('*').eq('id', 1).single();
+            showLoader(false);
+            
+            document.getElementById('cfgTitulo').value = data?.titulo || '';
+            document.getElementById('cfgSubtitulo').value = data?.subtitulo || '';
+            document.getElementById('cfgCarouselList').innerHTML = '';
+            
+            let imgs = data?.imagens || [];
+            if(typeof imgs === 'string') { try{ imgs = JSON.parse(imgs); }catch(e){ imgs=[]; } }
+            if(!Array.isArray(imgs)) imgs = [];
+            
+            if(imgs.length === 0) addCarouselItem();
+            else imgs.forEach(img => addCarouselItem(img.url, img.produto_id));
+            
+            document.getElementById('configModal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
+
+        function addCarouselItem(url = '', pid = '') {
+            const list = document.getElementById('cfgCarouselList');
+            const div = document.createElement('div');
+            div.className = "flex flex-col sm:flex-row gap-2 items-end sm:items-center p-3 border border-slate-100 bg-white rounded-lg shadow-sm relative group";
+            
+            let options = '<option value="">(Nenhum link. Só mostrar foto)</option>';
+            products.forEach(p => {
+                options += `<option value="${p.id}" ${p.id == pid ? 'selected' : ''}>${p.nome}</option>`;
+            });
+
+            div.innerHTML = `
+                <div class="w-full sm:w-1/2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Imagem (URL/Upload)</label>
+                    <div class="flex gap-2">
+                        <input type="file" accept="image/*" class="hidden file-cfg" onchange="handleCfgUpload(this)">
+                        <button type="button" onclick="this.previousElementSibling.click()" class="bg-slate-100 p-2 rounded text-brand-600 hover:bg-brand-50"><i data-lucide="upload-cloud" class="w-4 h-4"></i></button>
+                        <input type="text" placeholder="URL direta" value="${url}" class="url-cfg flex-1 border border-slate-200 rounded px-2 py-1 text-sm outline-none w-full">
+                    </div>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Link de Atalho (Opcional)</label>
+                    <select class="prod-cfg w-full border border-slate-200 rounded px-2 py-[7px] text-sm outline-none bg-slate-50">${options}</select>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>
+            `;
+            list.appendChild(div);
+            lucide.createIcons();
+        }
+
+        async function handleCfgUpload(inputEl) {
+            if(!inputEl.files.length) return;
+            const file = inputEl.files[0];
+            showLoader(true);
+            const fileName = `capa_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+            const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file);
+            if(uploadError) { alert("Erro da imagem: Certifique-se que o usuário tem permissão ou SQL foi rodado."); showLoader(false); return; }
+            
+            const { data: publicUrlData } = supabaseClient.storage.from('produtos').getPublicUrl(fileName);
+            inputEl.parentElement.querySelector('.url-cfg').value = publicUrlData.publicUrl;
+            showLoader(false);
+        }
+
+        async function saveConfig() {
+            const titulo = document.getElementById('cfgTitulo').value;
+            const subtitulo = document.getElementById('cfgSubtitulo').value;
+            const imgs = [];
+            
+            document.querySelectorAll('#cfgCarouselList > div').forEach(row => {
+                const url = row.querySelector('.url-cfg').value.trim();
+                const pid = row.querySelector('.prod-cfg').value;
+                if(url) imgs.push({ url: url, produto_id: pid });
+            });
+
+            const payload = { id: 1, titulo: titulo, subtitulo: subtitulo, imagens: imgs };
+
+            showLoader(true);
+            const { error } = await supabaseClient.from('loja_config').upsert(payload, {onConflict: 'id'});
+            showLoader(false);
+            if(error) alert("Erro ao salvar vitrine: " + error.message);
+            else closeConfigModal();
+        }
+
+        // --- COMBOS / KITS ---
+        function openComboModal() {
+            document.getElementById('cNome').value = '';
+            document.getElementById('cPrecoAtivo').value = '';
+            document.getElementById('cTotalOriginal').value = '0.00';
+            document.getElementById('cImageFile').value = '';
+            document.getElementById('cImagePreview').classList.add('hidden');
+            document.getElementById('cImagePlaceholder').classList.remove('hidden');
+            
+            const list = document.getElementById('comboProductsChecklist');
+            list.innerHTML = '';
+            
+            products.filter(p => p.disponivel !== "Não").forEach(p => {
+                const priceMatch = p.preco.match(/(\d+[\.,]\d*)/); 
+                const price = priceMatch ? parseFloat(priceMatch[0].replace(',','.')) : 0;
+                list.innerHTML += `
+                    <label class="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer rounded">
+                        <input type="checkbox" class="combo-checkbox w-4 h-4 text-amber-600 focus:ring-amber-500 rounded border-slate-300" data-name="${p.nome}" data-price="${price}">
+                        <span class="text-slate-700 flex-1 truncate font-medium">${p.nome}</span>
+                        <span class="text-slate-400 font-mono text-xs">R$ ${price.toFixed(2)}</span>
+                    </label>
+                `;
+            });
+            list.querySelectorAll('.combo-checkbox').forEach(cb => cb.addEventListener('change', calcComboTotal));
+            document.getElementById('comboModal').classList.remove('hidden');
+        }
+
+        function calcComboTotal() {
+            let total = 0;
+            document.querySelectorAll('.combo-checkbox:checked').forEach(cb => { total += parseFloat(cb.dataset.price || 0); });
+            document.getElementById('cTotalOriginal').value = total.toFixed(2);
+        }
+
+        function closeComboModal() { document.getElementById('comboModal').classList.add('hidden'); }
+
+        function handleComboImageFile(event) {
+            const file = event.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('cImagePreview');
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('cImagePlaceholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function saveCombo() {
+            const nome = document.getElementById('cNome').value.trim();
+            const precoStr = document.getElementById('cPrecoAtivo').value.trim();
+            if(!nome || !precoStr) return alert("Preencha o nome e o preço do Combo.");
+            const precoNum = parseFloat(precoStr.replace(',', '.'));
+            if(isNaN(precoNum)) return alert("Preço inválido.");
+            
+            let itensInclusos = [];
+            document.querySelectorAll('.combo-checkbox:checked').forEach(cb => itensInclusos.push(cb.dataset.name));
+            if(itensInclusos.length === 0) return alert("Selecione pelo menos um produto para o Combo.");
+
+            const totalOrig = parseFloat(document.getElementById('cTotalOriginal').value);
+            const desc = `Combo Especial contendo:\n✅ ${itensInclusos.join('\n✅ ')}\n\nDe R$ ${totalOrig.toFixed(2)} por apenas R$ ${precoNum.toFixed(2)}!`;
+
+            let finalUrl = "";
+            const fileInput = document.getElementById('cImageFile');
+            if (fileInput.files.length > 0) {
+                showLoader(true);
+                const file = fileInput.files[0];
+                const fn = `combo_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+                const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fn, file);
+                if (uploadError) { alert("Erro de Upload: " + uploadError.message); showLoader(false); return; }
+                const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fn);
+                finalUrl = data.publicUrl;
+                showLoader(false);
+            }
+
+            const payload = {
+                nome: nome,
+                preco: precoNum.toFixed(2),
+                categoria: 'Combos & Promos', // Fixa pra destacar em aba separada
+                imagem: finalUrl,
+                descricao: desc,
+                disponivel: "Sim",
+                destaque: "Sim" 
+            };
+
+            showLoader(true);
+            const { error } = await supabaseClient.from('produtos').insert([payload]);
+            if (error) alert("Erro ao criar Combo: " + error.message);
+            else { closeComboModal(); fetchProducts(); }
+            showLoader(false);
         }
     </script>
 </body>
