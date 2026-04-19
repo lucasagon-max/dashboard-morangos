@@ -525,9 +525,10 @@
 
         async function confirmDelete() {
             if(!idToDelete) return;
+            const targetId = idToDelete;
             closeDeleteModal();
             showLoader(true);
-            const { error } = await supabaseClient.from('produtos').delete().eq('id', idToDelete);
+            const { error } = await supabaseClient.from('produtos').delete().eq('id', targetId);
             if (error) alert("Erro ao excluir: " + error.message);
             else fetchProducts();
             showLoader(false);
