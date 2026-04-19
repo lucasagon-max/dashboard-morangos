@@ -153,33 +153,70 @@
 </main>
 
 <!-- ── APP SHELL (Principal) ── -->
-<div id="app-container" class="flex flex-col flex-1 max-w-lg mx-auto w-full relative bg-white min-h-screen shadow-xl">
+<div id="app-container" class="flex flex-col flex-1 w-full relative bg-[#f9f9f9] min-h-screen">
   
-  <!-- HEADER -->
-  <header class="bg-white px-6 py-5 flex items-center justify-between sticky top-0 z-40 shadow-sm border-b border-slate-100">
-    <div>
-      <h1 class="font-sans text-2xl font-black text-slate-900 leading-none">Morangos Tatuí</h1>
-      <p class="text-xs text-brand-600 font-bold mt-1" id="user-greeting">Olá, Carregando...</p>
-    </div>
-    <div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl flex items-center gap-1.5 border border-emerald-100 shadow-sm cursor-pointer hover:bg-emerald-100 transition-colors" onclick="switchTab('profile')" title="Ver seu saldo">
-      <i data-lucide="coins" class="w-4 h-4"></i>
-      <span class="text-sm font-black" id="user-cashback">0,00</span>
+  <!-- HEADER (Desktop & Mobile) -->
+  <header class="fixed top-0 w-full z-50 bg-[#f9f9f9]/90 backdrop-blur-xl shadow-sm border-b border-zinc-200/50 transition-all">
+    <div class="flex justify-between items-center w-full px-6 md:px-8 h-20 max-w-screen-2xl mx-auto">
+      
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('menu')">
+         <img src="https://ferramentas.morangostatui.com.br/logo.png" alt="Morangos Tatuí" class="w-10 h-10 rounded-xl shadow-sm">
+         <div>
+           <h1 class="text-xl md:text-2xl font-extrabold tracking-tighter text-[#1a1c1c] font-sans">Morangos Tatuí</h1>
+           <p class="text-[10px] md:text-xs text-brand-600 font-bold" id="user-greeting">Olá, Carregando...</p>
+         </div>
+      </div>
+      
+      <div class="hidden md:flex items-center space-x-8 font-sans font-bold">
+        <button onclick="switchTab('menu')" id="nav-pc-menu" class="text-brand-600 border-b-2 border-brand-600 pb-1 transition-all">Cardápio</button>
+        <button onclick="switchTab('cart')" id="nav-pc-cart" class="text-slate-500 hover:text-brand-600 transition-all">Pedido</button>
+        <button onclick="switchTab('profile')" id="nav-pc-profile" class="text-slate-500 hover:text-brand-600 transition-all">Perfil</button>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div class="hidden lg:flex items-center bg-white px-4 py-2 flex-1 max-w-sm rounded-full border border-slate-200 shadow-sm relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4"></i>
+          <input id="search-input-pc" class="bg-transparent border-none focus:ring-0 text-sm pl-8 font-sans w-full outline-none" placeholder="Buscar delícias..." type="text">
+        </div>
+        <div class="bg-emerald-50 text-emerald-700 px-3 py-1.5 md:py-2 rounded-xl flex items-center gap-1.5 border border-emerald-100 shadow-sm cursor-pointer hover:bg-emerald-100 transition-colors" onclick="switchTab('profile')" title="Ver seu saldo">
+          <i data-lucide="coins" class="w-4 h-4"></i>
+          <span class="text-xs md:text-sm font-black" id="user-cashback">0,00</span>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- ── TELA: CARDÁPIO ── -->
-  <main id="view-menu" class="flex-1 p-6 fade-in pb-28 bg-slate-50">
-    <!-- Busca -->
-    <div class="relative mb-6">
+  <main id="view-menu" class="flex-1 px-6 pb-28 pt-28 fade-in mx-auto w-full max-w-screen-xl">
+    
+    <!-- Hero Section (Desktop & Mobile) -->
+    <section class="mb-10 md:mb-16 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 mt-4 md:mt-8">
+      <div class="flex-1">
+        <h2 class="font-sans text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1] text-slate-900 mb-4 md:mb-6">
+          Frescor em<br/>cada detalhe.<br/><span class="text-brand-600 mt-2 block">Sua felicidade!</span>
+        </h2>
+        <p class="font-sans text-base md:text-lg text-slate-500 max-w-lg md:max-w-xl mx-auto md:mx-0 leading-relaxed">
+          Do cultivo direto para a sua casa. Descubra nosso cardápio artesanal cheio de delícias preparadas com todo carinho para você.
+        </p>
+      </div>
+      <!-- Hero Desktop Image -->
+      <div class="hidden md:block w-72 h-72 lg:w-96 lg:h-96 shrink-0 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+        <img src="https://ferramentas.morangostatui.com.br/logo.png" class="w-full h-full object-cover" alt="Morangos Tatuí">
+        <div class="absolute inset-0 border-[6px] border-white/20 rounded-[2.5rem]"></div>
+      </div>
+    </section>
+
+    <!-- Barra de Busca Mobile -->
+    <div class="relative mb-8 lg:hidden block">
       <i data-lucide="search" class="absolute left-4 top-3.5 w-4 h-4 text-slate-400"></i>
       <input type="text" id="search-input" placeholder="Buscar doces, bebidas..." class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-medium focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 shadow-sm transition-all text-slate-700">
     </div>
     
     <!-- Filtro Categorias -->
-    <div id="category-pills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-6"></div>
+    <div id="category-pills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-8 md:mb-12"></div>
 
     <!-- Lista de Produtos -->
-    <div id="menu-items" class="space-y-6">
+    <div id="menu-items" class="min-h-[50vh]">
       <div class="text-center py-12 text-slate-400 text-sm flex flex-col items-center">
         <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-3 text-brand-500"></i>
         Carregando delícias...
@@ -188,14 +225,17 @@
   </main>
 
   <!-- ── TELA: CARRINHO ── -->
-  <main id="view-cart" class="hidden flex-1 p-6 fade-in bg-slate-50 pb-28">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="font-sans text-2xl font-black text-slate-900">Seu Pedido</h2>
-      <button id="btn-clear-cart" class="text-xs font-bold text-slate-400 hover:text-brand-600 hidden uppercase tracking-widest">Limpar Tudo</button>
+  <main id="view-cart" class="hidden flex-1 px-6 pb-28 pt-28 fade-in mx-auto w-full max-w-screen-xl">
+    <div class="mb-8 md:mb-12 flex justify-between items-end">
+      <div>
+        <h1 class="font-sans text-4xl md:text-5xl font-extrabold tracking-[-0.03em] text-slate-900">Seu Pedido</h1>
+        <p class="text-slate-500 font-sans mt-2 md:mt-3 text-base">Confira os itens e finalize a compra.</p>
+      </div>
+      <button id="btn-clear-cart" class="text-xs font-bold text-slate-400 hover:text-brand-600 hidden uppercase tracking-widest bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-100 transition-colors hidden-md-max">Limpar Tudo</button>
     </div>
 
     <!-- Carrinho Vazio -->
-    <div id="cart-empty" class="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm">
+    <div id="cart-empty" class="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm max-w-xl mx-auto mt-12 md:mt-24">
       <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
         <i data-lucide="shopping-bag" class="w-8 h-8 text-slate-300"></i>
       </div>
@@ -204,44 +244,49 @@
       <button onclick="switchTab('menu')" class="bg-brand-50 text-brand-600 hover:bg-brand-100 font-bold text-sm px-6 py-3 rounded-xl transition-colors w-full">Explorar Cardápio</button>
     </div>
 
-    <!-- Itens do Carrinho -->
-    <div id="cart-content" class="hidden flex-col gap-6">
-      <div id="cart-items" class="space-y-3"></div>
+    <!-- Itens do Carrinho na Divisão Grid -->
+    <div id="cart-content" class="hidden grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+      
+      <!-- Lista de Itens -->
+      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 md:gap-6" id="cart-items"></div>
 
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-        <div class="mb-5">
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Como deseja receber?</label>
-          <div class="flex bg-slate-100 p-1 rounded-xl">
-            <button id="btn-type-delivery" onclick="setOrderType('delivery')" class="flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-brand-600 shadow-sm border border-slate-200 transition-all">🚗 Delivery</button>
-            <button id="btn-type-pickup" onclick="setOrderType('retirada')" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 transition-all hover:text-slate-700">🏪 Retirar na Loja</button>
+      <!-- Resumo & Checkout Lateral -->
+      <div class="lg:col-span-5 xl:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm lg:sticky lg:top-32">
+        <h2 class="text-xl font-bold font-sans mb-6 text-slate-900 border-b border-slate-100 pb-4">Resumo do Pedido</h2>
+        
+        <div class="mb-6">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Como deseja receber?</label>
+          <div class="flex bg-slate-100 p-1.5 rounded-xl">
+            <button id="btn-type-delivery" onclick="setOrderType('delivery')" class="flex-1 py-3 rounded-lg text-sm font-bold bg-white text-brand-600 shadow-sm border border-slate-200 transition-all">🚗 Delivery</button>
+            <button id="btn-type-pickup" onclick="setOrderType('retirada')" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all hover:text-slate-700">🏪 Retirar</button>
           </div>
         </div>
 
-        <div class="mb-5">
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Observações Gerais</label>
+        <div class="mb-6">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Observações (Opcional)</label>
           <textarea id="cart-obs" rows="2" placeholder="Ex: Troco para R$ 50..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-brand-500 resize-none font-medium text-slate-700"></textarea>
         </div>
 
-        <div class="border-t border-slate-100 pt-4 mb-5">
-          <div class="flex justify-between items-center mb-1">
-            <span class="text-sm font-medium text-slate-500">Subtotal</span>
+        <div class="border-t border-slate-100 pt-5 mb-6 space-y-3">
+          <div class="flex justify-between items-center text-slate-500">
+            <span class="text-sm font-medium">Subtotal</span>
             <span id="cart-subtotal" class="font-bold text-slate-700">R$ 0,00</span>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-base font-black text-slate-900">Total</span>
-            <span id="cart-total" class="text-2xl font-black text-brand-600">R$ 0,00</span>
+          <div class="flex justify-between items-center bg-brand-50 p-3 text-brand-700 rounded-xl">
+            <span class="text-sm font-black">Total Previsto</span>
+            <span id="cart-total" class="text-2xl font-black">R$ 0,00</span>
           </div>
         </div>
 
-        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 flex items-start gap-3 shadow-sm">
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start gap-3">
             <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></i>
             <div class="text-xs text-blue-800 font-medium leading-relaxed">
-                <strong class="block mb-0.5 text-blue-900">Como funciona o pagamento?</strong>
-                Ao enviar, seu pedido vai direto para a nossa equipe. Em seguida, <b>entraremos em contato</b> para passar a taxa de entrega e combinar as opções de pagamento.
+                <strong class="block mb-1 text-blue-900">Finalizar no WhatsApp</strong>
+                Após enviar o pedido, confirmaremos o valor do frete e os métodos de pagamento.
             </div>
         </div>
 
-        <button id="btn-send-order" onclick="sendOrderToSupabase()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black rounded-xl py-4 shadow-lg shadow-brand-200 flex justify-center items-center gap-2 active:scale-95 transition-all text-lg">
+        <button id="btn-send-order" onclick="sendOrderToSupabase()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black rounded-xl py-4 md:py-5 shadow-lg shadow-brand-200 flex justify-center items-center gap-2 active:scale-95 transition-all text-lg">
            Enviar Pedido <i data-lucide="arrow-right" class="w-5 h-5"></i>
         </button>
       </div>
@@ -249,8 +294,8 @@
   </main>
 
   <!-- ── TELA: PERFIL ── -->
-  <main id="view-profile" class="hidden flex-1 p-6 fade-in bg-slate-50 pb-28">
-    <h2 class="font-sans text-2xl font-black text-slate-900 mb-6">Meu Perfil</h2>
+  <main id="view-profile" class="hidden flex-1 px-6 pb-28 pt-28 fade-in mx-auto w-full max-w-3xl">
+    <h2 class="font-sans text-3xl md:text-4xl font-extrabold tracking-[-0.02em] text-slate-900 mb-8 mt-4 md:mt-8">Meu Perfil</h2>
     
     <!-- Card 1: Dados do Cliente -->
     <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm mb-4">
@@ -301,8 +346,8 @@
     </button>
   </main>
 
-  <!-- ── NAVEGAÇÃO INFERIOR (FIXA) ── -->
-  <nav class="glass-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg px-6 py-3.5 flex justify-around items-center z-50 rounded-t-3xl border-t border-slate-200 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] bg-white/95">
+  <!-- ── NAVEGAÇÃO INFERIOR (FIXA Mobile) ── -->
+  <nav class="md:hidden glass-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full px-6 py-3.5 flex justify-around items-center z-50 rounded-t-3xl border-t border-slate-200 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] bg-white/95 pb-safe">
     <button onclick="switchTab('menu')" id="tab-menu" class="nav-btn active flex flex-col items-center gap-1 text-brand-600 transition-colors w-16">
       <i data-lucide="layout-grid" class="w-6 h-6"></i>
       <span class="text-[10px] font-bold">Cardápio</span>
@@ -888,15 +933,37 @@ function switchTab(tabId) {
 
   ['menu', 'cart', 'profile'].forEach(id => {
     document.getElementById('view-' + id).classList.add('hidden');
+    
+    // Mobile Nav
     const tabBtn = document.getElementById('tab-' + id);
-    tabBtn.classList.remove('text-brand-600', 'active');
-    tabBtn.classList.add('text-slate-400');
+    if(tabBtn) {
+      tabBtn.classList.remove('text-brand-600', 'active');
+      tabBtn.classList.add('text-slate-400');
+    }
+
+    // PC Nav
+    const pcBtn = document.getElementById('nav-pc-' + id);
+    if(pcBtn) {
+      pcBtn.classList.remove('text-brand-600', 'border-b-2', 'border-brand-600', 'pb-1');
+      pcBtn.classList.add('text-slate-500', 'hover:text-brand-600');
+    }
   });
 
   document.getElementById('view-' + tabId).classList.remove('hidden');
+  
+  // Mobile Active
   const activeBtn = document.getElementById('tab-' + tabId);
-  activeBtn.classList.add('text-brand-600', 'active');
-  activeBtn.classList.remove('text-slate-400');
+  if(activeBtn) {
+    activeBtn.classList.add('text-brand-600', 'active');
+    activeBtn.classList.remove('text-slate-400');
+  }
+
+  // PC Active
+  const pcActive = document.getElementById('nav-pc-' + tabId);
+  if(pcActive) {
+    pcActive.classList.remove('text-slate-500', 'hover:text-brand-600');
+    pcActive.classList.add('text-brand-600', 'border-b-2', 'border-brand-600', 'pb-1');
+  }
   
   if(tabId === 'menu') { window.scrollTo(0,0); trackSession('Navegando no Cardápio'); }
   if(tabId === 'cart') { renderCart(); trackSession('Visualizando Carrinho'); }
@@ -955,9 +1022,15 @@ function buildCategoryPills() {
 }
 
 document.getElementById('search-input').addEventListener('input', applyFilter);
+if(document.getElementById('search-input-pc')) {
+  document.getElementById('search-input-pc').addEventListener('input', applyFilter);
+}
 
 function applyFilter() {
-  const q = document.getElementById('search-input').value.toLowerCase();
+  let q = document.getElementById('search-input').value.toLowerCase();
+  let pcQ = document.getElementById('search-input-pc') ? document.getElementById('search-input-pc').value.toLowerCase() : '';
+  if (pcQ) q = pcQ;
+  
   filteredProds = allProducts.filter(p => {
     const catMatch = activeCategory === 'Todos' || (p.categoria || 'Delícias') === activeCategory;
     const nameMatch = !q || p.nome.toLowerCase().includes(q) || (p.descricao && p.descricao.toLowerCase().includes(q));
@@ -974,27 +1047,41 @@ function renderProducts() {
   filteredProds.forEach(p => { const cat = p.categoria || 'Delícias'; if (!groups[cat]) groups[cat] = []; groups[cat].push(p); });
 
   let html = '';
+  // Iterating groups
   for (const [categoria, produtos] of Object.entries(groups)) {
-    html += `<div class="mb-6"><h2 class="font-sans text-lg font-black text-slate-900 mb-4 pl-1">${categoria}</h2><div class="space-y-4">`;
+    html += `<div class="mb-12 border-t border-slate-200/50 pt-8 first:border-0 first:pt-0">
+      <div class="flex justify-between items-end mb-6">
+        <div><h2 class="font-sans text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">${categoria}</h2></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
+      
     produtos.forEach(item => {
       const prices = parsePrices(item.preco);
       const minPrice = Math.min(...prices.map(x => x.val));
       const hasVars = prices.length > 1;
-      
       const priceDisplay = hasVars ? `A partir de ${formatMoney(minPrice)}` : formatMoney(minPrice);
-      const imgHtml = item.imagem ? `<img src="${item.imagem}" class="w-20 h-20 rounded-xl object-cover shrink-0 border border-slate-100 shadow-sm">` : '';
+      
+      const imgHtml = item.imagem 
+        ? `<div class="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden shrink-0"><img src="${item.imagem}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 shadow-sm border border-slate-100"></div>` 
+        : '';
 
       html += `
-        <div class="bg-white border border-slate-100 rounded-2xl p-4 flex gap-4 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer" onclick="openProductModal('${item.id}')">
-          <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-slate-900 truncate">${item.nome}</h3>
-            <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 mb-2 leading-relaxed">${item.descricao || 'Personalize seu pedido clicando aqui'}</p>
-            <div class="font-sans text-base font-black text-brand-600">${priceDisplay}</div>
-          </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-4 md:gap-6 shadow-sm border border-slate-200/60 group cursor-pointer hover:shadow-md hover:border-brand-200 transition-all relative overflow-hidden" onclick="openProductModal('${item.id}')">
           ${imgHtml}
-          <button class="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 transition-colors active:bg-brand-600 active:text-white border border-brand-100 shadow-sm">
-            <i data-lucide="plus" class="w-5 h-5"></i>
-          </button>
+          <div class="flex-1 min-w-0 py-1 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-1">
+                 <h4 class="font-sans text-lg md:text-xl font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-tight line-clamp-2 md:truncate" title="${item.nome}">${item.nome}</h4>
+              </div>
+              <p class="text-slate-500 text-[11px] md:text-xs line-clamp-2 md:line-clamp-3 leading-relaxed mb-3">${item.descricao || 'Personalize seu pedido clicando aqui'}</p>
+            </div>
+            <div class="flex justify-between items-center mt-auto pt-2">
+              <span class="text-brand-600 font-sans font-black text-base md:text-lg">${priceDisplay}</span>
+              <button class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
+              </button>
+            </div>
+          </div>
         </div>`;
     });
     html += `</div></div>`;
@@ -1188,29 +1275,32 @@ function renderCart() {
   const clearBtn = document.getElementById('btn-clear-cart');
 
   if (!cart.length) {
-    contentEl.classList.add('hidden'); contentEl.classList.remove('flex');
+    contentEl.classList.add('hidden'); contentEl.classList.remove('grid');
     emptyEl.classList.remove('hidden'); clearBtn.classList.add('hidden');
     return;
   }
 
   emptyEl.classList.add('hidden');
-  contentEl.classList.remove('hidden'); contentEl.classList.add('flex');
+  contentEl.classList.remove('hidden'); contentEl.classList.add('grid');
   clearBtn.classList.remove('hidden');
 
   itemsEl.innerHTML = cart.map((item, idx) => `
-    <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-      <div class="flex-1 min-w-0">
-        <h4 class="font-bold text-slate-900 text-sm leading-tight">${item.nome} ${item.variation ? `(${item.variation})` : ''}</h4>
-        ${item.addons && item.addons.length > 0 ? `<p class="text-[10px] text-slate-500 mt-0.5 font-medium">+ ${item.addons.map(a=>a.nome).join(', ')}</p>` : ''}
-        ${item.obs ? `<p class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded inline-block mt-1 font-bold">Obs: ${item.obs}</p>` : ''}
-        <p class="text-brand-600 font-black text-sm mt-1">${formatMoney(item.price)}</p>
-      </div>
-      <div class="flex flex-col items-end gap-2">
-          <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-1 border border-slate-200">
-            <button onclick="updateQty(${idx}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-600 font-bold active:bg-slate-200 rounded-lg">-</button>
-            <span class="w-4 text-center font-black text-slate-800 text-sm">${item.qty}</span>
-            <button onclick="updateQty(${idx}, 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-600 font-bold active:bg-slate-200 rounded-lg">+</button>
+    <div class="bg-white border border-slate-200/60 rounded-2xl p-4 md:p-6 shadow-sm flex flex-col sm:flex-row items-center gap-4 md:gap-6 group transition-all hover:shadow-md">
+      <div class="flex-1 min-w-0 w-full">
+        <div class="flex justify-between items-start">
+          <h4 class="font-bold text-lg md:text-xl font-sans text-slate-900 leading-tight">${item.nome} ${item.variation ? `<span class="text-brand-600 text-sm">(${item.variation})</span>` : ''}</h4>
+        </div>
+        ${item.addons && item.addons.length > 0 ? `<p class="text-xs md:text-sm text-slate-500 mt-1.5 font-medium">+ ${item.addons.map(a=>a.nome).join(', ')}</p>` : ''}
+        ${item.obs ? `<p class="text-[10px] md:text-xs text-amber-600 bg-amber-50 px-2 py-1.5 rounded-lg inline-block mt-2 font-bold shadow-sm">Obs: ${item.obs}</p>` : ''}
+        
+        <div class="mt-5 flex items-center justify-between">
+          <p class="text-brand-600 font-black text-lg md:text-xl">${formatMoney(item.price)}</p>
+          <div class="flex items-center gap-3 bg-slate-50 rounded-full py-1.5 px-2 border border-slate-200 shadow-sm">
+            <button onclick="updateQty(${idx}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 font-bold rounded-full transition-colors">-</button>
+            <span class="w-6 text-center font-black text-slate-800 text-sm">${item.qty}</span>
+            <button onclick="updateQty(${idx}, 1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 font-bold rounded-full transition-colors">+</button>
           </div>
+        </div>
       </div>
     </div>
   `).join('');
