@@ -513,7 +513,13 @@ let heroConfigData = null;
 function renderHero() {
     if(!heroConfigData) return;
     
-    if(heroConfigData.titulo) document.getElementById('hero-title').innerHTML = heroConfigData.titulo; 
+    if(heroConfigData.titulo) {
+        let parts = heroConfigData.titulo.split('|||');
+        let htmlTit = parts[0].replace(/\n/g, '<br/>');
+        if(parts[1]) htmlTit += `<br/><span class="text-brand-600 mt-2 block">${parts[1].replace(/\n/g, '<br/>')}</span>`;
+        document.getElementById('hero-title').innerHTML = htmlTit; 
+    }
+    
     if(heroConfigData.subtitulo) document.getElementById('hero-desc').innerText = heroConfigData.subtitulo;
 
     let imgs = heroConfigData.imagens || [];
@@ -525,9 +531,20 @@ function renderHero() {
         let slidesHtml = '';
         imgs.forEach((img, idx) => {
             const hasLink = img.produto_id ? `cursor-pointer" onclick="openProductModal('${img.produto_id}')"` : `"`;
+            
+            let textOverlay = '';
+            if (img.texto) {
+                textOverlay = `
+                <div class="absolute bottom-6 left-0 right-0 z-30 px-6 text-center pointer-events-none">
+                    <span class="inline-block bg-black/60 text-white backdrop-blur-md px-4 py-1.5 rounded-xl font-bold text-sm md:text-base shadow-lg border border-white/20 drop-shadow-md">${img.texto}</span>
+                </div>
+                `;
+            }
+
             slidesHtml += `
                 <div class="absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'} hero-slide">
                     <img src="${img.url}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-[2000ms] ${hasLink} alt="Banner Loja">
+                    ${textOverlay}
                 </div>
             `;
         });
@@ -1308,7 +1325,15 @@ async function loadProducts() {
 }
 
 function buildCategoryPills() {
-  const cats = ['Todos', ...new Set(allProducts.map(p => p.categoria || 'Delícias'))];
+  let cats = [...new Set(allProducts.map(p => p.categoria || 'Delícias'))];
+  cats.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      if (aLower.includes("combo") && !bLower.includes("combo")) return -1;
+      if (bLower.includes("combo") && !aLower.includes("combo")) return 1;
+      return a.localeCompare(b);
+  });
+  cats = ['Todos', ...cats];
   const container = document.getElementById('category-pills');
   container.innerHTML = '';
   cats.forEach(cat => {
@@ -1347,8 +1372,17 @@ function renderProducts() {
   filteredProds.forEach(p => { const cat = p.categoria || 'Delícias'; if (!groups[cat]) groups[cat] = []; groups[cat].push(p); });
 
   let html = '';
-  // Iterating groups
-  for (const [categoria, produtos] of Object.entries(groups)) {
+  const keys = Object.keys(groups);
+  keys.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      if (aLower.includes("combo") && !bLower.includes("combo")) return -1;
+      if (bLower.includes("combo") && !aLower.includes("combo")) return 1;
+      return a.localeCompare(b);
+  });
+
+  for (const categoria of keys) {
+    const produtos = groups[categoria];
     html += `<div class="mb-12 border-t border-slate-200/50 pt-8 first:border-0 first:pt-0">
       <div class="flex justify-between items-end mb-6">
         <div><h2 class="font-sans text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">${categoria}</h2></div>
