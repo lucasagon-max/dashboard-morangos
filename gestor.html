@@ -453,7 +453,8 @@ function renderBoard(orders) {
     grid.innerHTML = '';
 
     visible.forEach(o => {
-        const obsContent = o.obs || '';
+        let obsContent = o.obs || '';
+        obsContent = obsContent.replace(/\s*\|\s*\[TaxaApp:[\d\.]+\]/g, '').replace(/\[TaxaApp:[\d\.]+\]/g, '').trim();
         const barClass = getBarClass(o.tipo);
         const isBrandNew = !renderedIds.has(o.id) && !firstLoad;
         renderedIds.add(o.id);
@@ -655,13 +656,20 @@ function openPaymentModal(id) {
     if (!order) return;
     currentPaymentId  = id;
     
+    let taxaApp = 0;
+    if (order.obs) {
+        let m = order.obs.match(/\[TaxaApp:([\d\.]+)\]/);
+        if (m) taxaApp = parseFloat(m[1]);
+    }
+    
     // Reseta cálculos e puxa SINAL caso seja uma encomenda vinda pro caixa
-    orderSubtotalBase = parseMoney(order.total);
+    let totalValue = parseMoney(order.total);
+    orderSubtotalBase = totalValue - taxaApp; // subtotal extrai a taxa
     const sinalPago = parseMoney(order.sinal_pago);
     
     document.getElementById('payment-subtotal').innerText = formatMoney(orderSubtotalBase);
     
-    document.getElementById('input-taxa').value = '0,00';
+    document.getElementById('input-taxa').value = taxaApp > 0 ? taxaApp.toFixed(2).replace('.', ',') : '0,00';
     document.getElementById('input-desc').value = sinalPago > 0 ? sinalPago.toFixed(2).replace('.', ',') : '0,00';
     descType = 'R$';
     document.getElementById('btn-desc-type').innerText = 'R$';
@@ -890,7 +898,7 @@ async function processFinalPayment() {
 function printOrder(id) {
     const o = allOrdersData.find(x => x.id == id);
     if (!o) return;
-    const obs = o.obs || '';
+    const obs = (o.obs || '').replace(/\s*\|\s*\[TaxaApp:[\d\.]+\]/g, '').replace(/\[TaxaApp:[\d\.]+\]/g, '').trim();
     const win = window.open('', '', 'width=450,height=600');
     win.document.write(`<html><head><title>Imprimir #${id}</title><style>
         @page{margin:0}body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;color:#000}
