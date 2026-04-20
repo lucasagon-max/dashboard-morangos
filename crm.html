@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morangos Tatuí · CRM & Mensageria</title>
+    <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
+
+    <!-- Bibliotecas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,800&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"DM Sans"', 'sans-serif'], serif: ['"Playfair Display"', 'serif'] },
+                    colors: { brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' } }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #fcfcfc; color: #0f172a; overflow-x: hidden; }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; pointer-events: none; }
+        
+        .table-container { border: 1px solid #f1f5f9; background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
+        .input-ui { border: 1px solid #e2e8f0; border-radius: 1rem; transition: all 0.2s; outline: none; }
+        .input-ui:focus { border-color: #e11d48; box-shadow: 0 0 0 4px #ffe4e6; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative pb-20 lg:pb-0">
+
+    <div class="fixed inset-0 bg-pattern"></div>
+
+    <!-- ── CABEÇALHO ── -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors border border-slate-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div>
+                    <h1 class="font-serif text-xl font-black text-slate-900 leading-none italic">CRM <span class="text-fuchsia-600">& Mensagens</span></h1>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Conexão Supabase</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-6 py-8 relative z-10 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 fade-in">
+
+        <!-- ── COLUNA 1: CAMPANHA & EDITOR ── -->
+        <aside class="space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <i data-lucide="megaphone" class="w-32 h-32 text-fuchsia-600"></i>
+                </div>
+                
+                <div class="mb-5 relative z-10">
+                    <h2 class="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Editor de Mensagem</h2>
+                    <p class="text-[11px] text-slate-400 font-medium italic">Configure o texto e a mídia da campanha atual. Use <b class="text-fuchsia-600">{nome}</b> para personalizar.</p>
+                </div>
+
+                <div class="space-y-4 relative z-10">
+                    <!-- Mídia da Campanha -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">URL da Imagem de Campanha (Opcional)</label>
+                        <div class="flex gap-2">
+                            <input type="url" id="campanha-img" placeholder="https://exemplo.com/flyer.jpg" class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50" onchange="previewImg()">
+                        </div>
+                        <div id="preview-box" class="mt-3 hidden items-center justify-center bg-slate-50 border border-slate-100 rounded-xl overflow-hidden h-32 relative">
+                            <img id="preview-img" src="" class="w-full h-full object-cover">
+                            <button onclick="clearImg()" class="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-sm hover:bg-red-50 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Texto da Mensagem -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Texto Base</label>
+                        <textarea id="campanha-texto" rows="5" placeholder="Olá {nome}! Tudo bem? Temos uma oferta super especial de morangos em chocolate belga hoje..." class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50 resize-none h-40"></textarea>
+                    </div>
+
+                    <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 text-amber-700 flex gap-3 text-[11px] leading-relaxed">
+                        <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                        <p class="font-medium">O anexo de imagem funciona via <b>Web Share API</b> (ideal em dispositivos móveis ou Windows/Mac atualizados). Se falhar, abrirá via <code>wa.me</code> direto.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MÉTTRICAS -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Clientes</p>
+                    <p id="total-clientes" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Filtrados</p>
+                    <p id="total-filtrados" class="text-2xl font-black text-fuchsia-600 mt-1">0</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── COLUNA 2: LISTA DE CLIENTES ── -->
+        <section class="space-y-6">
+            <!-- Barra de Filtros -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                <div class="inline-flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                    <button class="filter-btn active flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-sm" data-filter="todos">Todos</button>
+                    <button class="filter-btn flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="vip">VIPs</button>
+                    <button class="filter-btn flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="inativos">Inativos (+30d)</button>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="Buscar por nome ou contato..." class="input-ui font-medium w-full pl-9 pr-4 py-2.5 text-xs text-slate-700 bg-white shadow-sm" oninput="renderTable()">
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="table-container fade-in min-h-[400px]">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <th class="px-5 py-4 w-12">#</th>
+                                <th class="px-5 py-4">Ficha do Cliente</th>
+                                <th class="px-5 py-4">Contato (WhatsApp)</th>
+                                <th class="px-5 py-4 text-center">Ticket/Freq</th>
+                                <th class="px-5 py-4 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-tbody" class="divide-y divide-slate-100 text-sm">
+                            <tr>
+                                <td colspan="5" class="px-5 py-16 text-center text-slate-400 italic font-medium">Buscando base de clientes no Supabase...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allClients = [];
+        let currentFilter = 'todos';
+
+        function previewImg() {
+            const val = document.getElementById('campanha-img').value;
+            const pb = document.getElementById('preview-box');
+            const pi = document.getElementById('preview-img');
+            if(val && val.trim() !== '') {
+                pi.src = val;
+                pb.classList.remove('hidden');
+                pb.classList.add('flex');
+            } else {
+                pb.classList.add('hidden');
+                pb.classList.remove('flex');
+            }
+        }
+        function clearImg() {
+            document.getElementById('campanha-img').value = '';
+            previewImg();
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'active');
+                    b.classList.add('text-slate-500');
+                });
+                const t = e.currentTarget;
+                t.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'active');
+                t.classList.remove('text-slate-500');
+                
+                currentFilter = t.getAttribute('data-filter');
+                renderTable();
+            });
+        });
+
+        async function loadClients() {
+            try {
+                const { data, error } = await sb.from('clientes').select('*').order('nome', { ascending: true });
+                
+                if (error) {
+                    if (error.code === '42P01') { 
+                        // Tabela não existe
+                        document.getElementById('clients-tbody').innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-5 py-12">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <i data-lucide="database" class="w-10 h-10 text-slate-300 mb-3"></i>
+                                    <p class="text-slate-800 font-bold mb-1">Tabela 'clientes' não encontrada no banco.</p>
+                                    <p class="text-xs text-slate-500 font-medium max-w-sm">Foi deixado o código SQL de criação no seu relatório de planejamento. Por favor verifique o Supabase.</p>
+                                </div>
+                            </td>
+                        </tr>`;
+                        lucide.createIcons();
+                        return;
+                    }
+                    throw error;
+                }
+
+                allClients = data || [];
+                document.getElementById('total-clientes').innerText = allClients.length;
+                renderTable();
+
+            } catch (err) {
+                console.error("Erro Supabase:", err);
+                document.getElementById('clients-tbody').innerHTML = `
+                <tr><td colspan="5" class="px-5 py-8 text-center text-red-500 font-bold">Erro ao carregar clientes: ${err.message}</td></tr>`;
+            }
+        }
+
+        function formatPhoneForWa(phone) {
+            if(!phone) return '';
+            let p = phone.replace(/\D/g, '');
+            if(p.length === 10 || p.length === 11) p = '55' + p;
+            return p;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('clients-tbody');
+            const term = document.getElementById('search-input').value.toLowerCase();
+
+            let filtered = allClients.filter(c => {
+                const matchName = (c.nome || '').toLowerCase().includes(term);
+                const matchPhone = (c.telefone || '').includes(term);
+                return matchName || matchPhone;
+            });
+
+            if (currentFilter === 'vip') {
+                filtered = filtered.filter(c => c.vip === true || c.frequencia >= 5 || (c.ticket_medio && c.ticket_medio > 100));
+            } else if (currentFilter === 'inativos') {
+                const trintaDiasAtras = new Date();
+                trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+                filtered = filtered.filter(c => {
+                    if(!c.data_ultima_compra) return false;
+                    const d = new Date(c.data_ultima_compra);
+                    return d < trintaDiasAtras;
+                });
+            }
+
+            document.getElementById('total-filtrados').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-5 py-16 text-center text-slate-400 font-medium italic">Base ou filtragem vazia.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((c, index) => {
+                let lastDate = 'Desc.';
+                if(c.data_ultima_compra) {
+                    const dt = new Date(c.data_ultima_compra);
+                    lastDate = dt.toLocaleDateString('pt-BR');
+                }
+
+                const firstLetter = (c.nome || '?').charAt(0).toUpperCase();
+                const isVip = c.vip || c.frequencia > 5;
+                const avatarClass = isVip 
+                    ? 'bg-amber-100 text-amber-600 border border-amber-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200';
+
+                return `
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="px-5 py-4">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-black shrink-0 shadow-sm ${avatarClass}">
+                            ${firstLetter}
+                        </div>
+                    </td>
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold text-slate-800 text-[13px] capitalize">${c.nome ? c.nome.toLowerCase() : 'Sem Nome'}</p>
+                            ${isVip ? '<i data-lucide="crown" class="w-3.5 h-3.5 text-amber-400"></i>' : ''}
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-medium mt-0.5">Última Compra: ${lastDate}</p>
+                    </td>
+                    <td class="px-5 py-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">
+                           <i data-lucide="smartphone" class="w-3.5 h-3.5 text-slate-400"></i> ${c.telefone || 'N/A'}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-center">
+                        <p class="text-xs font-bold text-slate-700">${c.frequencia || 1}x</p>
+                        ${c.ticket_medio ? `<p class="text-[10px] text-slate-400 font-medium mt-0.5">R$ ${parseFloat(c.ticket_medio).toFixed(2).replace('.',',')}</p>` : ''}
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <button onclick="handleSend('${c.nome}', '${c.telefone}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-[11px] font-black shadow-sm border border-emerald-100/50">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Chamar
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function handleSend(nome, telefoneRaw) {
+            const textoBase = document.getElementById('campanha-texto').value;
+            const imgUrl = document.getElementById('campanha-img').value;
+
+            let textoFormatado = '';
+            if(textoBase.trim() !== '') {
+                textoFormatado = textoBase.replace(/{nome}/g, (nome || '').split(' ')[0]);
+            } else {
+                textoFormatado = "Olá " + (nome || '').split(' ')[0] + ", tudo bem?";
+            }
+            
+            const num = formatPhoneForWa(telefoneRaw);
+            if(!num) {
+                alert("Este cliente não tem um contato telefônico ou está em formato inválido.");
+                return;
+            }
+
+            const fallbackWaUrl = `https://wa.me/${num}?text=${encodeURIComponent(textoFormatado)}`;
+
+            if (imgUrl && navigator.share) {
+                try {
+                    let fileShared = false;
+                    if(navigator.canShare) {
+                        try {
+                            const response = await fetch(imgUrl, { mode: 'cors' });
+                            const blob = await response.blob();
+                            let ext = 'jpg';
+                            if(imgUrl.includes('.')) ext = imgUrl.split('?')[0].split('.').pop() || 'jpg';
+                            const file = new File([blob], 'campanha.'+ext, { type: blob.type });
+
+                            const shareWithFile = {
+                                text: textoFormatado,
+                                files: [file]
+                            };
+
+                            if (navigator.canShare(shareWithFile)) {
+                                await navigator.share(shareWithFile);
+                                fileShared = true;
+                                return; 
+                            }
+                        } catch (imgError) {
+                            console.warn("Erro ao buscar a imagem para share API (CORS ou URL inválida).", imgError);
+                        }
+                    }
+
+                    if(!fileShared) {
+                         await navigator.share({
+                             text: textoFormatado + "\\n\\n" + imgUrl 
+                         });
+                         return;
+                    }
+
+                } catch (e) {
+                     console.log("Usuário fechou a janela de share ou ela não é suportada.", e);
+                }
+            }
+            
+            window.open(fallbackWaUrl, '_blank');
+        }
+
+        loadClients();
+    </script>
+</body>
+</html>
