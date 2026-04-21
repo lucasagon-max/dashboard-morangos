@@ -50,6 +50,17 @@
 
     <div class="fixed inset-0 bg-pattern"></div>
 
+    <!-- TELA DE LOGIN -->
+    <div id="loginOverlay" class="fixed inset-0 z-[9999] bg-gradient-to-br from-fuchsia-700 to-rose-700 flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center w-full max-w-sm flex flex-col items-center transform transition-all">
+            <h1 class="font-serif text-3xl font-black text-slate-900 leading-none italic mb-6">CRM <span class="text-fuchsia-600">& Mensagens</span></h1>
+            <h3 class="mb-6 text-slate-700 font-bold text-lg">Acesso Restrito</h3>
+            <input type="password" id="loginPass" placeholder="Digite a senha de acesso" class="w-full px-4 py-3 border border-slate-200 rounded-xl mb-4 text-center font-bold text-lg outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-100 transition-all">
+            <button onclick="verificarSenha()" class="w-full py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-black shadow-lg transition-all active:scale-95 text-lg">Entrar</button>
+            <div id="loginError" class="text-rose-600 font-bold text-sm mt-3 hidden animate-pulse">Senha incorreta!</div>
+        </div>
+    </div>
+
     <!-- ── CABEÇALHO ── -->
     <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -150,8 +161,16 @@
                                 <button onclick="insertText('🍓')" class="p-1 hover:scale-125 transition-transform" title="Morango">🍓</button>
                                 <button onclick="insertText('🔥')" class="p-1 hover:scale-125 transition-transform" title="Fogo">🔥</button>
                                 <button onclick="insertText('📍')" class="p-1 hover:scale-125 transition-transform" title="Local">📍</button>
+                                <div class="h-4 w-px bg-slate-200 mx-1"></div>
+                                <button onclick="undoText()" class="p-1 px-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" title="Desfazer"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                             <textarea id="campanha-texto" rows="6" placeholder="Olá {nome}! Temos uma oferta que vai esquentar o seu dia..." class="w-full px-4 py-3 text-xs font-medium text-slate-700 bg-transparent resize-none h-40 outline-none"></textarea>
+                        </div>
+                        
+                        <div class="flex gap-2 overflow-x-auto pb-1 mt-2 flex-nowrap" style="scrollbar-width: none;">
+                            <button onclick="insertText('https://www.morangostatui.com.br/catálogo-de-produtos')" class="whitespace-nowrap px-2 py-1.5 bg-amber-50 text-[10px] font-bold text-amber-700 rounded-lg border border-amber-200 hover:bg-amber-100 transition-colors shadow-sm">📦 Catálogo</button>
+                            <button onclick="insertText('https://www.instagram.com/morangos_tatui/')" class="whitespace-nowrap px-2 py-1.5 bg-pink-50 text-[10px] font-bold text-pink-700 rounded-lg border border-pink-200 hover:bg-pink-100 transition-colors shadow-sm">📸 Instagram</button>
+                            <button onclick="insertText('📍 Av. Cel. Firmo Viêira de Camargo, 420 - Centro, Tatuí - SP\nGoogle Maps: https://maps.app.goo.gl/k8RzkDBH5uXNPXeP6')" class="whitespace-nowrap px-2 py-1.5 bg-blue-50 text-[10px] font-bold text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors shadow-sm">📍 Endereço</button>
                         </div>
                     </div>
 
@@ -193,16 +212,35 @@
                         <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="vip">★ VIPs & Fiéis</button>
                         <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="inativos">Inativos (+30d)</button>
                         <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="frios">🧊 Frios</button>
+                        <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="oculto">🙈 Ocultos</button>
                     </div>
+                    <button onclick="gerarRelatorio()" class="bg-white border border-slate-200 text-slate-600 hover:text-slate-900 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"><i data-lucide="printer" class="w-4 h-4"></i> Relatório</button>
                 </div>
+                <!-- Bairros, Regiões e Busca -->
                 <div class="flex flex-wrap items-center gap-3 w-full justify-between">
-                    <div class="relative flex-1 min-w-[200px] max-w-sm">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                        <input type="text" id="search-input" placeholder="Buscar na Base..." class="input-ui h-10 w-full pl-9 pr-4 text-xs font-medium text-slate-700 bg-white shadow-sm" oninput="renderTable()">
+                    <div class="flex gap-2 items-center flex-wrap flex-1 max-w-xl">
+                        <div class="relative flex-1 min-w-[200px]">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="search-input" placeholder="Buscar na Base..." class="input-ui h-10 w-full pl-9 pr-4 text-xs font-medium text-slate-700 bg-white shadow-sm" oninput="renderTable()">
+                        </div>
+                        <div class="relative group">
+                            <button id="bairroLabel" class="bg-white border border-slate-200 px-3 py-2 h-10 rounded-xl text-xs font-bold text-slate-600 shadow-sm flex items-center gap-1 hover:bg-slate-50 truncate max-w-[120px]">🏡 Bairros <i data-lucide="chevron-down" class="w-3 h-3"></i></button>
+                            <div class="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 hidden group-hover:flex flex-col">
+                                <div class="p-2 border-b border-slate-100"><input type="text" id="buscaBairroInput" placeholder="🔍 Filtrar..." class="w-full text-xs p-2 outline-none bg-slate-50 rounded" onkeyup="filtrarOpcoes('bairrosListContainer', this.value)"></div>
+                                <div id="bairrosListContainer" class="max-h-48 overflow-y-auto p-1 flex flex-col"></div>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <button id="regiaoLabel" class="bg-white border border-slate-200 px-3 py-2 h-10 rounded-xl text-xs font-bold text-slate-600 shadow-sm flex items-center gap-1 hover:bg-slate-50 truncate max-w-[120px]">🌎 Regiões <i data-lucide="chevron-down" class="w-3 h-3"></i></button>
+                            <div class="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 hidden group-hover:flex flex-col">
+                                <div class="p-2 border-b border-slate-100"><input type="text" id="buscaRegiaoInput" placeholder="🔍 Filtrar..." class="w-full text-xs p-2 outline-none bg-slate-50 rounded" onkeyup="filtrarOpcoes('regiaoListContainer', this.value)"></div>
+                                <div id="regiaoListContainer" class="max-h-48 overflow-y-auto p-1 flex flex-col"></div>
+                            </div>
+                        </div>
                     </div>
-                    <label class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-white px-3 py-2 h-10 border border-slate-200 rounded-xl cursor-pointer shadow-sm">
+                    <label class="flex items-center gap-2 text-[11px] font-bold text-slate-600 bg-white px-3 py-2 h-10 border border-slate-200 rounded-xl cursor-pointer shadow-sm">
                         <input type="checkbox" id="hide-sent" checked class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 accent-fuchsia-600 cursor-pointer" onchange="renderTable()">
-                        Esconder já abordados nesta Campanha
+                        Esconder abordados
                     </label>
                 </div>
             </div>
@@ -266,6 +304,10 @@
                         <input type="text" id="cli-rua" class="input-ui w-full p-2.5 text-sm bg-slate-50">
                     </div>
                     <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Região</label>
+                        <input type="text" id="cli-regiao" class="input-ui w-full p-2.5 text-sm bg-slate-50" placeholder="Ex: Zona Norte">
+                    </div>
+                    <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Número</label>
                         <input type="text" id="cli-numero" class="input-ui w-full p-2.5 text-sm bg-slate-50">
                     </div>
@@ -278,6 +320,36 @@
             <div class="p-5 border-t border-slate-100 flex justify-end gap-3 shrink-0">
                 <button onclick="closeModalCliente()" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Cancelar</button>
                 <button onclick="saveCliente()" class="bg-fuchsia-600 text-white px-6 py-2 rounded-xl text-sm font-black shadow-lg hover:bg-fuchsia-700">Salvar Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Observações -->
+    <div id="modal-obs" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-lg text-slate-800" id="modal-obs-title">Observações</h3>
+                <button onclick="document.getElementById('modal-obs').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5">
+                <input type="hidden" id="modal-obs-id">
+                <textarea id="modal-obs-text" class="input-ui w-full p-3 text-sm h-32 resize-none bg-slate-50" placeholder="Digite uma anotação sobre o cliente..."></textarea>
+            </div>
+            <div class="p-4 border-t border-slate-100 flex justify-end">
+                <button onclick="salvarObservacao()" class="bg-fuchsia-600 text-white px-6 py-2 rounded-xl text-sm font-black shadow-lg hover:bg-fuchsia-700">Salvar Obs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Mensagem -->
+    <div id="modal-view-msg" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-lg text-slate-800" id="view-msg-title">Mensagem</h3>
+                <button onclick="document.getElementById('modal-view-msg').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 bg-slate-50 max-h-64 overflow-y-auto">
+                <p id="view-msg-body" class="text-sm text-slate-700 whitespace-pre-wrap font-medium"></p>
             </div>
         </div>
     </div>
@@ -310,6 +382,34 @@
         let allProducts = [];
         let enviosCampanha = new Set(); // Guarda telefones enviados nesta campanha
         let currentFilter = 'todos';
+        let textHistory = [];
+        let filtroBairrosSet = new Set(); 
+        let filtroRegiaoSet = new Set();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(sessionStorage.getItem("auth_morangos") === "true") {
+                document.getElementById("loginOverlay").style.display = "none";
+            }
+        });
+
+        function verificarSenha() {
+            const input = document.getElementById("loginPass")?.value;
+            if (input === "morangos420") {
+                document.getElementById("loginOverlay").style.display = "none";
+                sessionStorage.setItem("auth_morangos", "true"); 
+            } else {
+                const erro = document.getElementById("loginError");
+                if (erro) {
+                    erro.style.display = "block";
+                    document.getElementById("loginPass").value = "";
+                    setTimeout(() => erro.style.display = "none", 3000);
+                }
+            }
+        }
+
+        document.getElementById("loginPass")?.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") verificarSenha();
+        });
 
         // ============================================
         // INICIALIZAÇÃO / FETCH
@@ -321,10 +421,13 @@
 
         async function loadClients() {
             try {
-                // Seleciona todas as colunas evitando falha caso nova coluna de temperatura ainda não exista no banco
+                // Seleciona todas as colunas
                 const { data, error } = await sb.from('clientes').select('*').order('nome', { ascending: true });
                 if (error && error.code !== '42P01') throw error;
-                if(data) allClients = data;
+                if(data) {
+                    allClients = data;
+                    popularFiltrosOpcoes();
+                }
                 renderTable();
             } catch (err) {
                 console.error("Erro carrega clientes:", err);
@@ -441,7 +544,9 @@
         // CADASTRO / EDIÇÃO LEADS
         // ============================================
         function openModalCliente() {
-            ['cli-id','cli-nome','cli-tel','cli-cep','cli-rua','cli-numero','cli-bairro'].forEach(id=>document.getElementById(id).value='');
+            ['cli-id','cli-nome','cli-tel','cli-cep','cli-rua','cli-regiao','cli-numero','cli-bairro'].forEach(id=> {
+                const el = document.getElementById(id); if(el) el.value='';
+            });
             document.getElementById('cli-temp').value = 'Neutro';
             document.getElementById('modal-cliente').classList.remove('hidden');
         }
@@ -474,7 +579,8 @@
                 cep: document.getElementById('cli-cep').value,
                 rua: document.getElementById('cli-rua').value,
                 numero: document.getElementById('cli-numero').value,
-                bairro: document.getElementById('cli-bairro').value
+                bairro: document.getElementById('cli-bairro').value,
+                regiao: document.getElementById('cli-regiao')?.value || ''
             };
             const btn = document.querySelector('#modal-cliente button.bg-fuchsia-600');
             btn.innerHTML = 'Salvando...';
@@ -488,6 +594,97 @@
             }catch(e) {
                 toast(`Erro: ${e.message}`, "#ef4444");
             } finally { btn.innerHTML='Salvar Lead'; }
+        }
+
+        function abrirModalObs(id) {
+            const c = allClients.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('modal-obs-title').innerText = "Obs: " + c.nome;
+            document.getElementById('modal-obs-text').value = c.observacoes || "";
+            document.getElementById('modal-obs-id').value = id;
+            document.getElementById('modal-obs').classList.remove('hidden');
+        }
+
+        async function salvarObservacao() {
+            const id = document.getElementById('modal-obs-id').value;
+            const text = document.getElementById('modal-obs-text').value;
+            const idx = allClients.findIndex(x => x.id === id);
+            if(idx > -1) allClients[idx].observacoes = text;
+            renderTable();
+            document.getElementById('modal-obs').classList.add('hidden');
+            sb.from('clientes').update({observacoes: text}).eq('id', id).then(() => { toast("Salvo!", "#10b981"); });
+        }
+
+        function verUltimaMensagem(id) {
+            const c = allClients.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('view-msg-title').innerText = "Enviado para: " + c.nome.split(' ')[0];
+            document.getElementById('view-msg-body').innerText = c.ultima_msg || "(Vazia)";
+            document.getElementById('modal-view-msg').classList.remove('hidden');
+        }
+
+        function popularFiltrosOpcoes() {
+            const listB = document.getElementById('bairrosListContainer');
+            if (listB) {
+                listB.innerHTML = "";
+                const bairros = [...new Set(allClients.map(c => c.bairro ? c.bairro.trim() : ""))].filter(b => b !== "").sort();
+                bairros.forEach(b => {
+                    const checked = filtroBairrosSet.has(b) ? "checked" : "";
+                    listB.innerHTML += `<label class="flex items-center gap-2 p-2 hover:bg-slate-100 cursor-pointer text-xs text-slate-700 font-medium border-b border-slate-50"><input type="checkbox" value="${b}" onchange="toggleFiltroSet('bairro', this.value, this.checked)" class="accent-fuchsia-600 rounded w-3.5 h-3.5" ${checked}> ${b}</label>`;
+                });
+            }
+            const listR = document.getElementById('regiaoListContainer');
+            if (listR) {
+                listR.innerHTML = "";
+                const regioes = [...new Set(allClients.map(c => c.regiao ? c.regiao.trim() : ""))].filter(r => r !== "").sort();
+                regioes.forEach(r => {
+                    const checked = filtroRegiaoSet.has(r) ? "checked" : "";
+                    listR.innerHTML += `<label class="flex items-center gap-2 p-2 hover:bg-slate-100 cursor-pointer text-xs text-slate-700 font-medium border-b border-slate-50"><input type="checkbox" value="${r}" onchange="toggleFiltroSet('regiao', this.value, this.checked)" class="accent-indigo-500 rounded w-3.5 h-3.5" ${checked}> ${r}</label>`;
+                });
+            }
+        }
+        
+        function filtrarOpcoes(containerId, termo) {
+            const labels = document.querySelectorAll(`#${containerId} label`);
+            termo = termo.toLowerCase();
+            labels.forEach(l => {
+                l.style.display = l.innerText.toLowerCase().includes(termo) ? "flex" : "none";
+            });
+        }
+
+        function toggleFiltroSet(tipo, valor, checked) {
+            if(tipo === 'bairro') {
+                checked ? filtroBairrosSet.add(valor) : filtroBairrosSet.delete(valor);
+                document.getElementById('bairroLabel').innerHTML = filtroBairrosSet.size > 0 ? `🏡 (${filtroBairrosSet.size}) <i data-lucide="chevron-down" class="w-3 h-3"></i>` : `🏡 Bairros <i data-lucide="chevron-down" class="w-3 h-3"></i>`;
+            } else {
+                checked ? filtroRegiaoSet.add(valor) : filtroRegiaoSet.delete(valor);
+                document.getElementById('regiaoLabel').innerHTML = filtroRegiaoSet.size > 0 ? `🌎 (${filtroRegiaoSet.size}) <i data-lucide="chevron-down" class="w-3 h-3"></i>` : `🌎 Regiões <i data-lucide="chevron-down" class="w-3 h-3"></i>`;
+            }
+            lucide.createIcons();
+            renderTable();
+        }
+
+        function gerarRelatorio() {
+            const enviados = allClients.filter(c => c.telefone && enviosCampanha.has(c.telefone));
+            const msg = document.getElementById('campanha-texto').value;
+            const dataHoje = new Date().toLocaleDateString('pt-BR');
+            
+            const w = window.open('', '_blank');
+            if(!w) return alert("Permita popups para ver o relatório.");
+            const relHTML = `
+              <html><head><title>Relatório Envios</title>
+              <style>body{font-family:sans-serif;padding:30px;color:#333} h1{color:#e11d48} table{width:100%;border-collapse:collapse;font-size:14px} td,th{border:1px solid #eee;padding:8px;text-align:left} th{background:#fcfcfc} .msg{background:#fef2f2;padding:15px;border-radius:8px;white-space:pre-wrap;font-size:14px}</style>
+              </head><body>
+              <h1>Relatório de Envios - ${dataHoje}</h1>
+              <p>Campanha: <b>${document.getElementById('campanha-nome').value || 'Geral'}</b></p>
+              <div class="msg">${msg}</div>
+              <h2 style="margin-top:20px;font-size:16px;">Contatos Atingidos (${enviados.length})</h2>
+              <table><tr><th>Nome</th><th>Whatsapp</th><th>Bairro</th><th>Região</th></tr>
+              ${enviados.map(c => `<tr><td>${c.nome}</td><td>${c.telefone}</td><td>${c.bairro||'-'}</td><td>${c.regiao||'-'}</td></tr>`).join('')}
+              </table></body></html>`;
+            w.document.write(relHTML);
+            w.document.close();
+            setTimeout(()=>w.print(), 1000);
         }
 
         async function setTemp(id, tempValue) {
@@ -599,6 +796,19 @@
                 filtered = filtered.filter(c => !c.telefone || !enviosCampanha.has(c.telefone));
             }
 
+            // Filtros de multi-select (Bairros e Regiões)
+            if (filtroBairrosSet.size > 0) {
+                filtered = filtered.filter(c => c.bairro && filtroBairrosSet.has(c.bairro.trim()));
+            }
+            if (filtroRegiaoSet.size > 0) {
+                filtered = filtered.filter(c => c.regiao && filtroRegiaoSet.has(c.regiao.trim()));
+            }
+
+            // Oculto por padrão
+            if (currentFilter !== 'oculto') {
+                 filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() !== 'ocultar');
+            }
+
             // Tabs da Temperatura e outros
             if (currentFilter === 'vip') {
                 filtered = filtered.filter(c => c.vip || c.frequencia >= 5 || (c.ticket_medio && c.ticket_medio > 100));
@@ -609,6 +819,8 @@
                 filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() === 'quente');
             } else if (currentFilter === 'frios') {
                 filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() === 'frio');
+            } else if (currentFilter === 'oculto') {
+                filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() === 'ocultar');
             }
             // neutros seriam capturados no "todos" ou se precisasse de tab específica.
 
@@ -630,10 +842,12 @@
                 const tm = c.temperatura ? c.temperatura.toLowerCase() : 'neutro';
                 if(tm === 'quente') { tempIcon = '🔥'; tempClass = 'bg-rose-100 text-rose-600 border border-rose-200'; }
                 if(tm === 'frio') { tempIcon = '🧊'; tempClass = 'bg-sky-100 text-sky-600 border border-sky-200'; }
+                if(tm === 'ocultar') { tempIcon = '🙈'; tempClass = 'bg-slate-100 text-slate-400 border border-slate-200'; }
 
                 const isVip = c.vip || c.frequencia >= 4;
-
-                // Checa se ja foi enviado (quando hide-sent false é marcado, podemos ver a tag)
+                const temObs = c.observacoes && c.observacoes.trim().length > 0;
+                
+                // Checa se ja foi enviado
                 const alreadySent = c.telefone && enviosCampanha.has(c.telefone);
                 
                 return `
@@ -652,11 +866,19 @@
                         <div class="flex items-center gap-2">
                             <p class="font-bold text-slate-800 text-[13px] capitalize">${(c.nome || 'Sem Nome').toLowerCase()}</p>
                             ${isVip ? '<i data-lucide="crown" class="w-3 h-3 text-amber-400"></i>' : ''}
+                            ${temObs ? `<i data-lucide="file-text" onclick="abrirModalObs('${c.id}')" class="w-3 h-3 text-fuchsia-500 cursor-pointer hover:scale-110 transition-transform" title="Ver Observação"></i>` : `<i data-lucide="plus-circle" onclick="abrirModalObs('${c.id}')" class="w-3 h-3 text-slate-300 cursor-pointer hover:text-fuchsia-400 transition-colors tooltip" title="Adicionar Observação"></i>`}
                         </div>
-                        <div class="flex items-center gap-1.5 mt-1">
-                            <i data-lucide="smartphone" class="w-3 h-3 text-slate-400"></i>
-                            <span class="text-[10px] font-medium text-slate-500 font-mono">${formatPhone(c.telefone||'')}</span>
+                        <div class="flex gap-2 mt-1.5 flex-wrap items-center">
+                            <div class="flex items-center gap-1">
+                                <i data-lucide="smartphone" class="w-3 h-3 text-slate-400"></i>
+                                <span class="text-[10px] font-medium text-slate-500 font-mono">${formatPhone(c.telefone||'')}</span>
+                            </div>
+                            <div class="flex gap-1">
+                                ${c.bairro ? `<span class="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-sm">${c.bairro}</span>` : ''}
+                                ${c.regiao ? `<span class="bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-sm">${c.regiao}</span>` : ''}
+                            </div>
                         </div>
+                        ${c.ultima_msg ? `<button onclick="verUltimaMensagem('${c.id}')" class="mt-1.5 text-[9px] text-fuchsia-600 hover:underline font-medium text-left line-clamp-1 border border-fuchsia-100 bg-fuchsia-50 rounded px-1.5 py-0.5 w-full truncate tooltip" title="Clique para ler">💬 ${c.ultima_msg}</button>` : ''}
                     </td>
                     <!-- Seletor Clima -->
                     <td class="px-5 py-3 text-center">
@@ -664,6 +886,7 @@
                             <option value="Neutro" ${tm==='neutro'?'selected':''}>⚪ Neutro</option>
                             <option value="Quente" ${tm==='quente'?'selected':''}>🔥 Quente</option>
                             <option value="Frio" ${tm==='frio'?'selected':''}>🧊 Frio</option>
+                            <option value="Ocultar" ${tm==='ocultar'?'selected':''}>🙈 Ocultar</option>
                         </select>
                     </td>
                     <!-- Freq -->
@@ -695,7 +918,19 @@
         // ============================================
         // EDITOR EMOJIS & TEXT FORMAT
         // ============================================
+        function saveHistory() {
+            const el = document.getElementById('campanha-texto');
+            textHistory.push(el.value);
+            if(textHistory.length > 20) textHistory.shift();
+        }
+
+        function undoText() {
+            const el = document.getElementById('campanha-texto');
+            if(textHistory.length > 0) el.value = textHistory.pop();
+        }
+
         function insertText(text) {
+            saveHistory();
             const txt = document.getElementById('campanha-texto');
             const start = txt.selectionStart;
             const end = txt.selectionEnd;
@@ -705,6 +940,7 @@
         }
 
         function wrapText(char) {
+            saveHistory();
             const txt = document.getElementById('campanha-texto');
             const start = txt.selectionStart;
             const end = txt.selectionEnd;
@@ -778,6 +1014,14 @@
                 sb.from('crm_envios').insert([{ telefone_cliente: telefoneRaw, campanha_nome: campName }]).then(res => {
                     if(res.error) console.log("Opcional tracking error ignore:", res.error);
                 });
+            }
+
+            // Salva a ultima_msg no BD
+            const idx = allClients.findIndex(c => (c.telefone||'').replace(/\D/g,'') === num);
+            if (idx > -1) {
+                allClients[idx].ultima_msg = txtFmt;
+                sb.from('clientes').update({ ultima_msg: txtFmt }).eq('id', allClients[idx].id).then();
+                renderTable();
             }
 
             // Se houver anexo, incorpora o link na mensagem. O WhatsApp automaticamente
