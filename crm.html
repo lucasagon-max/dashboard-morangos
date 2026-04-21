@@ -306,8 +306,8 @@
 
         async function loadClients() {
             try {
-                // Seleciona as colunas incluindo temperatura caso exista
-                const { data, error } = await sb.from('clientes').select('id, nome, telefone, data_ultima_compra, frequencia, ticket_medio, vip, cep, rua, numero, bairro, temperatura').order('nome', { ascending: true });
+                // Seleciona todas as colunas evitando falha caso nova coluna de temperatura ainda não exista no banco
+                const { data, error } = await sb.from('clientes').select('*').order('nome', { ascending: true });
                 if (error && error.code !== '42P01') throw error;
                 if(data) allClients = data;
                 renderTable();
