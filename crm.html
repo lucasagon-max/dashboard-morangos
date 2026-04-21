@@ -37,7 +37,7 @@
         
         .table-container { border: 1px solid #f1f5f9; background: white; border-radius: 1.5rem; overflow: visible; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
         .input-ui { border: 1px solid #e2e8f0; border-radius: 0.75rem; transition: all 0.2s; outline: none; }
-        .input-ui:focus { border-color: #d946ef; box-shadow: 0 0 0 4px #fae8ff; }
+        .input-ui:focus, .input-ui:focus-within { border-color: #d946ef; box-shadow: 0 0 0 4px #fae8ff; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f8fafc; }
@@ -137,7 +137,22 @@
                                 </div>
                             </div>
                         </div>
-                        <textarea id="campanha-texto" rows="6" placeholder="Olá {nome}! Temos uma oferta que vai esquentar o seu dia..." class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50 resize-none h-40"></textarea>
+                        <div class="input-ui bg-slate-50 overflow-hidden shadow-sm">
+                            <div class="flex items-center gap-1 flex-wrap bg-white px-2 py-2 border-b border-slate-100 min-w-0">
+                                <button onclick="insertText('{nome}')" class="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-600 rounded border border-slate-200 hover:bg-fuchsia-50 hover:text-fuchsia-600 hover:border-fuchsia-200 transition-colors" title="Injeta o primeiro nome">Nome</button>
+                                <button onclick="insertText('{saudacao}')" class="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-600 rounded border border-slate-200 hover:bg-fuchsia-50 hover:text-fuchsia-600 hover:border-fuchsia-200 transition-colors" title="Bom dia, Boa tarde ou Boa noite">Saudação</button>
+                                <div class="h-4 w-px bg-slate-200 mx-1"></div>
+                                <button onclick="wrapText('*')" class="p-1 px-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" title="Negrito"><i data-lucide="bold" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="wrapText('_')" class="p-1 px-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" title="Itálico"><i data-lucide="italic" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="wrapText('~')" class="p-1 px-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors" title="Tachado"><i data-lucide="strikethrough" class="w-3.5 h-3.5"></i></button>
+                                <div class="h-4 w-px bg-slate-200 mx-1"></div>
+                                <button onclick="insertText('😊')" class="p-1 hover:scale-125 transition-transform" title="Sorriso">😊</button>
+                                <button onclick="insertText('🍓')" class="p-1 hover:scale-125 transition-transform" title="Morango">🍓</button>
+                                <button onclick="insertText('🔥')" class="p-1 hover:scale-125 transition-transform" title="Fogo">🔥</button>
+                                <button onclick="insertText('📍')" class="p-1 hover:scale-125 transition-transform" title="Local">📍</button>
+                            </div>
+                            <textarea id="campanha-texto" rows="6" placeholder="Olá {nome}! Temos uma oferta que vai esquentar o seu dia..." class="w-full px-4 py-3 text-xs font-medium text-slate-700 bg-transparent resize-none h-40 outline-none"></textarea>
+                        </div>
                     </div>
 
                     <!-- Templates Management -->
@@ -659,7 +674,14 @@
                     <!-- Disparo -->
                     <td class="px-5 py-3 text-right">
                         ${alreadySent 
-                            ? `<button disabled class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-400 text-[11px] font-bold border border-emerald-100 cursor-not-allowed"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Abordado</button>`
+                            ? `<div class="flex items-center justify-end gap-1.5">
+                                <button onclick="handleResetSent('${c.telefone}')" class="inline-flex items-center justify-center p-1.5 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100 hover:border-rose-500" title="Voltar para não enviados">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="handleSend('${c.nome}', '${c.telefone}', true)" class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all text-[11px] font-bold shadow-sm border border-emerald-200 hover:border-emerald-600" title="Reenviar Mensagem">
+                                    <i data-lucide="send" class="w-3 h-3"></i> Reenviar
+                                </button>
+                               </div>`
                             : `<button onclick="handleSend('${c.nome}', '${c.telefone}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-[11px] font-black shadow-sm border border-emerald-100 hover:border-emerald-500 group-hover:-translate-y-0.5">
                                 <i data-lucide="send" class="w-3.5 h-3.5"></i> Chamar
                                </button>`
@@ -671,9 +693,59 @@
         }
 
         // ============================================
+        // EDITOR EMOJIS & TEXT FORMAT
+        // ============================================
+        function insertText(text) {
+            const txt = document.getElementById('campanha-texto');
+            const start = txt.selectionStart;
+            const end = txt.selectionEnd;
+            txt.value = txt.value.substring(0, start) + text + txt.value.substring(end);
+            txt.focus();
+            txt.selectionStart = txt.selectionEnd = start + text.length;
+        }
+
+        function wrapText(char) {
+            const txt = document.getElementById('campanha-texto');
+            const start = txt.selectionStart;
+            const end = txt.selectionEnd;
+            const selectedText = txt.value.substring(start, end);
+            if (selectedText.length > 0) {
+                const replacement = char + selectedText + char;
+                txt.value = txt.value.substring(0, start) + replacement + txt.value.substring(end);
+                txt.focus();
+                txt.selectionStart = start;
+                txt.selectionEnd = start + replacement.length;
+            } else {
+                const replacement = char + char;
+                txt.value = txt.value.substring(0, start) + replacement + txt.value.substring(end);
+                txt.focus();
+                txt.selectionStart = txt.selectionEnd = start + char.length;
+            }
+        }
+
+        async function handleResetSent(telefoneRaw) {
+            const campName = document.getElementById('campanha-nome').value.trim() || 'Geral';
+            
+            if (enviosCampanha.has(telefoneRaw)) {
+                enviosCampanha.delete(telefoneRaw);
+                document.getElementById('total-enviados').innerText = enviosCampanha.size;
+                renderTable(); // Remove UI update imediatly
+            }
+            
+            sb.from('crm_envios')
+              .delete()
+              .eq('telefone_cliente', telefoneRaw)
+              .eq('campanha_nome', campName)
+              .then(res => {
+                  if(res.error) console.log("Erro reset:", res.error);
+                  else toast("Lead resetado para Não Abordado!", "#f43f5e");
+              });
+        }
+
+        // ============================================
         // MOTOR DE DISPARO E RASTREIO
         // ============================================
-        async function handleSend(nome, telefoneRaw) {
+        async function handleSend(nome, telefoneRaw, isResend = false) {
             const textoBase = document.getElementById('campanha-texto').value || "Olá {nome}!";
             const imgUrl = document.getElementById('campanha-img').value;
             const extraLink = document.getElementById('campanha-link').value;
@@ -686,20 +758,31 @@
             // Variável Nome
             let primeironome = (nome || '').split(' ')[0];
             let txtFmt = textoBase.replace(/{nome}/gi, primeironome);
+            
+            // Variável Saudação
+            const hour = new Date().getHours();
+            let saudacao = "Bom dia";
+            if (hour >= 12 && hour < 18) saudacao = "Boa tarde";
+            else if (hour >= 18) saudacao = "Boa noite";
+            txtFmt = txtFmt.replace(/{saudacao}/gi, saudacao);
+
             // Append link opcional se preenchido
             if(extraLink) txtFmt += `\n\nConfira o link: ${extraLink}`;
 
             // --- Gravar na tabela 'crm_envios' Assíncrono ---
-            enviosCampanha.add(telefoneRaw);
-            renderTable(); // Re-render imediato da ui
-            document.getElementById('total-enviados').innerText = enviosCampanha.size;
+            if (!isResend) {
+                enviosCampanha.add(telefoneRaw);
+                renderTable(); // Re-render imediato da ui
+                document.getElementById('total-enviados').innerText = enviosCampanha.size;
 
-            sb.from('crm_envios').insert([{ telefone_cliente: telefoneRaw, campanha_nome: campName }]).then(res => {
-                if(res.error) console.log("Opcional tracking error ignore:", res.error);
-            });
+                sb.from('crm_envios').insert([{ telefone_cliente: telefoneRaw, campanha_nome: campName }]).then(res => {
+                    if(res.error) console.log("Opcional tracking error ignore:", res.error);
+                });
+            }
 
             // --- Lógica Web Share (Anexo) vs Direto (Link) ---
-            const linkPuro = `https://wa.me/${wpNum}?text=${encodeURIComponent(txtFmt)}`;
+            // Usa o protocolo direto nativo para evitar a tela da web do wa.me e abrir direto o WhatsApp PC / Mobile.
+            const linkPuro = `whatsapp://send?phone=${wpNum}&text=${encodeURIComponent(txtFmt)}`;
 
             if (imgUrl && navigator.share) {
                 try {
@@ -722,8 +805,8 @@
                 } catch (eUsr) { console.log("Janela Share cancelada ou não permitida."); }
             }
 
-            // Desktop Fallback
-            window.open(linkPuro, '_blank');
+            // Desktop Fallback: usar _self para protocolos garante que não crie uma aba vazia morta se bloqueado sem notificar
+            window.open(linkPuro, '_self');
         }
 
         // Init
