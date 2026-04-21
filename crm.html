@@ -780,30 +780,15 @@
                 });
             }
 
-            // --- Lógica Web Share (Anexo) vs Direto (Link) ---
+            // Se houver anexo, incorpora o link na mensagem. O WhatsApp automaticamente
+            // reconhece links de imagem e cria um "Preview" (miniatura) na hora que enviar.
+            if (imgUrl) {
+                txtFmt += `\n\n📷 *Anexo:* ${imgUrl}`;
+            }
+
+            // --- Lógica Web Share vs Direto ---
             // Usa o protocolo direto nativo para evitar a tela da web do wa.me e abrir direto o WhatsApp PC / Mobile.
             const linkPuro = `whatsapp://send?phone=${wpNum}&text=${encodeURIComponent(txtFmt)}`;
-
-            if (imgUrl && navigator.share) {
-                try {
-                    let fileShared = false;
-                    if(navigator.canShare) {
-                        try {
-                            const resFetch = await fetch(imgUrl, { mode: 'cors' });
-                            const blob = await resFetch.blob();
-                            let ext = 'jpg'; if(imgUrl.includes('.')) ext = imgUrl.split('?')[0].split('.').pop() || 'jpg';
-                            const file = new File([blob], 'crm-media.'+ext, { type: blob.type });
-
-                            const sw = { text: txtFmt, files: [file] };
-                            if (navigator.canShare(sw)) {
-                                await navigator.share(sw);
-                                return; // Feito!
-                            }
-                        } catch (eImg) { console.warn("Supabase CORS / Fetch API falhou nativo.", eImg); }
-                    }
-                    if(!fileShared) { await navigator.share({ text: txtFmt + "\n\n" + imgUrl }); return; }
-                } catch (eUsr) { console.log("Janela Share cancelada ou não permitida."); }
-            }
 
             // Desktop Fallback: usar _self para protocolos garante que não crie uma aba vazia morta se bloqueado sem notificar
             window.open(linkPuro, '_self');
