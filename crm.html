@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morangos Tatuí · CRM & Mensageria</title>
+    <title>Morangos Tatuí · CRM Automático</title>
     <link rel="icon" type="image/jpeg" href="https://ferramentas.morangostatui.com.br/favicon.jpg">
 
     <!-- Bibliotecas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Toastify para alertas -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,18 +31,19 @@
 
     <style>
         body { background-color: #fcfcfc; color: #0f172a; overflow-x: hidden; }
-        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .bg-pattern { background-image: radial-gradient(#e11d48 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.03; pointer-events: none; }
         
-        .table-container { border: 1px solid #f1f5f9; background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
-        .input-ui { border: 1px solid #e2e8f0; border-radius: 1rem; transition: all 0.2s; outline: none; }
-        .input-ui:focus { border-color: #e11d48; box-shadow: 0 0 0 4px #ffe4e6; }
+        .table-container { border: 1px solid #f1f5f9; background: white; border-radius: 1.5rem; overflow: visible; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
+        .input-ui { border: 1px solid #e2e8f0; border-radius: 0.75rem; transition: all 0.2s; outline: none; }
+        .input-ui:focus { border-color: #d946ef; box-shadow: 0 0 0 4px #fae8ff; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f8fafc; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative pb-20 lg:pb-0">
@@ -47,105 +51,162 @@
     <div class="fixed inset-0 bg-pattern"></div>
 
     <!-- ── CABEÇALHO ── -->
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div class="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <a href="index.html" class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors border border-slate-200">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </a>
                 <div>
                     <h1 class="font-serif text-xl font-black text-slate-900 leading-none italic">CRM <span class="text-fuchsia-600">& Mensagens</span></h1>
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Conexão Supabase</p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Status: Conectado</p>
                 </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Controle de Campanha Global -->
+                <div class="flex items-center bg-fuchsia-50/50 border border-fuchsia-100 px-3 py-1.5 rounded-xl">
+                    <i data-lucide="flag" class="w-4 h-4 text-fuchsia-500 mr-2"></i>
+                    <input type="text" id="campanha-nome" value="Campanha Base" onblur="loadSentData()" placeholder="Nome da Campanha..." class="bg-transparent text-sm font-bold text-fuchsia-800 outline-none w-32 border-b border-transparent focus:border-fuchsia-300 placeholder:text-fuchsia-300">
+                </div>
+
+                <button onclick="openModalCliente()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-4 h-4 text-fuchsia-400"></i> Novo Lead
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-6 py-8 relative z-10 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 fade-in">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-6 py-8 relative z-10 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 fade-in">
 
         <!-- ── COLUNA 1: CAMPANHA & EDITOR ── -->
         <aside class="space-y-6">
-            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                    <i data-lucide="megaphone" class="w-32 h-32 text-fuchsia-600"></i>
-                </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-visible">
                 
-                <div class="mb-5 relative z-10">
-                    <h2 class="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Editor de Mensagem</h2>
-                    <p class="text-[11px] text-slate-400 font-medium italic">Configure o texto e a mídia da campanha atual. Use <b class="text-fuchsia-600">{nome}</b> para personalizar.</p>
+                <div class="flex justify-between items-end mb-5 relative z-10">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Criação da Mensagem</h2>
+                        <p class="text-[11px] text-slate-400 font-medium italic">Configure o modelo do envio. Use <b class="text-fuchsia-600">{nome}</b> nas frases.</p>
+                    </div>
                 </div>
 
                 <div class="space-y-4 relative z-10">
-                    <!-- Mídia da Campanha -->
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">URL da Imagem de Campanha (Opcional)</label>
-                        <div class="flex gap-2">
-                            <input type="url" id="campanha-img" placeholder="https://exemplo.com/flyer.jpg" class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50" onchange="previewImg()">
+                    
+                    <!-- Aba Mídia/Link -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">1. Anexo e Link Especial</label>
+                        
+                        <!-- Upload Option -->
+                        <div class="flex gap-2 items-center mb-3">
+                            <input type="url" id="campanha-img" placeholder="URL da Imagem (Opção 1)" class="input-ui flex-1 px-3 py-2 text-xs font-medium text-slate-700 bg-white" onchange="previewImg()">
+                            <span class="text-xs font-bold text-slate-300">OU</span>
+                            <div class="relative">
+                                <!-- Upload Input (Opção 2) -->
+                                <input type="file" id="file-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleImageUpload(event)">
+                                <button class="bg-white border-2 border-dashed border-slate-300 text-slate-500 hover:border-fuchsia-400 hover:text-fuchsia-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 w-[120px] justify-center" id="btn-upload">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload file
+                                </button>
+                            </div>
                         </div>
-                        <div id="preview-box" class="mt-3 hidden items-center justify-center bg-slate-50 border border-slate-100 rounded-xl overflow-hidden h-32 relative">
+
+                        <!-- Link Específico -->
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="link" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                            <input type="url" id="campanha-link" placeholder="Link de Saída (Ex: cardápio ou site)..." class="input-ui w-full px-3 py-2 text-xs font-medium text-slate-700 bg-white shadow-sm">
+                        </div>
+
+                        <div id="preview-box" class="hidden items-center justify-center bg-white border border-slate-200 shadow-inner rounded-xl overflow-hidden h-32 relative group">
                             <img id="preview-img" src="" class="w-full h-full object-cover">
-                            <button onclick="clearImg()" class="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-sm hover:bg-red-50 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            <button onclick="clearImg()" class="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                     </div>
 
-                    <!-- Texto da Mensagem -->
+                    <!-- Corpo da Mensagem -->
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Texto Base</label>
-                        <textarea id="campanha-texto" rows="5" placeholder="Olá {nome}! Tudo bem? Temos uma oferta super especial de morangos em chocolate belga hoje..." class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50 resize-none h-40"></textarea>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">2. Estrutura Textual</label>
+                            
+                            <!-- Dropdown Produtos -->
+                            <div class="relative">
+                                <button onclick="toggleProdMenu()" class="text-[10px] font-bold bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100 px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors">
+                                    <i data-lucide="shopping-bag" class="w-3 h-3"></i> Catalogo
+                                </button>
+                                <div id="prod-menu" class="hidden absolute right-0 top-full mt-1 w-64 bg-white border border-slate-200 shadow-xl rounded-xl z-50 max-h-48 overflow-y-auto">
+                                    <div class="p-2 sticky top-0 bg-white/90 backdrop-blur border-b border-slate-100"><input type="text" id="prod-search" oninput="renderProdMenu(this.value)" placeholder="Procurar produto..." class="w-full text-xs p-1 outline-none"></div>
+                                    <div id="prod-list" class="divide-y divide-slate-50"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea id="campanha-texto" rows="6" placeholder="Olá {nome}! Temos uma oferta que vai esquentar o seu dia..." class="input-ui w-full px-4 py-3 text-xs font-medium text-slate-700 bg-slate-50 resize-none h-40"></textarea>
                     </div>
 
-                    <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 text-amber-700 flex gap-3 text-[11px] leading-relaxed">
-                        <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                        <p class="font-medium">O anexo de imagem funciona via <b>Web Share API</b> (ideal em dispositivos móveis ou Windows/Mac atualizados). Se falhar, abrirá via <code>wa.me</code> direto.</p>
+                    <!-- Templates Management -->
+                    <div class="flex justify-between gap-2 border-t border-slate-100 pt-4">
+                        <button onclick="openModalTemplates()" class="flex-1 text-[11px] font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> Meus Modelos
+                        </button>
+                        <button onclick="saveCurrentTemplate()" class="flex-1 text-[11px] font-bold text-white bg-slate-900 hover:bg-slate-800 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-3.5 h-3.5"></i> Salvar Modelo
+                        </button>
                     </div>
+
                 </div>
             </div>
 
-            <!-- MÉTTRICAS -->
+            <!-- MÉTTRICAS RESUMO -->
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Clientes</p>
-                    <p id="total-clientes" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Leads Filtrados</p>
+                    <p class="text-2xl font-black text-slate-800 mt-1" id="total-filtrados">-</p>
                 </div>
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Filtrados</p>
-                    <p id="total-filtrados" class="text-2xl font-black text-fuchsia-600 mt-1">0</p>
+                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-center">
+                    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Sucesso / Enviados</p>
+                    <p class="text-2xl font-black text-emerald-700 mt-1" id="total-enviados">0</p>
                 </div>
             </div>
         </aside>
 
-        <!-- ── COLUNA 2: LISTA DE CLIENTES ── -->
-        <section class="space-y-6">
-            <!-- Barra de Filtros -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div class="inline-flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-                    <button class="filter-btn active flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-sm" data-filter="todos">Todos</button>
-                    <button class="filter-btn flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="vip">VIPs</button>
-                    <button class="filter-btn flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="inativos">Inativos (+30d)</button>
+        <!-- ── COLUNA 2: BASE DE CLIENTES ── -->
+        <section class="space-y-5">
+            <!-- Controles Tabela -->
+            <div class="flex flex-col gap-3">
+                <!-- Filtro Temperatura / Filtro Status -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl items-center shadow-inner overflow-x-auto whitespace-nowrap">
+                        <button class="filter-btn active px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-sm" data-filter="todos">Base Geral</button>
+                        <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="quentes">🔥 Quentes</button>
+                        <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="vip">★ VIPs & Fiéis</button>
+                        <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="inativos">Inativos (+30d)</button>
+                        <button class="filter-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" data-filter="frios">🧊 Frios</button>
+                    </div>
                 </div>
-                <div class="relative w-full sm:w-72">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                    <input type="text" id="search-input" placeholder="Buscar por nome ou contato..." class="input-ui font-medium w-full pl-9 pr-4 py-2.5 text-xs text-slate-700 bg-white shadow-sm" oninput="renderTable()">
+                <div class="flex flex-wrap items-center gap-3 w-full justify-between">
+                    <div class="relative flex-1 min-w-[200px] max-w-sm">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="search-input" placeholder="Buscar na Base..." class="input-ui h-10 w-full pl-9 pr-4 text-xs font-medium text-slate-700 bg-white shadow-sm" oninput="renderTable()">
+                    </div>
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-white px-3 py-2 h-10 border border-slate-200 rounded-xl cursor-pointer shadow-sm">
+                        <input type="checkbox" id="hide-sent" checked class="w-4 h-4 rounded text-fuchsia-600 focus:ring-fuchsia-500 accent-fuchsia-600 cursor-pointer" onchange="renderTable()">
+                        Esconder já abordados nesta Campanha
+                    </label>
                 </div>
             </div>
 
             <!-- Tabela -->
-            <div class="table-container fade-in min-h-[400px]">
-                <div class="overflow-x-auto">
+            <div class="table-container fade-in min-h-[500px]">
+                <div class="overflow-visible">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                <th class="px-5 py-4 w-12">#</th>
+                                <th class="px-5 py-4 w-10">St.</th>
                                 <th class="px-5 py-4">Ficha do Cliente</th>
-                                <th class="px-5 py-4">Contato (WhatsApp)</th>
-                                <th class="px-5 py-4 text-center">Ticket/Freq</th>
-                                <th class="px-5 py-4 text-right">Ação</th>
+                                <th class="px-5 py-4 text-center">Temperatura</th>
+                                <th class="px-5 py-4 text-center">Frequência</th>
+                                <th class="px-5 py-4 text-right">Disparo</th>
                             </tr>
                         </thead>
-                        <tbody id="clients-tbody" class="divide-y divide-slate-100 text-sm">
-                            <tr>
-                                <td colspan="5" class="px-5 py-16 text-center text-slate-400 italic font-medium">Buscando base de clientes no Supabase...</td>
-                            </tr>
+                        <tbody id="clients-tbody" class="divide-y divide-slate-100 text-sm bg-white">
+                            <tr><td colspan="5" class="px-5 py-16 text-center text-slate-400 font-medium tracking-wide">Iniciando Servidor CRM...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -153,34 +214,346 @@
         </section>
     </main>
 
+    <!-- =========================== MODAIS =========================== -->
+
+    <!-- Modal Novo Cliente -->
+    <div id="modal-cliente" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i data-lucide="user-plus" class="text-fuchsia-500 w-5 h-5"></i> Cadastrar Lead</h3>
+                <button onclick="closeModalCliente()" class="text-slate-400 hover:text-slate-600 p-1 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <input type="hidden" id="cli-id">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Nome Completo *</label>
+                        <input type="text" id="cli-nome" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">WhatsApp *</label>
+                        <input type="tel" id="cli-tel" oninput="this.value = formatPhone(this.value)" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Temperatura</label>
+                        <select id="cli-temp" class="input-ui w-full p-2.5 text-sm font-bold bg-slate-50 h-[42px]">
+                            <option value="Neutro">⚪ Neutro</option>
+                            <option value="Quente">🔥 Quente (Alto Potencial)</option>
+                            <option value="Frio">🧊 Frio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">CEP</label>
+                        <input type="text" id="cli-cep" oninput="formatCEP(this)" onblur="buscaCEP(this.value)" maxlength="9" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Rua / Logradouro</label>
+                        <input type="text" id="cli-rua" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Número</label>
+                        <input type="text" id="cli-numero" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Bairro</label>
+                        <input type="text" id="cli-bairro" class="input-ui w-full p-2.5 text-sm bg-slate-50">
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button onclick="closeModalCliente()" class="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Cancelar</button>
+                <button onclick="saveCliente()" class="bg-fuchsia-600 text-white px-6 py-2 rounded-xl text-sm font-black shadow-lg hover:bg-fuchsia-700">Salvar Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Templates -->
+    <div id="modal-tpl" class="fixed inset-0 z-[100] hidden flex items-center justify-center modal-overlay p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i data-lucide="layers" class="text-indigo-500 w-5 h-5"></i> Modelos Salvos</h3>
+                <button onclick="document.getElementById('modal-tpl').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto" id="tpl-list">
+                <div class="text-center py-10 text-slate-400 font-medium text-sm">Carregando seus modelos da Nuvem...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================== SCRIPT =========================== -->
     <script>
         lucide.createIcons();
+        function toast(text, bg = "#334155") { Toastify({ text, duration: 2500, style: { background: bg, fontWeight: 'bold', borderRadius: '12px' } }).showToast(); }
 
+        // --- Config Supabase ---
         const SUPABASE_URL = "https://fepvxdmssoqfktqmbyzn.supabase.co";
         const SUPABASE_KEY = "sb_publishable_d0ESFHQfYGGW3r69IpE6Jg_gKCSvHzG";
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- Estado Global ---
         let allClients = [];
+        let allProducts = [];
+        let enviosCampanha = new Set(); // Guarda telefones enviados nesta campanha
         let currentFilter = 'todos';
 
+        // ============================================
+        // INICIALIZAÇÃO / FETCH
+        // ============================================
+        async function init() {
+            toast("Sincronizando Leads...", "#10b981");
+            await Promise.all([loadClients(), loadProducts(), loadSentData()]);
+        }
+
+        async function loadClients() {
+            try {
+                // Seleciona as colunas incluindo temperatura caso exista
+                const { data, error } = await sb.from('clientes').select('id, nome, telefone, data_ultima_compra, frequencia, ticket_medio, vip, cep, rua, numero, bairro, temperatura').order('nome', { ascending: true });
+                if (error && error.code !== '42P01') throw error;
+                if(data) allClients = data;
+                renderTable();
+            } catch (err) {
+                console.error("Erro carrega clientes:", err);
+                document.getElementById('clients-tbody').innerHTML = `<tr><td colspan="5" class="py-10 text-center text-red-500 font-bold px-4">Falha ao ler Clientes: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const { data, error } = await sb.from('produtos').select('id, nome, preco, disponivel').eq('disponivel', 'Sim');
+                if(!error && data) allProducts = data;
+            } catch(e) {}
+        }
+
+        // Lê tabela crm_envios ou usa set vazio caso não criada
+        async function loadSentData() {
+            const cName = document.getElementById('campanha-nome').value.trim() || 'Geral';
+            enviosCampanha.clear();
+            try {
+                const { data, error } = await sb.from('crm_envios').select('telefone_cliente').eq('campanha_nome', cName);
+                if (error) {
+                    if(error.code === '42P01') console.log("Tabela crm_envios ainda não existe.");
+                } else if(data) {
+                    data.forEach(d => { if(d.telefone_cliente) enviosCampanha.add(d.telefone_cliente); });
+                }
+            } catch(e) {}
+            
+            document.getElementById('total-enviados').innerText = enviosCampanha.size;
+            renderTable();
+        }
+
+        // ============================================
+        // UPLOAD DE MÍDIA
+        // ============================================
+        async function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const btn = document.getElementById('btn-upload');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-fuchsia-500"></i> Upando...`;
+            lucide.createIcons();
+
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_campanha.${fileExt}`;
+                const filePath = `${fileName}`;
+
+                // Usa bucket 'marketing', cria/solicita nas docs
+                const { data, error } = await sb.storage.from('marketing').upload(filePath, file);
+                
+                if (error) {
+                     // Fallback para bucket produtos se marketing n existir
+                     console.log("Bucket marketing deu erro, tentando no bucket produtos...", error.message);
+                     const { data: d2, error: err2 } = await sb.storage.from('produtos').upload(filePath, file);
+                     if(err2) throw err2;
+                     const { data: pUrl2 } = sb.storage.from('produtos').getPublicUrl(filePath);
+                     if(pUrl2) applyMidiaURL(pUrl2.publicUrl);
+                } else {
+                     const { data: pUrl } = sb.storage.from('marketing').getPublicUrl(filePath);
+                     if(pUrl) applyMidiaURL(pUrl.publicUrl);
+                }
+                toast("Upload Concluído!", "#10b981");
+            } catch (err) {
+                alert(`Falha no upload: ${err.message}\nCertifique-se de que o bucket 'marketing' ou 'produtos' é público e aceita inserts.`);
+            } finally {
+                btn.innerHTML = originalHTML;
+                e.target.value = '';
+                lucide.createIcons();
+            }
+        }
+
+        function applyMidiaURL(url) {
+            document.getElementById('campanha-img').value = url;
+            previewImg();
+        }
         function previewImg() {
             const val = document.getElementById('campanha-img').value;
             const pb = document.getElementById('preview-box');
-            const pi = document.getElementById('preview-img');
-            if(val && val.trim() !== '') {
-                pi.src = val;
-                pb.classList.remove('hidden');
-                pb.classList.add('flex');
-            } else {
-                pb.classList.add('hidden');
-                pb.classList.remove('flex');
-            }
+            if(val) { document.getElementById('preview-img').src = val; pb.classList.replace('hidden','flex'); }
+            else { pb.classList.replace('flex','hidden'); }
         }
-        function clearImg() {
-            document.getElementById('campanha-img').value = '';
-            previewImg();
+        function clearImg() { applyMidiaURL(''); }
+
+        // ============================================
+        // MENU PRODUTOS
+        // ============================================
+        function toggleProdMenu() { document.getElementById('prod-menu').classList.toggle('hidden'); renderProdMenu(''); }
+        document.addEventListener('click', (e) => { 
+            const menu = document.getElementById('prod-menu');
+            if(!menu.classList.contains('hidden') && !e.target.closest('.relative')) menu.classList.add('hidden');
+        });
+        function renderProdMenu(term) {
+            const list = document.getElementById('prod-list');
+            const q = term.toLowerCase();
+            const filt = allProducts.filter(p => !q || p.nome.toLowerCase().includes(q)).slice(0, 8);
+            if(filt.length===0){ list.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Nenhum produto...</div>`; return;}
+            list.innerHTML = filt.map(p => {
+                let prVal = "??";
+                const m = String(p.preco||'').match(/[\d\.,]+/);
+                if(m) prVal = m[0];
+                return `<div class="cursor-pointer hover:bg-fuchsia-50 p-2.5 text-xs text-slate-700 flex justify-between" onclick="insertProdText('${p.nome.replace(/'/g,"\\'")}','${prVal}')"><span class="font-bold truncate">${p.nome}</span> <span class="text-fuchsia-600">+ R$${prVal}</span></div>`;
+            }).join('');
+        }
+        function insertProdText(nome, preco) {
+            const txt = document.getElementById('campanha-texto');
+            const cursorPos = txt.selectionStart || txt.value.length;
+            const textToInsert = `\n🍓 *${nome}* - R$ ${preco}`;
+            txt.value = txt.value.slice(0, cursorPos) + textToInsert + txt.value.slice(cursorPos);
+            document.getElementById('prod-menu').classList.add('hidden');
+            toast("Produto injetado!", "#10b981");
         }
 
+        // ============================================
+        // CADASTRO / EDIÇÃO LEADS
+        // ============================================
+        function openModalCliente() {
+            ['cli-id','cli-nome','cli-tel','cli-cep','cli-rua','cli-numero','cli-bairro'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('cli-temp').value = 'Neutro';
+            document.getElementById('modal-cliente').classList.remove('hidden');
+        }
+        function closeModalCliente(){ document.getElementById('modal-cliente').classList.add('hidden'); }
+        function formatPhone(v) {
+            v = v.replace(/\D/g, '').slice(0, 11);
+            if(v.length <= 2) return `(${v}`;
+            if(v.length <= 7) return `(${v.slice(0,2)}) ${v.slice(2)}`;
+            return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+        }
+        function formatCEP(el) { let v = el.value.replace(/\D/g, ''); if(v.length>5) v = v.slice(0,5)+'-'+v.slice(5,8); el.value=v; }
+        async function buscaCEP(cep) {
+            cep = cep.replace(/\D/g,'');
+            if(cep.length===8) {
+                try {
+                    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    const d = await r.json();
+                    if(!d.erro) { document.getElementById('cli-rua').value = d.logradouro; document.getElementById('cli-bairro').value = d.bairro; document.getElementById('cli-numero').focus(); }
+                } catch(e){}
+            }
+        }
+        async function saveCliente() {
+            const nom = document.getElementById('cli-nome').value.trim();
+            const tel = document.getElementById('cli-tel').value.replace(/\D/g,'');
+            if (!nom || tel.length < 10) return toast("Nome e Telefone requeridos.", "#ef4444");
+
+            const payload = {
+                nome: nom, telefone: tel,
+                temperatura: document.getElementById('cli-temp').value,
+                cep: document.getElementById('cli-cep').value,
+                rua: document.getElementById('cli-rua').value,
+                numero: document.getElementById('cli-numero').value,
+                bairro: document.getElementById('cli-bairro').value
+            };
+            const btn = document.querySelector('#modal-cliente button.bg-fuchsia-600');
+            btn.innerHTML = 'Salvando...';
+
+            try {
+                const { error } = await sb.from('clientes').insert([payload]);
+                if(error) throw error;
+                toast("Lead Adicionado!", "#10b981");
+                closeModalCliente();
+                loadClients();
+            }catch(e) {
+                toast(`Erro: ${e.message}`, "#ef4444");
+            } finally { btn.innerHTML='Salvar Lead'; }
+        }
+
+        async function setTemp(id, tempValue) {
+            try {
+                const idx = allClients.findIndex(c => c.id === id);
+                if(idx > -1) allClients[idx].temperatura = tempValue;
+                // UI optimistic update if implemented on icon, here we just push to DB silently
+                sb.from('clientes').update({temperatura: tempValue}).eq('id', id).then(r => {
+                    toast(`Atualizado para: ${tempValue}`, "#334155");
+                });
+                renderTable(); // Refresh table colors
+            } catch(e) {}
+        }
+
+        // ============================================
+        // TEMPLATES (SALVAR/CARREGAR)
+        // ============================================
+        async function saveCurrentTemplate() {
+            const texto = document.getElementById('campanha-texto').value;
+            if(!texto.trim()) return toast("Escreva algo no texto para salvar.", "#f59e0b");
+            const titulo = prompt("Dê um título curto para este modelo de mensagem:");
+            if(!titulo) return;
+
+            const payload = {
+                titulo: titulo, texto: texto,
+                imagem_url: document.getElementById('campanha-img').value || ''
+            };
+            try {
+                const { error } = await sb.from('crm_templates').insert([payload]);
+                if(error) throw error;
+                toast("Modelo Salvo!", "#10b981");
+            } catch(err) {
+                if(err.code === '42P01') {
+                    // Fallback to localstorage
+                    toast("Guarda Numérica local (Tabela não detectada)", "#eab308");
+                    let saves = JSON.parse(localStorage.getItem('crmLocalTpls')||'[]');
+                    saves.push({...payload, id: Date.now()});
+                    localStorage.setItem('crmLocalTpls', JSON.stringify(saves));
+                } else alert("Erro: " + err.message);
+            }
+        }
+
+        async function openModalTemplates() {
+            document.getElementById('modal-tpl').classList.remove('hidden');
+            const list = document.getElementById('tpl-list');
+            try {
+                const { data, error } = await sb.from('crm_templates').select('*').order('criado_em', {ascending: false});
+                if(error) throw error;
+                renderTplList(data, false);
+            } catch(e) {
+                let saves = JSON.parse(localStorage.getItem('crmLocalTpls')||'[]');
+                renderTplList(saves, true);
+            }
+        }
+        function renderTplList(arr, isLocal) {
+            const list = document.getElementById('tpl-list');
+            if(!arr || arr.length===0) { list.innerHTML = `<p class="py-6 text-center text-slate-400">Nenhum template salvo ${isLocal?'(Local)':'(Nuvem)'}.</p>`; return; }
+            list.innerHTML = arr.map(t => {
+                const imgThumb = t.imagem_url ? `<img src="${t.imagem_url}" class="w-10 h-10 object-cover rounded shadow-sm">` : `<div class="w-10 h-10 bg-slate-100 rounded flex items-center justify-center"><i data-lucide="image" class="w-4 h-4 text-slate-300"></i></div>`;
+                // Escape needed for onclick
+                return `
+                <div class="flex items-start gap-3 p-3 border border-slate-100 rounded-xl mb-2 hover:bg-slate-50 relative group cursor-pointer" onclick="aplicarTpl(\`${(t.texto||'').replace(/`/g, '\\`')}\`,\`${t.imagem_url||''}\`)">
+                    ${imgThumb}
+                    <div class="flex-1 truncate">
+                        <p class="font-bold text-slate-700 text-sm truncate">${t.titulo || 'Sem Título'}</p>
+                        <p class="text-[10px] text-slate-400 truncate mt-0.5">${t.texto}</p>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+        function aplicarTpl(txt, url) {
+            document.getElementById('campanha-texto').value = txt;
+            applyMidiaURL(url);
+            document.getElementById('modal-tpl').classList.add('hidden');
+            toast("Modelo Carregado!", "#10b981");
+        }
+
+        // ============================================
+        // FILTROS & TABELA
+        // ============================================
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => {
@@ -190,56 +563,15 @@
                 const t = e.currentTarget;
                 t.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'active');
                 t.classList.remove('text-slate-500');
-                
                 currentFilter = t.getAttribute('data-filter');
                 renderTable();
             });
         });
 
-        async function loadClients() {
-            try {
-                const { data, error } = await sb.from('clientes').select('*').order('nome', { ascending: true });
-                
-                if (error) {
-                    if (error.code === '42P01') { 
-                        // Tabela não existe
-                        document.getElementById('clients-tbody').innerHTML = `
-                        <tr>
-                            <td colspan="5" class="px-5 py-12">
-                                <div class="flex flex-col items-center justify-center text-center">
-                                    <i data-lucide="database" class="w-10 h-10 text-slate-300 mb-3"></i>
-                                    <p class="text-slate-800 font-bold mb-1">Tabela 'clientes' não encontrada no banco.</p>
-                                    <p class="text-xs text-slate-500 font-medium max-w-sm">Foi deixado o código SQL de criação no seu relatório de planejamento. Por favor verifique o Supabase.</p>
-                                </div>
-                            </td>
-                        </tr>`;
-                        lucide.createIcons();
-                        return;
-                    }
-                    throw error;
-                }
-
-                allClients = data || [];
-                document.getElementById('total-clientes').innerText = allClients.length;
-                renderTable();
-
-            } catch (err) {
-                console.error("Erro Supabase:", err);
-                document.getElementById('clients-tbody').innerHTML = `
-                <tr><td colspan="5" class="px-5 py-8 text-center text-red-500 font-bold">Erro ao carregar clientes: ${err.message}</td></tr>`;
-            }
-        }
-
-        function formatPhoneForWa(phone) {
-            if(!phone) return '';
-            let p = phone.replace(/\D/g, '');
-            if(p.length === 10 || p.length === 11) p = '55' + p;
-            return p;
-        }
-
         function renderTable() {
             const tbody = document.getElementById('clients-tbody');
             const term = document.getElementById('search-input').value.toLowerCase();
+            const hideSent = document.getElementById('hide-sent').checked;
 
             let filtered = allClients.filter(c => {
                 const matchName = (c.nome || '').toLowerCase().includes(term);
@@ -247,17 +579,23 @@
                 return matchName || matchPhone;
             });
 
-            if (currentFilter === 'vip') {
-                filtered = filtered.filter(c => c.vip === true || c.frequencia >= 5 || (c.ticket_medio && c.ticket_medio > 100));
-            } else if (currentFilter === 'inativos') {
-                const trintaDiasAtras = new Date();
-                trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-                filtered = filtered.filter(c => {
-                    if(!c.data_ultima_compra) return false;
-                    const d = new Date(c.data_ultima_compra);
-                    return d < trintaDiasAtras;
-                });
+            // "Esconder Jjá enviadio"
+            if (hideSent) {
+                filtered = filtered.filter(c => !c.telefone || !enviosCampanha.has(c.telefone));
             }
+
+            // Tabs da Temperatura e outros
+            if (currentFilter === 'vip') {
+                filtered = filtered.filter(c => c.vip || c.frequencia >= 5 || (c.ticket_medio && c.ticket_medio > 100));
+            } else if (currentFilter === 'inativos') {
+                const thirty = new Date(); thirty.setDate(thirty.getDate() - 30);
+                filtered = filtered.filter(c => c.data_ultima_compra && new Date(c.data_ultima_compra) < thirty);
+            } else if (currentFilter === 'quentes') {
+                filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() === 'quente');
+            } else if (currentFilter === 'frios') {
+                filtered = filtered.filter(c => (c.temperatura||'').toLowerCase() === 'frio');
+            }
+            // neutros seriam capturados no "todos" ou se precisasse de tab específica.
 
             document.getElementById('total-filtrados').innerText = filtered.length;
 
@@ -268,112 +606,128 @@
 
             tbody.innerHTML = filtered.map((c, index) => {
                 let lastDate = 'Desc.';
-                if(c.data_ultima_compra) {
-                    const dt = new Date(c.data_ultima_compra);
-                    lastDate = dt.toLocaleDateString('pt-BR');
-                }
+                if(c.data_ultima_compra) lastDate = new Date(c.data_ultima_compra).toLocaleDateString('pt-BR');
+                
+                const fLett = (c.nome || '?').charAt(0).toUpperCase();
+                
+                // Trata a temperatura (design)
+                let tempIcon = '⚪'; let tempClass = "bg-slate-100 text-slate-500";
+                const tm = c.temperatura ? c.temperatura.toLowerCase() : 'neutro';
+                if(tm === 'quente') { tempIcon = '🔥'; tempClass = 'bg-rose-100 text-rose-600 border border-rose-200'; }
+                if(tm === 'frio') { tempIcon = '🧊'; tempClass = 'bg-sky-100 text-sky-600 border border-sky-200'; }
 
-                const firstLetter = (c.nome || '?').charAt(0).toUpperCase();
-                const isVip = c.vip || c.frequencia > 5;
-                const avatarClass = isVip 
-                    ? 'bg-amber-100 text-amber-600 border border-amber-200'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200';
+                const isVip = c.vip || c.frequencia >= 4;
 
+                // Checa se ja foi enviado (quando hide-sent false é marcado, podemos ver a tag)
+                const alreadySent = c.telefone && enviosCampanha.has(c.telefone);
+                
                 return `
-                <tr class="hover:bg-slate-50 transition-colors group">
-                    <td class="px-5 py-4">
-                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-black shrink-0 shadow-sm ${avatarClass}">
-                            ${firstLetter}
+                <tr class="hover:bg-slate-50 transition-colors group ${alreadySent ? 'opacity-60 bg-slate-50/50' : ''}">
+                    <!-- Avatar  -->
+                    <td class="px-5 py-3">
+                        <div class="relative">
+                           <div class="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-black shrink-0 ${isVip ? 'bg-amber-100 text-amber-600 shadow-sm border border-amber-200' : 'bg-slate-100 text-slate-600'}">
+                               ${fLett}
+                           </div>
+                           ${alreadySent ? `<div class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title="Já Abordado"><i data-lucide="check" class="w-2.5 h-2.5 text-white"></i></div>` : ''}
                         </div>
                     </td>
-                    <td class="px-5 py-4">
+                    <!-- Info Lead -->
+                    <td class="px-5 py-3 min-w-[200px]">
                         <div class="flex items-center gap-2">
-                            <p class="font-bold text-slate-800 text-[13px] capitalize">${c.nome ? c.nome.toLowerCase() : 'Sem Nome'}</p>
-                            ${isVip ? '<i data-lucide="crown" class="w-3.5 h-3.5 text-amber-400"></i>' : ''}
+                            <p class="font-bold text-slate-800 text-[13px] capitalize">${(c.nome || 'Sem Nome').toLowerCase()}</p>
+                            ${isVip ? '<i data-lucide="crown" class="w-3 h-3 text-amber-400"></i>' : ''}
                         </div>
-                        <p class="text-[10px] text-slate-400 font-medium mt-0.5">Última Compra: ${lastDate}</p>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <i data-lucide="smartphone" class="w-3 h-3 text-slate-400"></i>
+                            <span class="text-[10px] font-medium text-slate-500 font-mono">${formatPhone(c.telefone||'')}</span>
+                        </div>
                     </td>
-                    <td class="px-5 py-4">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">
-                           <i data-lucide="smartphone" class="w-3.5 h-3.5 text-slate-400"></i> ${c.telefone || 'N/A'}
-                        </span>
+                    <!-- Seletor Clima -->
+                    <td class="px-5 py-3 text-center">
+                        <select onchange="setTemp('${c.id}', this.value)" class="text-[10px] font-bold ${tempClass} px-2 py-1 rounded-lg outline-none appearance-none text-center cursor-pointer">
+                            <option value="Neutro" ${tm==='neutro'?'selected':''}>⚪ Neutro</option>
+                            <option value="Quente" ${tm==='quente'?'selected':''}>🔥 Quente</option>
+                            <option value="Frio" ${tm==='frio'?'selected':''}>🧊 Frio</option>
+                        </select>
                     </td>
-                    <td class="px-5 py-4 text-center">
-                        <p class="text-xs font-bold text-slate-700">${c.frequencia || 1}x</p>
-                        ${c.ticket_medio ? `<p class="text-[10px] text-slate-400 font-medium mt-0.5">R$ ${parseFloat(c.ticket_medio).toFixed(2).replace('.',',')}</p>` : ''}
+                    <!-- Freq -->
+                    <td class="px-5 py-3 text-center">
+                        <p class="text-[11px] font-bold text-slate-700">${c.frequencia || 1}x</p>
+                        <p class="text-[9px] text-slate-400 font-medium">Últ: ${lastDate}</p>
                     </td>
-                    <td class="px-5 py-4 text-right">
-                        <button onclick="handleSend('${c.nome}', '${c.telefone}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-[11px] font-black shadow-sm border border-emerald-100/50">
-                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Chamar
-                        </button>
+                    <!-- Disparo -->
+                    <td class="px-5 py-3 text-right">
+                        ${alreadySent 
+                            ? `<button disabled class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-400 text-[11px] font-bold border border-emerald-100 cursor-not-allowed"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Abordado</button>`
+                            : `<button onclick="handleSend('${c.nome}', '${c.telefone}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-[11px] font-black shadow-sm border border-emerald-100 hover:border-emerald-500 group-hover:-translate-y-0.5">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i> Chamar
+                               </button>`
+                        }
                     </td>
-                </tr>
-                `;
+                </tr>`;
             }).join('');
             lucide.createIcons();
         }
 
+        // ============================================
+        // MOTOR DE DISPARO E RASTREIO
+        // ============================================
         async function handleSend(nome, telefoneRaw) {
-            const textoBase = document.getElementById('campanha-texto').value;
+            const textoBase = document.getElementById('campanha-texto').value || "Olá {nome}!";
             const imgUrl = document.getElementById('campanha-img').value;
+            const extraLink = document.getElementById('campanha-link').value;
+            const campName = document.getElementById('campanha-nome').value.trim() || 'Geral';
 
-            let textoFormatado = '';
-            if(textoBase.trim() !== '') {
-                textoFormatado = textoBase.replace(/{nome}/g, (nome || '').split(' ')[0]);
-            } else {
-                textoFormatado = "Olá " + (nome || '').split(' ')[0] + ", tudo bem?";
-            }
-            
-            const num = formatPhoneForWa(telefoneRaw);
-            if(!num) {
-                alert("Este cliente não tem um contato telefônico ou está em formato inválido.");
-                return;
-            }
+            const num = (telefoneRaw || '').replace(/\D/g, '');
+            if(!num || num.length < 10) return alert("Cliente sem número válido!");
+            const wpNum = (num.length === 10 || num.length === 11) ? '55' + num : num;
 
-            const fallbackWaUrl = `https://wa.me/${num}?text=${encodeURIComponent(textoFormatado)}`;
+            // Variável Nome
+            let primeironome = (nome || '').split(' ')[0];
+            let txtFmt = textoBase.replace(/{nome}/gi, primeironome);
+            // Append link opcional se preenchido
+            if(extraLink) txtFmt += `\n\nConfira o link: ${extraLink}`;
+
+            // --- Gravar na tabela 'crm_envios' Assíncrono ---
+            enviosCampanha.add(telefoneRaw);
+            renderTable(); // Re-render imediato da ui
+            document.getElementById('total-enviados').innerText = enviosCampanha.size;
+
+            sb.from('crm_envios').insert([{ telefone_cliente: telefoneRaw, campanha_nome: campName }]).then(res => {
+                if(res.error) console.log("Opcional tracking error ignore:", res.error);
+            });
+
+            // --- Lógica Web Share (Anexo) vs Direto (Link) ---
+            const linkPuro = `https://wa.me/${wpNum}?text=${encodeURIComponent(txtFmt)}`;
 
             if (imgUrl && navigator.share) {
                 try {
                     let fileShared = false;
                     if(navigator.canShare) {
                         try {
-                            const response = await fetch(imgUrl, { mode: 'cors' });
-                            const blob = await response.blob();
-                            let ext = 'jpg';
-                            if(imgUrl.includes('.')) ext = imgUrl.split('?')[0].split('.').pop() || 'jpg';
-                            const file = new File([blob], 'campanha.'+ext, { type: blob.type });
+                            const resFetch = await fetch(imgUrl, { mode: 'cors' });
+                            const blob = await resFetch.blob();
+                            let ext = 'jpg'; if(imgUrl.includes('.')) ext = imgUrl.split('?')[0].split('.').pop() || 'jpg';
+                            const file = new File([blob], 'crm-media.'+ext, { type: blob.type });
 
-                            const shareWithFile = {
-                                text: textoFormatado,
-                                files: [file]
-                            };
-
-                            if (navigator.canShare(shareWithFile)) {
-                                await navigator.share(shareWithFile);
-                                fileShared = true;
-                                return; 
+                            const sw = { text: txtFmt, files: [file] };
+                            if (navigator.canShare(sw)) {
+                                await navigator.share(sw);
+                                return; // Feito!
                             }
-                        } catch (imgError) {
-                            console.warn("Erro ao buscar a imagem para share API (CORS ou URL inválida).", imgError);
-                        }
+                        } catch (eImg) { console.warn("Supabase CORS / Fetch API falhou nativo.", eImg); }
                     }
-
-                    if(!fileShared) {
-                         await navigator.share({
-                             text: textoFormatado + "\\n\\n" + imgUrl 
-                         });
-                         return;
-                    }
-
-                } catch (e) {
-                     console.log("Usuário fechou a janela de share ou ela não é suportada.", e);
-                }
+                    if(!fileShared) { await navigator.share({ text: txtFmt + "\n\n" + imgUrl }); return; }
+                } catch (eUsr) { console.log("Janela Share cancelada ou não permitida."); }
             }
-            
-            window.open(fallbackWaUrl, '_blank');
+
+            // Desktop Fallback
+            window.open(linkPuro, '_blank');
         }
 
-        loadClients();
+        // Init
+        init();
     </script>
 </body>
 </html>
