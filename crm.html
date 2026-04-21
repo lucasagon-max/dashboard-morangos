@@ -112,12 +112,16 @@
                         <!-- Upload Option -->
                         <div class="flex gap-2 items-center mb-3">
                             <input type="url" id="campanha-img" placeholder="URL da Imagem (Opção 1)" class="input-ui flex-1 px-3 py-2 text-xs font-medium text-slate-700 bg-white" onchange="previewImg()">
-                            <span class="text-xs font-bold text-slate-300">OU</span>
-                            <div class="relative">
-                                <!-- Upload Input (Opção 2) -->
-                                <input type="file" id="file-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleImageUpload(event)">
-                                <button class="bg-white border-2 border-dashed border-slate-300 text-slate-500 hover:border-fuchsia-400 hover:text-fuchsia-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 w-[120px] justify-center" id="btn-upload">
-                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload file
+                            <span class="text-xs font-bold text-slate-300 hidden sm:inline">OU</span>
+                            <div class="flex gap-1.5 flex-wrap flex-1 sm:flex-none">
+                                <div class="relative flex-1 sm:flex-none">
+                                    <input type="file" id="file-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleImageUpload(event)">
+                                    <button class="bg-white border-2 border-dashed border-slate-300 text-slate-500 hover:border-fuchsia-400 hover:text-fuchsia-600 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 w-full sm:w-[110px]" id="btn-upload">
+                                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Arquivo
+                                    </button>
+                                </div>
+                                <button onclick="openModalGaleria()" class="bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none shadow-sm" title="Imagens Cadastradas">
+                                    <i data-lucide="images" class="w-3.5 h-3.5"></i> Nuvem
                                 </button>
                             </div>
                         </div>
@@ -369,6 +373,21 @@
         </div>
     </div>
 
+    <!-- Modal Galeria -->
+    <div id="modal-galeria" class="fixed inset-0 z-[105] hidden flex items-center justify-center modal-overlay p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[80vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i data-lucide="images" class="text-fuchsia-500 w-5 h-5"></i> Arquivos da Nuvem</h3>
+                <button onclick="document.getElementById('modal-galeria').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 bg-slate-50">
+                <div id="galeria-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    <div class="col-span-full text-center py-10 text-slate-400 font-medium text-sm"><i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2 opacity-50"></i> Carregando galeria...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- =========================== SCRIPT =========================== -->
     <script>
         lucide.createIcons();
@@ -439,7 +458,8 @@
 
         async function loadProducts() {
             try {
-                const { data, error } = await sb.from('produtos').select('id, nome, preco, disponivel').eq('disponivel', 'Sim');
+                // Buscando todos os items igual o cardápio
+                const { data, error } = await sb.from('produtos').select('*').eq('disponivel', 'Sim').order('categoria').order('nome');
                 if(!error && data) allProducts = data;
             } catch(e) {}
         }
@@ -514,32 +534,110 @@
         function clearImg() { applyMidiaURL(''); }
 
         // ============================================
-        // MENU PRODUTOS
+        // MENU PRODUTOS (IGUAL AO CARDAPIO)
         // ============================================
         function toggleProdMenu() { document.getElementById('prod-menu').classList.toggle('hidden'); renderProdMenu(''); }
         document.addEventListener('click', (e) => { 
             const menu = document.getElementById('prod-menu');
             if(!menu.classList.contains('hidden') && !e.target.closest('.relative')) menu.classList.add('hidden');
         });
+
+        // Parser exato do preço usado lá
+        function parseToNumberPrice(v) {
+            if (!v) return 0;
+            let str = String(v).replace('R$', '').trim();
+            if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+            else if (str.includes(',')) str = str.replace(',', '.');
+            return parseFloat(str) || 0;
+        }
+
         function renderProdMenu(term) {
             const list = document.getElementById('prod-list');
             const q = term.toLowerCase();
-            const filt = allProducts.filter(p => !q || p.nome.toLowerCase().includes(q)).slice(0, 8);
+            const filt = allProducts.filter(p => !q || p.nome.toLowerCase().includes(q)).slice(0, 15);
             if(filt.length===0){ list.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Nenhum produto...</div>`; return;}
+            
             list.innerHTML = filt.map(p => {
-                let prVal = "??";
-                const m = String(p.preco||'').match(/[\d\.,]+/);
-                if(m) prVal = m[0];
-                return `<div class="cursor-pointer hover:bg-fuchsia-50 p-2.5 text-xs text-slate-700 flex justify-between" onclick="insertProdText('${p.nome.replace(/'/g,"\\'")}','${prVal}')"><span class="font-bold truncate">${p.nome}</span> <span class="text-fuchsia-600">+ R$${prVal}</span></div>`;
+                let prVal = 0;
+                let isVariado = false;
+                const strPreco = String(p.preco || '0');
+                if (strPreco.includes('|')) {
+                    isVariado = true;
+                    const val = strPreco.split('|')[0].split(':')[1];
+                    prVal = parseToNumberPrice(val);
+                } else {
+                    prVal = parseToNumberPrice(strPreco);
+                }
+
+                const prDisplay = prVal > 0 ? prVal.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '0,00';
+                const prefixDisplay = isVariado ? 'A partir de R$ ' : 'R$ ';
+
+                return `<div class="cursor-pointer hover:bg-fuchsia-50 p-2 text-xs text-slate-700 flex flex-col border-b border-slate-50" onclick="insertProdText('${p.nome.replace(/'/g,"\\'")}','${prDisplay}', ${isVariado})">
+                    <span class="font-bold truncate">${p.nome}</span> 
+                    <span class="text-[10px] text-fuchsia-600 font-medium">${prefixDisplay}${prDisplay}</span>
+                </div>`;
             }).join('');
         }
-        function insertProdText(nome, preco) {
+        function insertProdText(nome, precoFmt, isVariado) {
             const txt = document.getElementById('campanha-texto');
             const cursorPos = txt.selectionStart || txt.value.length;
-            const textToInsert = `\n🍓 *${nome}* - R$ ${preco}`;
+            const prefix = isVariado ? 'A partir de ' : '';
+            const textToInsert = `\n🍓 *${nome}* - ${prefix}R$ ${precoFmt}`;
             txt.value = txt.value.slice(0, cursorPos) + textToInsert + txt.value.slice(cursorPos);
             document.getElementById('prod-menu').classList.add('hidden');
             toast("Produto injetado!", "#10b981");
+        }
+
+        // ============================================
+        // GALERIA NUVEM MODAL
+        // ============================================
+        let loadedGaleria = false;
+        async function openModalGaleria() {
+            document.getElementById('modal-galeria').classList.remove('hidden');
+            if(loadedGaleria) return;
+            
+            const grid = document.getElementById('galeria-grid');
+            grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400"><i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2 opacity-50"></i></div>';
+            lucide.createIcons();
+            
+            try {
+                // Tenta buscar nos 2 buckets
+                let combinedFiles = [];
+                const {data: filesM} = await sb.storage.from('marketing').list();
+                if(filesM) combinedFiles.push(...filesM.map(f => ({...f, bucket: 'marketing'})));
+                
+                const {data: filesP} = await sb.storage.from('produtos').list();
+                if(filesP) combinedFiles.push(...filesP.map(f => ({...f, bucket: 'produtos'})));
+
+                // Filtrar por extensões validas de imagem
+                combinedFiles = combinedFiles.filter(f => f.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 40); // Pega max 40 ultimas
+
+                if(combinedFiles.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400 font-medium">Nenhuma imagem encontrada na nuvem.</div>';
+                    return;
+                }
+
+                grid.innerHTML = combinedFiles.map(f => {
+                    const {data: pUrl} = sb.storage.from(f.bucket).getPublicUrl(f.name);
+                    const url = pUrl.publicUrl;
+                    return `
+                    <div class="relative group aspect-square rounded-xl overflow-hidden cursor-pointer bg-white border border-slate-200 shadow-sm" onclick="selecionarImgGaleria('${url}')">
+                        <img src="${url}" class="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy">
+                        <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+                            <span class="text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-fuchsia-600 rounded-full shadow-lg">Usar</span>
+                        </div>
+                    </div>`;
+                }).join('');
+                
+                loadedGaleria = true;
+            } catch(e) {
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-rose-500 font-medium">Erro ao carregar: ${e.message}</div>`;
+            }
+        }
+        function selecionarImgGaleria(url) {
+            applyMidiaURL(url);
+            document.getElementById('modal-galeria').classList.add('hidden');
+            toast("Imagem do catálogo selecionada!", "#10b981");
         }
 
         // ============================================
@@ -1026,10 +1124,45 @@
                 renderTable();
             }
 
-            // Se houver anexo, incorpora o link na mensagem. O WhatsApp automaticamente
-            // reconhece links de imagem e cria um "Preview" (miniatura) na hora que enviar.
+            // Se houver anexo, tenta usar o compartilhamento real da imagem
+            let usedNativeShare = false;
             if (imgUrl) {
-                txtFmt += `\n\n📷 *Anexo:* ${imgUrl}`;
+                try {
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    if (isMobile && navigator.canShare) {
+                        const response = await fetch(imgUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], 'anexo.jpg', { type: blob.type });
+                        const shareWithFile = {
+                            title: 'Campanha Morangos',
+                            text: txtFmt,
+                            files: [file]
+                        };
+                        
+                        if (navigator.canShare(shareWithFile)) {
+                            await navigator.share(shareWithFile);
+                            usedNativeShare = true;
+                        }
+                    } else if (navigator.clipboard && window.ClipboardItem) {
+                        // Desktop CRM: Copia a imagem pra área de transferência p/ o admin só dar Ctrl+V na conversa!
+                        const response = await fetch(imgUrl);
+                        const blob = await response.blob();
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ [blob.type]: blob })
+                        ]);
+                        toast("📷 Imagem copiada! Dê Ctrl+V no WhatsApp.", "#10b981");
+                    } else {
+                        txtFmt += `\n\n📷 *Anexo:* ${imgUrl}`;
+                    }
+                } catch(e) {
+                    console.log("Erro ao processar imagem:", e);
+                    if(!txtFmt.includes(imgUrl)) txtFmt += `\n\n📷 *Anexo:* ${imgUrl}`;
+                }
+            }
+
+            if (usedNativeShare) {
+                return; // Se usou o share nativo (Mobile), encerra pois o app já foi aberto
             }
 
             // --- Lógica Web Share vs Direto ---
