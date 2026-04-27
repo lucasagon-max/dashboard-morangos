@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CRM Morangos Tatuí</title>
+<style>
+  /* ESTILO GERAL - Layout Confortável */
+  body { 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background: #e0e0e0; 
+      padding: 0; margin: 0; 
+      height: 100vh; 
+      display: flex; align-items: center; justify-content: center; 
+      font-size: 16px; 
+  }
+  
+  .app-container { 
+      width: 95%; 
+      max-width: 850px; 
+      background: white; 
+      height: 95vh; 
+      max-height: 900px;
+      display: flex; 
+      flex-direction: column; 
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      border-radius: 16px; 
+      overflow: hidden;
+  }
+
+  /* TELA DE LOGIN */
+  .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+  .login-box { background: white; padding: 30px; border-radius: 16px; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+  .login-logo { height: 70px; margin-bottom: 15px; object-fit: contain; }
+  .login-box h3 { margin: 0 0 20px 0; color: #333; font-size: 20px; }
+  .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; text-align: center; }
+  .login-box button { width: 100%; padding: 12px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.2s; }
+  .login-box button:active { transform: scale(0.98); background: #b71c1c; }
+  .error-msg { color: #d32f2f; font-size: 14px; margin-top: 10px; display: none; font-weight: bold; }
+
+  /* CABEÇALHO */
+  header { background: #ffffff; color: #333; padding: 12px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+  .brand-area { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+  .logo-img { height: 50px; width: auto; object-fit: contain; } 
+  header h2 { margin: 0; font-size: 20px; font-weight: 800; color: #d32f2f; text-align: center; } 
+
+  /* NAV TABS */
+  .nav-tabs { display: flex; width: 100%; border-bottom: 1px solid #ddd; background: #fff; flex-shrink: 0; }
+  .nav-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 15px; }
+  .nav-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; background: #fff5f5; }
+
+  /* CONTAINER DO CORPO */
+  .content-body { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+
+  .tab-view { display: none; flex-direction: column; flex-grow: 1; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .tab-view.active { display: flex; }
+
+  /* --- VIEW 1: LISTA --- */
+  .fixed-top-section { background: #f9f9f9; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; display: flex; flex-direction: column; }
+
+  .message-preview-bar { background: #fff3e0; border: 1px solid #ffe0b2; color: #e65100; padding: 10px 14px; border-radius: 6px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 12px 10px 0 10px; }
+  
+  .top-search-actions { display: flex; gap: 8px; align-items: center; padding: 0 10px; margin-top: 10px; margin-bottom: 10px; }
+  .search-box { position: relative; flex-grow: 1; }
+  .search-box input { width: 100%; padding: 10px 10px 10px 36px; border-radius: 6px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; outline: none; height: 42px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; opacity: 0.5; }
+  
+  .actions-group { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-action-new { background: #d32f2f; color: white; border: none; padding: 0 14px; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; height: 42px; white-space: nowrap; }
+  .btn-action-reload, .btn-action-report { background: #fff; border: 1px solid #ccc; color: #555; padding: 0 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; height: 42px; display: flex; align-items: center; justify-content: center; }
+  
+  .sticky-filters-bar { padding: 8px 10px; background: #fff; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  
+  .filters-row { display: flex; gap: 6px; align-items: center; justify-content: center; width: auto; }
+  
+  select.filter-compact, 
+  .dropdown-btn.filter-compact { 
+      height: 32px; 
+      font-size: 13px; 
+      padding: 0 8px; 
+      width: 120px; 
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+  }
+  
+  .multiselect-wrapper { position: relative; flex: 0 1 auto; min-width: auto; }
+  
+  .counter-area { width:100%; text-align:center; font-size:12px; color:#666; padding-top: 6px; font-weight: 500; }
+
+  .client-list { flex-grow: 1; overflow: visible; padding-bottom: 20px; background: #fff; }
+  .client-card { display: flex; align-items: flex-start; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; transition: all 0.2s; gap: 12px; }
+  .client-card:hover { background: #fafafa; }
+  .client-card.sent { background: #f1f8e9; opacity: 0.8; }
+  
+  .card-content { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .row-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .client-name { font-weight: bold; font-size: 16px; color: #2c3e50; } 
+  .client-phone { font-size: 14px; color: #7f8c8d; } 
+  .loc-badge { font-size: 11px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555; margin-left: 5px; }
+  .loc-badge.regiao { background: #e3f2fd; color: #1565c0; }
+  
+  /* Botão de Última Mensagem */
+  .last-msg-btn { background: #fff8e1; border: 1px solid #ffe0b2; color: #e65100; font-size: 11px; padding: 4px 8px; border-radius: 12px; cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; margin-top: 2px; }
+  .last-msg-btn:hover { background: #ffe0b2; }
+
+  .action-wrapper { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .btn-whatsapp { background-color: #25D366; color: white; padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: bold; cursor: pointer; border:none; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; height: 30px; }
+  .btn-reset-single { background-color: #7e57c2; color: white; padding: 4px 10px; border-radius: 20px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; height: 30px; }
+  .btn-obs { background: none; border: 1px solid #ccc; color: #555; padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; font-weight: bold; height: 30px; display: inline-flex; align-items: center; }
+  .btn-obs.has-obs { background: #fff3cd; border-color: #ffca28; color: #856404; } 
+  .temp-selector { display: flex; gap: 4px; align-items: center; background: #f5f5f5; padding: 3px 6px; border-radius: 20px; height: 30px; }
+  .temp-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; opacity: 0.3; padding: 0 4px; line-height: 1; }
+  .temp-btn:hover, .temp-btn.active { opacity: 1; transform: scale(1.2); filter: grayscale(0%); }
+
+  /* --- VIEW 2: EDITOR --- */
+  .editor-container { padding: 15px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; overflow-y: auto;}
+  textarea { width: 100%; height: 160px; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 16px; margin-bottom: 12px; resize: none; line-height: 1.5; flex-shrink: 0;}
+  .saved-models-area { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+  .model-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .model-header { display: flex; justify-content: space-between; align-items: center; }
+  .model-title { font-weight: bold; font-size: 14px; color: #2c3e50; }
+  .model-text-preview { font-size: 12px; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .model-actions { display: flex; gap: 10px; margin-top: 5px; justify-content: flex-end; }
+  .btn-view-model { background: #fff; border: 1px solid #ccc; color: #555; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .btn-use-model { background: #e3f2fd; color: #1565c0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;}
+  
+  .save-model-btn-main { background: #4caf50; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 15px; }
+
+  .dropdown-content { display: none; position: absolute; background-color: #fff; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 100; border-radius: 6px; border: 1px solid #ddd; top: 105%; left: 0; padding-bottom: 5px; }
+  .dropdown-content.show { display: block; }
+  .dropdown-search { padding: 10px; border-bottom: 1px solid #eee; background: #f9f9f9; border-radius: 6px 6px 0 0; }
+  .dropdown-search input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; outline: none; }
+  .bairros-scroll-area { max-height: 200px; overflow-y: auto; }
+  .bairros-scroll-area label { color: #333; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+
+  .format-bar { display: flex; gap: 6px; margin-bottom: 6px; overflow-x: auto; padding-bottom: 6px; align-items: center; }
+  .format-btn { background: #fff; border: 1px solid #ccc; color: #444; font-weight: 600; cursor: pointer; border-radius: 4px; padding: 8px 12px; font-size: 13px; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+  .emoji-picker-container { display: none; background: #fff; border: 1px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; }
+  .emoji-picker-container.show { display: flex; }
+  .emoji-btn { background: #f0f0f0; border: 1px solid #e0e0e0; font-size: 24px; cursor: pointer; padding: 5px; border-radius: 6px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+  .emoji-btn:hover { background: #e0e0e0; }
+  .quick-links-bar { display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 6px; }
+  .link-btn { background: #fff8e1; border: 1px solid #ffe0b2; color: #bf360c; font-weight: 600; cursor: pointer; border-radius: 4px; padding: 8px 12px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+  .link-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #fff; font-size: 15px; }
+
+  .batch-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: white; padding: 15px; display: none; justify-content: space-between; align-items: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); z-index: 1000; box-sizing: border-box; }
+  .batch-bar.visible { display: flex; }
+  .btn-batch-reset { background: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; }
+  .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .modal-box h3 { margin-top: 0; color: #d32f2f; font-size: 20px; margin-bottom: 20px;}
+  .modal-box input, .modal-box select, .modal-box textarea { width: 100%; margin-bottom: 12px; padding: 12px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-family: inherit; }
+  .modal-box button { width: 100%; padding: 12px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; margin-top: 8px; font-size: 16px; }
+  .btn-save { background: #2e7d32; color: white; }
+  .btn-cancel { background: #eee; color: #333; margin-top: 10px; }
+  .btn-delete-red { background: #ffebee; color: #c62828; margin-top:10px;}
+
+  .loading { text-align: center; padding: 40px; color: #7f8c8d; font-weight: 500; font-size: 16px; }
+  .empty-state { text-align: center; padding: 40px; color: #999; font-style: italic; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <img src="https://i.postimg.cc/zDgfht66/logotransparente01.png" alt="Logo Morangos" class="login-logo">
+    <h3>Acesso Restrito</h3>
+    <input type="password" id="loginPass" placeholder="Digite a senha de acesso">
+    <button onclick="verificarSenha()">Entrar</button>
+    <div id="loginError" class="error-msg">Senha incorreta!</div>
+  </div>
+</div>
+
+<div class="app-container">
+  <header>
+    <div class="brand-area">
+        <img src="https://i.postimg.cc/zDgfht66/logotransparente01.png" alt="Logo Morangos" class="logo-img">
+        <h2>CRM Morangos Tatuí</h2>
+    </div>
+  </header>
+
+  <!-- NAVEGAÇÃO POR ABAS -->
+  <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-clients" onclick="mudarAba('clients')">📋 Lista de Clientes</div>
+      <div class="nav-tab" id="tab-message" onclick="mudarAba('message')">✏️ Editor de Mensagem</div>
+  </div>
+
+  <!-- CONTAINER FLEX PARA O CONTEÚDO -->
+  <div class="content-body">
+      
+      <!-- VIEW 1: LISTA DE CLIENTES -->
+      <div id="view-clients" class="tab-view active">
+          
+          <!-- SEÇÃO SUPERIOR FIXA (Não rola) -->
+          <div class="fixed-top-section">
+            <div class="message-preview-bar" onclick="mudarAba('message')" title="Clique para editar">
+                <span style="font-weight:bold;">✉️ Msg:</span>
+                <span id="msgPreviewText" style="margin-left:5px; font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 150px;">Olá {nome}...</span>
+                <span style="margin-left:auto;">✎</span>
+            </div>
+
+            <!-- BUSCA + BOTÕES -->
+            <div class="top-search-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Buscar..." onkeyup="renderizarLista()">
+                </div>
+                
+                <div class="actions-group">
+                    <button class="btn-action-new" onclick="abrirModalCriar()">+ Novo</button>
+                    <button class="btn-action-reload" onclick="carregarDados()">🔄</button>
+                    <button class="btn-action-report" onclick="gerarRelatorio()">🖨️</button>
+                </div>
+            </div>
+            
+            <!-- FILTROS UNIFICADOS E COMPACTOS -->
+            <div class="sticky-filters-bar">
+                <div class="filters-row">
+                    <div class="multiselect-wrapper">
+                        <div class="dropdown-btn filter-compact" onclick="toggleBairroMenu()">
+                            <span id="bairroLabel">🏡 Bairros</span>
+                            <span>▼</span>
+                        </div>
+                        <div id="dropdownBairroContent" class="dropdown-content">
+                            <div class="dropdown-search">
+                                <input type="text" id="buscaBairroInput" placeholder="🔍 Filtrar..." onkeyup="filtrarOpcoesBairro()" onclick="event.stopPropagation()">
+                            </div>
+                            <div id="bairrosListContainer" class="bairros-scroll-area"></div>
+                        </div>
+                    </div>
+
+                    <div class="multiselect-wrapper">
+                        <div class="dropdown-btn filter-compact" onclick="toggleRegiaoMenu()">
+                            <span id="regiaoLabel">🌎 Regiões</span>
+                            <span>▼</span>
+                        </div>
+                        <div id="dropdownRegiaoContent" class="dropdown-content">
+                            <div class="dropdown-search">
+                                <input type="text" id="buscaRegiaoInput" placeholder="🔍 Filtrar..." onkeyup="filtrarOpcoesRegiao()" onclick="event.stopPropagation()">
+                            </div>
+                            <div id="regiaoListContainer" class="bairros-scroll-area"></div>
+                        </div>
+                    </div>
+
+                    <select id="filterTemp" class="filter-compact" onchange="renderizarLista()">
+                        <option value="todos">Todos</option>
+                        <option value="enviados">✅ Env.</option> 
+                        <option value="Quente">🔥 Quente</option>
+                        <option value="Neutro">😐 Neutro</option>
+                        <option value="Frio">❄️ Frio</option>
+                        <option value="Ocultar">🙈 Oculto</option> 
+                    </select>
+                </div>
+                
+                <!-- CONTADOR FIXO -->
+                <div class="counter-area">
+                    <span id="counterBadge">Carregando...</span>
+                </div>
+            </div>
+          </div>
+
+          <div id="loading" class="loading">Conectando... ⏳</div>
+          <!-- A LISTA AGORA TEM SEU PRÓPRIO SCROLL -->
+          <div class="client-list" id="clientList"></div>
+      </div>
+
+      <!-- VIEW 2: EDITOR DE MENSAGEM -->
+      <div id="view-message" class="tab-view">
+          <div class="editor-container">
+              <div class="config-section" style="border:none; padding:0; background:transparent;">
+                
+                <input type="text" id="msgTitleInput" placeholder="Apelido da mensagem (Ex: Promoção de Terça)..." class="link-input" style="margin-bottom:8px; font-weight:bold;">
+
+                <div class="format-bar">
+                    <button class="format-btn undo-btn" onclick="undoText()" title="Desfazer">↩️</button>
+                    <button class="format-btn name-btn" onclick="addFormat('{nome}', '')">👤 Nome</button>
+                    <!-- BOTÃO DE EMOJIS -->
+                    <button class="format-btn" onclick="toggleEmojiPicker()">😀 Emojis</button>
+                    
+                    <button class="format-btn" onclick="addFormat('*', '*')"><b>B</b></button>
+                    <button class="format-btn" onclick="addFormat('_', '_')"><i>I</i></button>
+                    <button class="format-btn" onclick="addFormat('~', '~')"><strike>S</strike></button>
+                    <button class="format-btn" onclick="addList('bullet')">📝 Lista</button>
+                    <button class="format-btn" onclick="quebraLinha()">↵ Enter</button>
+                </div>
+
+                <div id="emojiPicker" class="emoji-picker-container">
+                    <button class="emoji-btn" onclick="addEmoji('🍓')">🍓</button>
+                    <button class="emoji-btn" onclick="addEmoji('🎂')">🎂</button>
+                    <button class="emoji-btn" onclick="addEmoji('🍫')">🍫</button>
+                    <button class="emoji-btn" onclick="addEmoji('🧁')">🧁</button>
+                    <button class="emoji-btn" onclick="addEmoji('😋')">😋</button>
+                    <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+                    <button class="emoji-btn" onclick="addEmoji('🚀')">🚀</button>
+                    <button class="emoji-btn" onclick="addEmoji('✅')">✅</button>
+                    <button class="emoji-btn" onclick="addEmoji('👋')">👋</button>
+                    <button class="emoji-btn" onclick="addEmoji('😍')">😍</button>
+                    <button class="emoji-btn" onclick="addEmoji('📲')">📲</button>
+                    <button class="emoji-btn" onclick="addEmoji('📦')">📦</button>
+                    <button class="emoji-btn" onclick="addEmoji('🤩')">🤩</button>
+                    <button class="emoji-btn" onclick="addEmoji('✨')">✨</button>
+                    <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+                    <button class="emoji-btn" onclick="addEmoji('📍')">📍</button>
+                </div>
+
+                <div class="quick-links-bar">
+                    <button class="link-btn" onclick="insertText('https://www.morangostatui.com.br/cat%C3%A1logo-de-produtos')">📦 Catálogo</button>
+                    <button class="link-btn" onclick="insertText('https://www.instagram.com/morangos_tatui/')">📸 Instagram</button>
+                    <button class="link-btn" onclick="insertText('Av. Cel. Firmo Viêira de Camargo, 420 - Centro, Tatuí - SP\nGoogle Maps: https://maps.app.goo.gl/k8RzkDBH5uXNPXeP6')">📍 Endereço</button>
+                </div>
+
+                <textarea id="msgTemplate" oninput="atualizarPreviewMsg()">Olá *{nome}*! 🍓 Temos novidades hoje na Morangos Tatuí. Confira!</textarea>
+                <input type="text" id="linkAnexo" class="link-input" placeholder="Cole o link da Imagem/Cardápio aqui...">
+                
+                <button class="save-model-btn-main" onclick="salvarModelo()">💾 Salvar Modelo na Nuvem</button>
+
+                <div class="saved-models-area">
+                    <h4 style="margin:0 0 10px 0; color:#333; font-size:16px;">📜 Histórico de Mensagens Salvas</h4>
+                    <div id="savedModelsList">
+                        <div style="text-align:center; color:#999; font-size:14px; padding:20px;">Carregando mensagens...</div>
+                    </div>
+                </div>
+              </div>
+          </div>
+      </div>
+
+  </div> <!-- Fim content-body -->
+
+</div>
+
+<div id="batchBar" class="batch-bar">
+    <span id="batchCount" style="font-weight:bold; font-size:16px;">0 selecionados</span>
+    <button class="btn-batch-reset" onclick="resetarLoteSelecionado()">🔄 Resetar Status</button>
+</div>
+
+<!-- MODAL NOVO CLIENTE -->
+<div class="modal-overlay" id="modalNovo">
+  <div class="modal-box">
+    <h3>Novo Cliente</h3>
+    <input type="text" id="novoNome" placeholder="Nome">
+    <input type="text" id="novoTel" placeholder="Whatsapp (DDD+Num)">
+    <input type="text" id="novoBairro" placeholder="Bairro (Opcional)">
+    <input type="text" id="novoRegiao" placeholder="Região (Ex: Zona Norte) - Opcional">
+    
+    <select id="novoTemp">
+      <option value="Quente">🔥 Quente</option>
+      <option value="Neutro" selected>😐 Neutro</option>
+      <option value="Frio">❄️ Frio</option>
+    </select>
+    <button class="btn-save" onclick="salvarNovoCliente()">Salvar</button>
+    <button class="btn-cancel" onclick="document.getElementById('modalNovo').style.display='none'">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL OBSERVAÇÕES -->
+<div class="modal-overlay" id="modalObs">
+  <div class="modal-box">
+    <h3 id="modalObsTitle">Observações</h3>
+    <textarea id="modalObsText" placeholder="Escreva aqui..." style="height:120px; text-align:left;"></textarea>
+    <input type="hidden" id="modalObsRow">
+    <button class="btn-save" onclick="salvarObservacao()">Salvar Obs</button>
+    <button class="btn-cancel" onclick="document.getElementById('modalObs').style.display='none'">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL VISUALIZAR MENSAGEM (NOVO) -->
+<div class="modal-overlay" id="modalViewMsg">
+  <div class="modal-box" style="max-width:400px;">
+    <h3 id="viewMsgTitle" style="margin-bottom:5px;">Título da Mensagem</h3>
+    <div style="font-size:14px; color:#666; margin-bottom:10px;" id="viewMsgDate"></div>
+    
+    <div style="background:#f9f9f9; padding:15px; border-radius:8px; border:1px solid #eee; text-align:left; max-height:200px; overflow-y:auto; margin-bottom:15px; font-size:16px; white-space: pre-wrap;" id="viewMsgBody"></div>
+    
+    <!-- DADOS ESCONDIDOS -->
+    <input type="hidden" id="viewMsgRow">
+    <input type="hidden" id="viewMsgFullText">
+
+    <div style="display:flex; gap:10px;">
+        <button id="btnUseMsg" class="btn-save" onclick="usarModeloDoModal()">✅ Usar</button>
+        <button id="btnDelMsg" class="btn-delete-red" onclick="excluirModeloDoModal()">🗑️ Excluir</button>
+    </div>
+    <button class="btn-cancel" onclick="document.getElementById('modalViewMsg').style.display='none'">Fechar</button>
+  </div>
+</div>
+
+<script>
+  // ======================================================
+  const API_URL = "https://script.google.com/macros/s/AKfycby_ldiG1zmff1UL5t7dZij4rc-eLk-VfaYMoGkCArh-G8AkonX71pXo8zME2RO2q67IKA/exec"; 
+  const SENHA_ACESSO = "morangos420"; 
+  // ======================================================
+
+  let clientes = [];
+  let selecionados = new Set(); 
+  let textHistory = [];
+  let filtroBairrosSet = new Set(); 
+  let filtroRegiaoSet = new Set();
+
+  window.onload = carregarDados;
+
+  function mudarAba(aba) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+      document.getElementById('tab-' + aba).classList.add('active');
+      document.getElementById('view-' + aba).classList.add('active');
+      if(aba === 'clients') atualizarPreviewMsg();
+      if(aba === 'message') carregarMensagensSalvas(); 
+  }
+
+  function atualizarPreviewMsg() {
+      const msg = document.getElementById('msgTemplate').value;
+      const preview = msg.length > 25 ? msg.substring(0, 25) + "..." : msg;
+      document.getElementById('msgPreviewText').innerText = preview;
+  }
+
+  function toggleEmojiPicker() {
+      const picker = document.getElementById('emojiPicker');
+      picker.classList.toggle('show');
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+      if(sessionStorage.getItem("auth_morangos") === "true") {
+          document.getElementById("loginOverlay").style.display = "none";
+          carregarDados();
+      }
+      atualizarPreviewMsg();
+  });
+
+  function verificarSenha() {
+      const input = document.getElementById("loginPass").value;
+      if (input === SENHA_ACESSO) {
+          document.getElementById("loginOverlay").style.display = "none";
+          sessionStorage.setItem("auth_morangos", "true"); 
+          carregarDados();
+      } else {
+          const erro = document.getElementById("loginError");
+          erro.style.display = "block";
+          document.getElementById("loginPass").value = "";
+          setTimeout(() => erro.style.display = "none", 3000);
+      }
+  }
+
+  document.getElementById("loginPass").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") verificarSenha();
+  });
+
+  window.onclick = function(event) {
+    if (!event.target.closest('.multiselect-wrapper')) {
+        document.getElementById("dropdownBairroContent").classList.remove("show");
+        document.getElementById("dropdownRegiaoContent").classList.remove("show");
+    }
+  }
+
+  function carregarDados() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('loading').innerText = "Atualizando lista... ⏳";
+    document.getElementById('clientList').innerHTML = ""; 
+    selecionados.clear();
+    
+    fetch(API_URL + "?nocache=" + new Date().getTime())
+      .then(response => response.json())
+      .then(data => {
+        if(data.length > 0 && data[0].nome && data[0].nome.includes("ERRO")) {
+            alert("Erro na planilha: " + data[0].nome);
+            return;
+        }
+        clientes = data;
+        popularFiltroBairros(data); 
+        popularFiltroRegiao(data);
+        document.getElementById('loading').style.display = 'none';
+        renderizarLista();
+      })
+      .catch(err => {
+        document.getElementById('loading').innerHTML = "⚠️ Erro de conexão. <br><button onclick='carregarDados()'>Tentar Novamente</button>";
+      });
+  }
+
+  function carregarMensagensSalvas() {
+      const container = document.getElementById('savedModelsList');
+      if(container.children.length > 1) return; 
+
+      fetch(API_URL + "?tipo=mensagens&nocache=" + new Date().getTime())
+      .then(res => res.json())
+      .then(data => {
+          container.innerHTML = "";
+          if(data.length === 0) {
+              container.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>Nenhuma mensagem salva.</div>";
+              return;
+          }
+          data.forEach(msg => {
+              const div = document.createElement('div');
+              div.className = 'model-card';
+              
+              const displayTitle = msg.titulo ? msg.titulo : (msg.texto.substring(0, 20) + "...");
+              
+              div.innerHTML = `
+                  <div style="flex-grow:1; overflow:hidden;">
+                      <div class="model-header">
+                          <span class="model-title">${displayTitle}</span>
+                          <span class="model-date">${msg.data}</span>
+                      </div>
+                      <div class="model-text-preview">${msg.texto}</div>
+                  </div>
+                  <div class="model-actions">
+                      <button class="btn-view-model" onclick="abrirVisualizacaoModelo('${encodeURIComponent(msg.texto)}', '${encodeURIComponent(displayTitle)}', '${msg.data}', ${msg.rowIndex})">Ver</button>
+                      <button class="btn-use-model" onclick="usarModelo('${encodeURIComponent(msg.texto)}')">Usar</button>
+                  </div>
+              `;
+              container.appendChild(div);
+          });
+      });
+  }
+
+  function salvarModelo() {
+      const texto = document.getElementById('msgTemplate').value;
+      const titulo = document.getElementById('msgTitleInput').value;
+      
+      if(!texto.trim()) return alert("Escreva algo para salvar!");
+      if(!titulo.trim()) return alert("Dê um apelido para a mensagem!");
+      
+      const btn = document.querySelector('.save-model-btn-main');
+      btn.innerText = "Salvando..."; btn.disabled = true;
+
+      // CORREÇÃO: Adicionado redirect: 'follow'
+      fetch(API_URL, {
+          method: "POST", mode: "no-cors", redirect: "follow",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({action: "salvar_modelo", texto: texto, titulo: titulo})
+      }).then(() => {
+          alert("Mensagem salva!");
+          btn.innerText = "💾 Salvar Modelo na Nuvem"; btn.disabled = false;
+          document.getElementById('msgTitleInput').value = "";
+          carregarMensagensSalvas();
+      });
+  }
+
+  function abrirVisualizacaoModelo(textoCod, tituloCod, data, rowIndex) {
+      const texto = decodeURIComponent(textoCod);
+      const titulo = decodeURIComponent(tituloCod);
+      
+      document.getElementById('viewMsgTitle').innerText = titulo;
+      document.getElementById('viewMsgDate').innerText = data ? "Criado em: " + data : "Data desconhecida";
+      document.getElementById('viewMsgBody').innerText = texto;
+      
+      document.getElementById('viewMsgFullText').value = texto;
+      document.getElementById('viewMsgRow').value = rowIndex;
+      
+      // Mostrar botões de ação para modelos
+      document.getElementById('btnUseMsg').style.display = 'block';
+      document.getElementById('btnDelMsg').style.display = 'block';
+      
+      document.getElementById('modalViewMsg').style.display = 'flex';
+  }
+  
+  function verUltimaMensagem(row) {
+      const c = clientes.find(item => item.rowIndex === row);
+      if(!c) return;
+      
+      // Tenta pegar a mensagem de várias propriedades possíveis
+      const msg = c.ultima_msg || c.ultima_mensagem || c.ultimamensagem || c["Última Mensagem"] || "(Mensagem vazia)";
+      
+      document.getElementById('viewMsgTitle').innerText = "Última Mensagem para " + c.nome;
+      document.getElementById('viewMsgDate').innerText = "Enviada recentemente";
+      document.getElementById('viewMsgBody').innerText = msg;
+      
+      // Esconder botões de ação de modelo, pois é apenas visualização
+      document.getElementById('btnUseMsg').style.display = 'none';
+      document.getElementById('btnDelMsg').style.display = 'none';
+      
+      document.getElementById('modalViewMsg').style.display = 'flex';
+  }
+
+  function usarModeloDoModal() {
+      const texto = document.getElementById('viewMsgFullText').value;
+      document.getElementById('msgTemplate').value = texto;
+      atualizarPreviewMsg();
+      document.getElementById('modalViewMsg').style.display = 'none';
+      alert("Mensagem carregada no editor!");
+  }
+
+  function excluirModeloDoModal() {
+      const rowIndex = document.getElementById('viewMsgRow').value;
+      if(confirm("Tem certeza que deseja excluir este modelo?")) {
+           excluirModelo(rowIndex);
+           document.getElementById('modalViewMsg').style.display = 'none';
+      }
+  }
+
+  function usarModelo(textoCodificado) {
+      const texto = decodeURIComponent(textoCodificado);
+      document.getElementById('msgTemplate').value = texto;
+      atualizarPreviewMsg();
+      alert("Mensagem carregada!");
+  }
+
+  function excluirModelo(linha) {
+      fetch(API_URL, {
+          method: "POST", mode: "no-cors", redirect: "follow",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({action: "excluir_modelo", linha: linha})
+      }).then(() => {
+          carregarMensagensSalvas();
+      });
+  }
+
+  function gerarRelatorio() {
+      const contatosEnviados = clientes.filter(c => (c.status || "").toLowerCase().includes("enviado"));
+      const mensagem = document.getElementById('msgTemplate').value;
+      const dataHoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      
+      const janelaRelatorio = window.open('', '_blank');
+      
+      let htmlRelatorio = `
+        <html>
+        <head>
+          <title>Relatório de Envios - CRM Morangos Tatuí</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; max-width: 800px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #d32f2f; padding-bottom: 15px; margin-bottom: 20px; }
+            .logo { height: 60px; margin-bottom: 10px; }
+            h1 { margin: 0; color: #d32f2f; font-size: 24px; }
+            .date { color: #666; font-size: 14px; margin-top: 5px; text-transform: capitalize; }
+            .section { margin-bottom: 30px; }
+            .section h2 { font-size: 16px; background: #f5f5f5; padding: 8px 12px; border-left: 4px solid #d32f2f; margin-bottom: 10px; }
+            .message-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
+            th { background: #f9f9f9; font-weight: bold; color: #d32f2f; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+             <img src="https://i.postimg.cc/zDgfht66/logotransparente01.png" alt="Logo" class="logo">
+             <h1>Relatório de Envios</h1>
+             <div class="date">${dataHoje}</div>
+          </div>
+          <div class="section">
+             <h2>Mensagem da Campanha</h2>
+             <div class="message-box">${mensagem}</div>
+          </div>
+          <div class="section">
+             <h2>Contatos Alcançados (${contatosEnviados.length})</h2>
+             <table>
+               <thead><tr><th>Nome</th><th>Telefone</th><th>Bairro</th><th>Região</th></tr></thead>
+               <tbody>
+                 ${contatosEnviados.map(c => `<tr><td>${c.nome}</td><td>${c.telefone}</td><td>${c.bairro || '-'}</td><td>${c.regiao || '-'}</td></tr>`).join('')}
+               </tbody>
+             </table>
+          </div>
+          <script>window.onload = function() { window.print(); }<\/script>
+        </body>
+        </html>
+      `;
+      janelaRelatorio.document.write(htmlRelatorio);
+      janelaRelatorio.document.close();
+  }
+
+  function popularFiltroBairros(dados) {
+      const container = document.getElementById('bairrosListContainer');
+      container.innerHTML = ""; 
+      const itens = [...new Set(dados.map(c => c.bairro ? c.bairro.trim() : ""))].filter(b => b !== "").sort();
+      if(itens.length === 0) { container.innerHTML = "<label style='color:#999; padding:10px;'>Nenhum bairro encontrado</label>"; return; }
+      
+      itens.forEach(b => {
+          const label = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox"; checkbox.value = b; checkbox.style.marginRight = "8px";
+          if(filtroBairrosSet.has(b)) checkbox.checked = true;
+          checkbox.onchange = function() { toggleBairroFilter(this.value, this.checked); };
+          label.appendChild(checkbox); label.appendChild(document.createTextNode(b));
+          container.appendChild(label);
+      });
+  }
+
+  function popularFiltroRegiao(dados) {
+      const container = document.getElementById('regiaoListContainer');
+      container.innerHTML = ""; 
+      const itens = [...new Set(dados.map(c => c.regiao ? c.regiao.trim() : ""))].filter(b => b !== "").sort();
+      if(itens.length === 0) { container.innerHTML = "<label style='color:#999; padding:10px;'>Vazio</label>"; return; }
+      
+      itens.forEach(r => {
+          const label = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox"; checkbox.value = r; checkbox.style.marginRight = "8px";
+          if(filtroRegiaoSet.has(r)) checkbox.checked = true;
+          checkbox.onchange = function() { toggleRegiaoFilter(this.value, this.checked); };
+          label.appendChild(checkbox); label.appendChild(document.createTextNode(r));
+          container.appendChild(label);
+      });
+  }
+
+  function toggleBairroMenu() { 
+      document.getElementById("dropdownRegiaoContent").classList.remove("show");
+      const menu = document.getElementById("dropdownBairroContent");
+      menu.classList.toggle("show");
+      if(menu.classList.contains("show")) setTimeout(() => document.getElementById("buscaBairroInput").focus(), 100);
+  }
+
+  function toggleRegiaoMenu() {
+      document.getElementById("dropdownBairroContent").classList.remove("show");
+      const menu = document.getElementById("dropdownRegiaoContent");
+      menu.classList.toggle("show");
+      if(menu.classList.contains("show")) setTimeout(() => document.getElementById("buscaRegiaoInput").focus(), 100);
+  }
+
+  function filtrarOpcoesBairro() {
+      const termo = document.getElementById("buscaBairroInput").value.toLowerCase();
+      document.querySelectorAll("#bairrosListContainer label").forEach(label => {
+          label.style.display = label.innerText.toLowerCase().includes(termo) ? "flex" : "none";
+      });
+  }
+
+  function filtrarOpcoesRegiao() {
+      const termo = document.getElementById("buscaRegiaoInput").value.toLowerCase();
+      document.querySelectorAll("#regiaoListContainer label").forEach(label => {
+          label.style.display = label.innerText.toLowerCase().includes(termo) ? "flex" : "none";
+      });
+  }
+
+  function toggleBairroFilter(val, isChecked) {
+      if(isChecked) filtroBairrosSet.add(val); else filtroBairrosSet.delete(val);
+      const btnLabel = document.getElementById("bairroLabel");
+      if(filtroBairrosSet.size === 0) btnLabel.innerText = "🏡 Bairros";
+      else btnLabel.innerText = `🏡 (${filtroBairrosSet.size})`;
+      renderizarLista();
+  }
+
+  function toggleRegiaoFilter(val, isChecked) {
+      if(isChecked) filtroRegiaoSet.add(val); else filtroRegiaoSet.delete(val);
+      const btnLabel = document.getElementById("regiaoLabel");
+      if(filtroRegiaoSet.size === 0) btnLabel.innerText = "🌎 Regiões";
+      else btnLabel.innerText = `🌎 (${filtroRegiaoSet.size})`;
+      renderizarLista();
+  }
+
+  function isMobile() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+
+  function saveHistory() {
+      const el = document.getElementById('msgTemplate');
+      textHistory.push(el.value);
+      if(textHistory.length > 20) textHistory.shift();
+  }
+
+  function undoText() {
+      const el = document.getElementById('msgTemplate');
+      if(textHistory.length > 0) el.value = textHistory.pop();
+  }
+
+  function insertText(text) {
+      saveHistory();
+      const el = document.getElementById('msgTemplate');
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      el.value = el.value.substring(0, start) + text + el.value.substring(end);
+      el.focus();
+      el.setSelectionRange(start + text.length, start + text.length);
+      atualizarPreviewMsg();
+  }
+
+  function addFormat(tagStart, tagEnd) {
+    saveHistory();
+    const el = document.getElementById('msgTemplate');
+    const start = el.selectionStart; const end = el.selectionEnd;
+    el.value = el.value.substring(0, start) + tagStart + el.value.substring(start, end) + tagEnd + el.value.substring(end);
+    el.focus();
+    el.setSelectionRange(start + tagStart.length, end + tagStart.length);
+    atualizarPreviewMsg();
+  }
+
+  function addEmoji(emoji) { 
+      saveHistory();
+      const el = document.getElementById('msgTemplate');
+      const start = el.selectionStart; const end = el.selectionEnd;
+      el.value = el.value.substring(0, start) + emoji + el.value.substring(end);
+      el.focus();
+      el.setSelectionRange(start + emoji.length, start + emoji.length);
+      atualizarPreviewMsg();
+  }
+  
+  function quebraLinha() { 
+      saveHistory();
+      const el = document.getElementById('msgTemplate');
+      const start = el.selectionStart;
+      el.value = el.value.substring(0, start) + "\n" + el.value.substring(el.selectionEnd);
+      el.focus();
+      el.setSelectionRange(start + 1, start + 1);
+      atualizarPreviewMsg();
+  }
+
+  function addList(type) {
+    saveHistory();
+    const el = document.getElementById('msgTemplate');
+    const start = el.selectionStart; const end = el.selectionEnd;
+    const text = el.value;
+    let prefix = (type === 'bullet') ? "• " : "> ";
+    if (start === end) {
+        const toInsert = (type === 'number') ? "\n1. " : ("\n" + prefix);
+        const newText = text.substring(0, start) + toInsert + text.substring(end);
+        el.value = newText;
+        el.focus();
+        el.setSelectionRange(start + toInsert.length, start + toInsert.length);
+    } else {
+        const selectedText = text.substring(start, end);
+        const lines = selectedText.split('\n');
+        const newLines = lines.map((line, index) => {
+            if (type === 'number') return `${index + 1}. ${line}`;
+            return `${prefix}${line}`;
+        });
+        const newBlock = newLines.join('\n');
+        el.value = text.substring(0, start) + newBlock + text.substring(end);
+        el.focus();
+        el.setSelectionRange(start, start + newBlock.length);
+    }
+    atualizarPreviewMsg();
+  }
+
+  function resetarIndividual(linha) {
+      const idx = clientes.findIndex(c => c.rowIndex === linha);
+      if(idx >= 0) { clientes[idx].status = "Pronto pra enviar"; renderizarLista(); }
+      registrarAcao('resetar_individual', linha);
+  }
+
+  // --- FUNÇÕES OBSERVAÇÕES ---
+  function abrirModalObs(linha) {
+      const cliente = clientes.find(c => c.rowIndex === linha);
+      if(!cliente) return;
+      document.getElementById('modalObsTitle').innerText = "Obs: " + cliente.nome;
+      document.getElementById('modalObsText').value = cliente.observacoes || "";
+      document.getElementById('modalObsRow').value = linha;
+      document.getElementById('modalObs').style.display = 'flex';
+  }
+
+  function salvarObservacao() {
+      const linha = parseInt(document.getElementById('modalObsRow').value);
+      const texto = document.getElementById('modalObsText').value;
+      const idx = clientes.findIndex(c => c.rowIndex === linha);
+      if(idx >= 0) { clientes[idx].observacoes = texto; renderizarLista(); }
+      document.getElementById('modalObs').style.display = 'none';
+      registrarAcao('salvar_observacao', linha, { texto: texto });
+  }
+
+  function marcarEnviadoNaPlanilha(linha) {
+      const idx = clientes.findIndex(c => c.rowIndex === linha);
+      const msgAtual = document.getElementById('msgTemplate').value;
+      
+      if(idx >= 0) { 
+          clientes[idx].status = "Enviado"; 
+          // Atualiza todas as chaves possíveis para garantir que o botão apareça
+          clientes[idx].ultima_msg = msgAtual; 
+          clientes[idx].ultima_mensagem = msgAtual; 
+          clientes[idx]["Última Mensagem"] = msgAtual;
+          
+          renderizarLista(); 
+      }
+      registrarAcao('registrar_envio', linha, { mensagem: msgAtual });
+  }
+
+  function renderizarLista() {
+    const container = document.getElementById('clientList');
+    const filtroTemp = document.getElementById('filterTemp').value;
+    const textoBusca = document.getElementById('searchInput').value.toLowerCase();
+    const templateMsg = document.getElementById('msgTemplate').value;
+    const linkExtra = document.getElementById('linkAnexo').value.trim();
+    const msgFull = linkExtra ? templateMsg + "\n\n" + linkExtra : templateMsg;
+
+    container.innerHTML = "";
+    
+    let lista = clientes.filter(c => {
+      // 1. SE TIVER BUSCA, IGNORA O RESTO
+      if (textoBusca) {
+          return c.nome.toLowerCase().includes(textoBusca) || c.telefone.includes(textoBusca);
+      }
+
+      // 2. LÓGICA PADRÃO DE FILTROS (Só executa se NÃO tiver busca)
+      const statusVal = (c.status || "").toLowerCase();
+      const isEnviado = statusVal.includes("enviado");
+
+      if (filtroBairrosSet.size > 0) { if (!c.bairro || !filtroBairrosSet.has(c.bairro.trim())) return false; }
+      if (filtroRegiaoSet.size > 0) { if (!c.regiao || !filtroRegiaoSet.has(c.regiao.trim())) return false; }
+
+      if (filtroTemp === 'enviados') return isEnviado;
+      if (filtroTemp === 'Ocultar') return c.temperatura === 'Ocultar';
+
+      if (isEnviado) return false;
+      if (c.temperatura === 'Ocultar') return false;
+      if (filtroTemp !== 'todos' && c.temperatura !== filtroTemp) return false;
+
+      return true;
+    });
+
+    document.getElementById('counterBadge').innerText = `Total na tela: ${lista.length}`;
+
+    if(lista.length === 0) {
+       container.innerHTML = "<div class='empty-state'>Nenhum cliente encontrado.</div>";
+       return;
+    }
+
+    lista.forEach(c => {
+      const statusVal = c.status || "Pronto pra enviar";
+      const jaEnviado = statusVal.toLowerCase().includes("enviado");
+      const primeiroNome = c.nome.split(' ')[0];
+      let telLimpo = c.telefone.replace(/\D/g, '');
+      if (telLimpo.length >= 10 && telLimpo.length <= 11) telLimpo = "55" + telLimpo;
+      
+      let baseUrl = isMobile() ? "https://api.whatsapp.com/send" : "whatsapp://send";
+      const linkZap = `${baseUrl}?phone=${telLimpo}&text=${encodeURIComponent(msgFull.replace(/{nome}/gi, primeiroNome))}`;
+      const targetLink = isMobile() ? "_blank" : "_self"; 
+
+      const temp = c.temperatura || "Neutro";
+      const temObs = c.observacoes && c.observacoes.trim().length > 0;
+      
+      // Tenta pegar a mensagem de várias propriedades possíveis
+      const ultimaMsg = c.ultima_msg || c.ultima_mensagem || c.ultimamensagem || c["Última Mensagem"];
+
+      const div = document.createElement('div');
+      div.className = `client-card ${jaEnviado ? 'sent' : ''}`;
+      div.setAttribute('data-row', c.rowIndex); 
+
+      div.innerHTML = `
+        <div class="card-content">
+            <div class="row-top">
+                <div>
+                    <span class="client-name">${c.nome} 
+                        ${temObs ? '<span style="font-size:14px;" title="Tem Observações">📝</span>' : ''}
+                    </span>
+                    <span class="tag-status ${temp.toLowerCase()}">${temp}</span>
+                    ${c.bairro ? `<span class="loc-badge">${c.bairro}</span>` : ''}
+                    ${c.regiao ? `<span class="loc-badge regiao">${c.regiao}</span>` : ''}
+                    <span class="client-phone">${c.telefone}</span>
+                </div>
+            </div>
+            
+            ${ultimaMsg ? 
+              `<button class="last-msg-btn" onclick="verUltimaMensagem(${c.rowIndex})">✉️ Ver última msg</button>` : 
+              `<div class="last-msg">Nenhuma msg registrada</div>`
+            }
+
+            <div class="action-wrapper">
+                <span style="font-size:11px; color:${jaEnviado ? '#2e7d32' : '#999'}; font-weight:bold; margin-right:auto; display:flex; align-items:center; gap:5px;">
+                 ${jaEnviado ? '✅ Enviado' : '⏳ ' + statusVal}
+                 ${jaEnviado ? `<button class="btn-reset-single" onclick="resetarIndividual(${c.rowIndex})">↩️ Reset</button>` : ''}
+                </span>
+
+                <button class="btn-obs ${temObs ? 'has-obs' : ''}" onclick="abrirModalObs(${c.rowIndex})">
+                    ${temObs ? 'Ver Obs' : '+ Obs'}
+                </button>
+
+                <div class="temp-selector">
+                    <button class="temp-btn ${temp=='Quente'?'active':''}" onclick="mudarTemp(${c.rowIndex}, 'Quente')">🔥</button>
+                    <button class="temp-btn ${temp=='Neutro'?'active':''}" onclick="mudarTemp(${c.rowIndex}, 'Neutro')">😐</button>
+                    <button class="temp-btn ${temp=='Frio'?'active':''}" onclick="mudarTemp(${c.rowIndex}, 'Frio')">❄️</button>
+                    <button class="temp-btn ${temp=='Ocultar'?'active':''}" onclick="mudarTemp(${c.rowIndex}, 'Ocultar')">🙈</button>
+                </div>
+                
+                <a href="${linkZap}" target="${targetLink}" class="btn-whatsapp" onclick="marcarEnviadoNaPlanilha(${c.rowIndex})">
+                    ${jaEnviado ? 'Reenviar' : 'Enviar 🚀'}
+                </a>
+            </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function registrarAcao(acao, linha, extras = {}) {
+    if (acao === 'mudar_temperatura') {
+        const idx = clientes.findIndex(c => c.rowIndex === linha);
+        if(idx >= 0) { clientes[idx].temperatura = extras.valor; renderizarLista(); }
+    }
+    
+    if(acao === 'criar' || acao === 'resetar_lote') {
+       document.getElementById('loading').style.display = 'block';
+       document.getElementById('loading').innerText = "Processando no Google...";
+    }
+
+    const payload = { action: acao, linha: linha, ...extras };
+    
+    fetch(API_URL, {
+      method: "POST", mode: "no-cors", redirect: "follow",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
+        if(acao === 'criar' || acao === 'resetar_lote') {
+             setTimeout(() => { carregarDados(); }, 2000); 
+        }
+    }).catch(err => {
+        console.error(err); alert("Erro de conexão."); carregarDados();
+    });
+  }
+
+  function mudarTemp(linha, valor) { registrarAcao('mudar_temperatura', linha, { valor: valor }); }
+  function abrirModalCriar() { document.getElementById('modalNovo').style.display = 'flex'; }
+  
+  function salvarNovoCliente() {
+    const nome = document.getElementById('novoNome').value;
+    const tel = document.getElementById('novoTel').value;
+    const bairro = document.getElementById('novoBairro').value;
+    const regiao = document.getElementById('novoRegiao').value; 
+    const temp = document.getElementById('novoTemp').value;
+    
+    if(!nome || !tel) return alert("Preencha dados");
+    
+    registrarAcao('criar', 0, { nome, telefone: tel, bairro: bairro, regiao: regiao, temperatura: temp });
+    
+    document.getElementById('modalNovo').style.display = 'none';
+    document.getElementById('novoNome').value = ""; 
+    document.getElementById('novoTel').value = "";
+    document.getElementById('novoBairro').value = "";
+    document.getElementById('novoRegiao').value = "";
+  }
+</script>
+
+</body>
+</html>
