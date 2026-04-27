@@ -294,19 +294,30 @@
                 });
 
                 const rows = [];
-                const dataHoje = new Date().toLocaleDateString('pt-BR');
+                const agora = new Date();
+                const dataFormatada = agora.toLocaleDateString('pt-BR');
+                const horaFormatada = agora.toLocaleTimeString('pt-BR');
+
+                const genId = () => Math.random().toString(16).slice(2, 10);
+                const fmtBRL = (v) => "R$ " + v.toFixed(2).replace('.', ',');
+                const fmtNum = (v) => v.toFixed(2).replace('.', ',');
 
                 // Linhas de Entrada (Subtotais Brutos)
                 for (const cat in resumo) {
                     if (resumo[cat] > 0) {
                         rows.push([
-                            dataHoje,
-                            "Entrada",
-                            "Vendas",
-                            `MP: Subtotal ${cat}`,
-                            resumo[cat].toFixed(2).replace('.', ','),
-                            resumo[cat].toFixed(2).replace('.', ','), // Valor Líquido simplificado como bruto aqui, conforme pedido
-                            cat
+                            genId(),             // ID_Movimentacao
+                            dataFormatada,       // Data
+                            horaFormatada,       // Hora
+                            "Entrada",           // Tipo
+                            "Vendas",            // Categoria
+                            "",                  // Descricao (conforme exemplo vazio)
+                            fmtBRL(resumo[cat]), // Valor (Ex: "R$ 407,00")
+                            cat,                 // Forma_Pagamento
+                            "Pago",              // Status
+                            "",                  // ID_Fechamento
+                            "",                  // Comprovante
+                            fmtNum(resumo[cat])  // Valor_Liquido (apenas o número formatado)
                         ]);
                     }
                 }
@@ -314,13 +325,18 @@
                 // Linha de Saída (Taxas)
                 if (totalTaxas > 0) {
                     rows.push([
-                        dataHoje,
+                        genId(),
+                        dataFormatada,
+                        horaFormatada,
                         "Saída",
                         "Taxas",
-                        "MP: Total Taxas Retidas",
-                        totalTaxas.toFixed(2).replace('.', ','),
-                        totalTaxas.toFixed(2).replace('.', ','),
-                        "Mercado Pago"
+                        "Taxas Mercado Pago",
+                        fmtBRL(totalTaxas),
+                        "Mercado Pago",
+                        "Pago",
+                        "",
+                        "",
+                        fmtNum(totalTaxas)
                     ]);
                 }
 
