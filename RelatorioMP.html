@@ -346,7 +346,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Movimentacoes:append?valueInputOption=USER_ENTERED`, {
+                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Movimentacoes!A:A:append?valueInputOption=USER_ENTERED`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
